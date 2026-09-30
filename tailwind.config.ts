@@ -12,14 +12,18 @@ const config: Config = {
         bg: {
           primary:   'var(--color-bg-primary)',
           secondary: 'var(--color-bg-secondary)',
+          tertiary:  'var(--color-bg-tertiary)',
           dark:      'var(--color-bg-dark)',
+          'dark-card': 'var(--color-bg-dark-card)',
           card:      'var(--color-bg-card)',
         },
         text: {
           primary: 'var(--color-text-primary)',
-          light:   'var(--color-text-light)',
           body:    'var(--color-text-body)',
           muted:   'var(--color-text-muted)',
+          light:   'var(--color-text-light)',
+          'light-sub': 'var(--color-text-light-sub)',
+          'light-mute': 'var(--color-text-light-mute)',
         },
         accent: {
           DEFAULT: 'var(--color-accent)',
@@ -36,7 +40,7 @@ const config: Config = {
         body:    ['var(--font-body)',    'sans-serif'],
         mono:    ['var(--font-mono)',    'monospace'],
       },
-      transitionDuration: { '250': '250ms', '350': '350ms' },
+      transitionDuration: { '200': '200ms', '300': '300ms' },
     },
   },
   plugins: [],

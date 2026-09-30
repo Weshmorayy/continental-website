@@ -1,33 +1,44 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════
-   PALETTE — Continental®
-   Extraite du logo noir + fiches produits
+   PALETTE & CONTRAST TOKENS — Continental®
+   Optimisée pour un contraste irréprochable (WCAG AAA)
    ════════════════════════════════════════════════════ */
 :root {
+  /* Fonds */
   --color-bg-primary:    #FFFFFF;
-  --color-bg-secondary:  #F4F4F4;
-  --color-bg-dark:       #0D0D0D;
-  --color-bg-card:       #FAFAFA;
+  --color-bg-secondary:  #F8F9FA;
+  --color-bg-tertiary:   #EEF2F6;
+  --color-bg-dark:       #0A0D12;
+  --color-bg-dark-card:  #141922;
+  --color-bg-card:       #FFFFFF;
 
-  --color-text-primary:  #0D0D0D;
+  /* Textes sur fond clair */
+  --color-text-primary:  #0F172A; /* Noir très profond et lisible */
+  --color-text-body:     #334155; /* Gris ardoise soutenu */
+  --color-text-muted:    #64748B; /* Lisibilité garantie */
+
+  /* Textes sur fond sombre */
   --color-text-light:    #FFFFFF;
-  --color-text-body:     #3D3D3D;
-  --color-text-muted:    #888888;
+  --color-text-light-sub:#CBD5E1; /* Gris clair très lisible */
+  --color-text-light-mute:#94A3B8;
 
-  --color-accent:        #1A6FBF;
-  --color-accent-hover:  #1558A0;
-  --color-accent-light:  #E8F1FA;
+  /* Accent bleu Continental® */
+  --color-accent:        #0056B3; /* Bleu royal intense, fort contraste */
+  --color-accent-hover:  #004494;
+  --color-accent-light:  #EBF3FC;
 
-  --color-border:        #E0E0E0;
-  --color-border-dark:   #2A2A2A;
+  /* Bordures */
+  --color-border:        #E2E8F0;
+  --color-border-dark:   #242D3D;
 
+  /* Typographie */
   --font-heading: 'Barlow Condensed', sans-serif;
-  --font-body:    'Inter', sans-serif;
+  --font-body:    'Plus Jakarta Sans', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 }
 
@@ -53,52 +64,72 @@ body {
   .font-heading    { font-family: var(--font-heading); }
   .font-mono-ref   { font-family: var(--font-mono); }
 
-  .bg-dark      { background-color: var(--color-bg-dark); }
-  .bg-secondary { background-color: var(--color-bg-secondary); }
-  .bg-card      { background-color: var(--color-bg-card); }
+  .bg-dark        { background-color: var(--color-bg-dark); }
+  .bg-dark-card   { background-color: var(--color-bg-dark-card); }
+  .bg-secondary   { background-color: var(--color-bg-secondary); }
+  .bg-card        { background-color: var(--color-bg-card); }
 
   .text-primary-dark { color: var(--color-text-primary); }
   .text-light        { color: var(--color-text-light); }
+  .text-light-sub    { color: var(--color-text-light-sub); }
   .text-muted        { color: var(--color-text-muted); }
   .text-accent       { color: var(--color-accent); }
 
   .border-dark { border-color: var(--color-border-dark); }
 
-  /* Boutons */
+  /* Bouton d'action principal haute visibilité */
   .btn-accent {
-    @apply inline-flex items-center gap-2 px-6 py-3 text-sm font-medium tracking-wide transition-all duration-250;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide transition-all duration-200 shadow-md;
     background-color: var(--color-accent);
-    color: #fff;
+    color: #FFFFFF;
   }
-  .btn-accent:hover { background-color: var(--color-accent-hover); }
+  .btn-accent:hover {
+    background-color: var(--color-accent-hover);
+    @apply shadow-lg -translate-y-0.5;
+  }
 
+  /* Bouton secondaire sur fond sombre */
   .btn-outline-white {
-    @apply inline-flex items-center gap-2 px-6 py-3 text-sm font-medium tracking-wide border transition-all duration-250;
-    border-color: rgba(255,255,255,0.4);
-    color: #fff;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide border-2 transition-all duration-200;
+    border-color: rgba(255, 255, 255, 0.85);
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.05);
   }
   .btn-outline-white:hover {
-    border-color: #fff;
-    background-color: rgba(255,255,255,0.08);
+    border-color: #FFFFFF;
+    background-color: #FFFFFF;
+    color: var(--color-text-primary);
+  }
+
+  /* Bouton secondaire sur fond clair */
+  .btn-outline-dark {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide border-2 transition-all duration-200;
+    border-color: var(--color-text-primary);
+    color: var(--color-text-primary);
+  }
+  .btn-outline-dark:hover {
+    background-color: var(--color-text-primary);
+    color: #FFFFFF;
   }
 
   /* Section plein viewport */
-  .section-hero { min-height: 100svh; @apply flex items-center; }
+  .section-hero { min-height: 92svh; @apply flex items-center; }
 
-  /* Référence produit */
+  /* Référence produit & surtitre haute visibilité */
   .product-ref {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-text-muted);
   }
 
-  /* Prix */
+  /* Prix percutant */
   .price-tag {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
     color: var(--color-accent);
   }
 }

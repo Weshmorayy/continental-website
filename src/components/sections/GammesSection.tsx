@@ -1,94 +1,152 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-
-const ventilateurGamme = {
-  title: 'Ventilateurs',
-  description: 'Sur pied, muraux, orbitaux — pour chaque pièce de la maison ou du bureau.',
-  image: '/products/stand-fan-5-308r.jpg',
-  href: '/catalogue?cat=ventilateur-pied',
-  count: '6 modèles disponibles',
-}
-
-const climatiseurGamme = {
-  title: 'Climatiseurs',
-  description: 'Fraîcheur optimale, économie d\'énergie, installation professionnelle.',
-  href: '/catalogue?cat=climatiseur',
-  count: 'Bientôt disponible',
-  comingSoon: true,
-}
+import { ArrowRight, Wind, Snowflake, CheckCircle2 } from 'lucide-react'
 
 export default function GammesSection() {
   return (
-    <section className="bg-bg-primary py-20 md:py-28">
+    <section className="bg-bg-secondary py-16 md:py-24 border-b border-border">
       <div className="container-site">
 
-        {/* Header */}
-        <div className="mb-12 md:mb-16">
-          <p className="product-ref text-text-muted tracking-[0.25em] mb-3">NOS GAMMES</p>
-          <h2 className="font-heading font-bold text-text-primary text-4xl md:text-5xl">
-            Ventilation haute performance,<br className="hidden md:block" />
-            choisie pour le climat de Dakar.
+        {/* Section Header avec contraste fort */}
+        <div className="max-w-3xl mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 text-accent font-mono font-bold text-xs uppercase tracking-widest mb-3">
+            <span className="w-6 h-0.5 bg-accent" />
+            <span>SOLUTIONS DE REFROIDISSEMENT</span>
+          </div>
+          <h2 className="font-heading font-black text-text-primary text-3xl sm:text-4xl md:text-5xl tracking-tight leading-tight">
+            Deux univers conçus pour dompter la chaleur.
           </h2>
+          <p className="text-text-body text-base md:text-lg mt-3 font-normal">
+            Appareils testés en conditions extrêmes pour garantir une fraîcheur continue
+            dans votre maison, vos bureaux ou vos locaux commerciaux à Dakar.
+          </p>
         </div>
 
-        {/* 2 colonnes asymétriques */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6">
+        {/* Grille des 2 Gammes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-          {/* Grande carte — Ventilateurs */}
-          <div className="md:col-span-3 relative bg-bg-secondary overflow-hidden group">
-            <div className="relative h-72 md:h-96 bg-white">
+          {/* Gamme 1 : Ventilateurs */}
+          <div className="bg-white border-2 border-border hover:border-accent transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col justify-between group">
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <span className="px-3 py-1 bg-accent/10 text-accent font-mono font-bold text-xs uppercase tracking-wider">
+                  Gamme Ventilation
+                </span>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 border border-emerald-200">
+                  En Stock Immédiat
+                </span>
+              </div>
+
+              <h3 className="font-heading font-black text-text-primary text-2xl sm:text-3xl mb-3">
+                Ventilateurs Pied, Sol & Muraux
+              </h3>
+              <p className="text-text-body text-sm leading-relaxed mb-6">
+                Brasseurs d&apos;air gros débit, ventilateurs silencieux sur pied à télécommande
+                et modèles industriels renforcés à moteur 100% cuivre.
+              </p>
+
+              <ul className="space-y-2 mb-6 text-sm text-text-body">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>3 à 8 vitesses & modes brise naturelle</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>Moteur bobiné cuivre longue durée de vie</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>Garantie 2 ans avec service après-vente dédié</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Photo Produit Isolée */}
+            <div className="relative h-64 sm:h-72 w-full bg-bg-secondary/60 border-t border-border flex items-center justify-center p-6 overflow-hidden">
               <Image
-                src={ventilateurGamme.image}
-                alt={ventilateurGamme.title}
+                src="/products/ventilateur-sol-louisiane-45cm.jpg"
+                alt="Brasseur d'air sol Continental"
                 fill
-                className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
-                sizes="(max-width: 768px) 100vw, 60vw"
+                className="object-contain p-6 group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 1024px) 100vw, 500px"
               />
             </div>
-            <div className="p-6 md:p-8 flex flex-col gap-3">
-              <p className="product-ref text-text-muted tracking-widest">{ventilateurGamme.count}</p>
-              <h3 className="font-heading font-bold text-text-primary text-3xl md:text-4xl">
-                {ventilateurGamme.title}
-              </h3>
-              <p className="text-text-body text-sm leading-relaxed max-w-sm">
-                {ventilateurGamme.description}
-              </p>
+
+            <div className="p-6 bg-white border-t border-border flex items-center justify-between">
+              <span className="font-mono text-xs font-bold text-text-muted uppercase">
+                Modèles dès 30.000 FCFA
+              </span>
               <Link
-                href={ventilateurGamme.href}
-                className="inline-flex items-center gap-2 text-accent text-sm font-medium mt-2 hover:gap-3 transition-all duration-250"
+                href="/catalogue?cat=ventilateur-pied"
+                className="inline-flex items-center gap-2 font-bold text-accent hover:text-accent-hover text-sm group-hover:translate-x-1 transition-all"
               >
-                Explorer la gamme <ArrowRight size={15} />
+                Voir les ventilateurs <ArrowRight size={16} />
               </Link>
             </div>
           </div>
 
-          {/* Petite carte — Climatiseurs */}
-          <div className="md:col-span-2 relative bg-bg-dark overflow-hidden group">
-            <div className="relative h-52 md:h-96 flex items-center justify-center">
-              {/* Placeholder visuel pour les climatiseurs */}
-              <div className="flex flex-col items-center gap-4 opacity-20">
-                <div className="w-24 h-24 border-2 border-white/40 rounded-full flex items-center justify-center">
-                  <span className="font-heading font-black text-white text-3xl">AC</span>
-                </div>
+          {/* Gamme 2 : Climatiseurs */}
+          <div className="bg-white border-2 border-border hover:border-accent transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col justify-between group">
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <span className="px-3 py-1 bg-blue-100 text-blue-900 font-mono font-bold text-xs uppercase tracking-wider">
+                  Gamme Climatisation
+                </span>
+                <span className="text-xs font-bold text-accent bg-accent-light px-2.5 py-1 border border-blue-200">
+                  Technologie Inverter
+                </span>
               </div>
-              {/* Badge "Bientôt" */}
-              <span className="absolute top-4 left-4 px-3 py-1 bg-accent/20 border border-accent/30 text-accent text-[10px] product-ref tracking-widest uppercase">
-                Bientôt
-              </span>
-            </div>
-            <div className="p-6 md:p-8 flex flex-col gap-3">
-              <p className="product-ref text-text-light/30 tracking-widest">{climatiseurGamme.count}</p>
-              <h3 className="font-heading font-bold text-text-light text-3xl md:text-4xl">
-                {climatiseurGamme.title}
+
+              <h3 className="font-heading font-black text-text-primary text-2xl sm:text-3xl mb-3">
+                Climatiseurs Split Inverter Tropicalisés
               </h3>
-              <p className="text-text-light/50 text-sm leading-relaxed max-w-sm">
-                {climatiseurGamme.description}
+              <p className="text-text-body text-sm leading-relaxed mb-6">
+                Splits haute performance de 9.000 à 18.000 BTU. Économies d&apos;énergie jusqu&apos;à 60%,
+                protection anti-corrosion Gold Fin et silence total de fonctionnement.
               </p>
+
+              <ul className="space-y-2 mb-6 text-sm text-text-body">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>Compresseur T3 tropicalisé certifié 55°C</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>Consommation électrique réduite (Classe A+++)</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 size={16} className="text-accent flex-shrink-0" />
+                  <span>Traitement spécial résistance air marin côtier</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Photo Produit Climatiseur Isolée */}
+            <div className="relative h-64 sm:h-72 w-full bg-bg-secondary/60 border-t border-border flex items-center justify-center p-6 overflow-hidden">
+              <Image
+                src="/products/climatiseur-split-pro-inverter.jpg"
+                alt="Climatiseur Inverter Continental"
+                fill
+                className="object-contain p-6 group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 1024px) 100vw, 500px"
+              />
+            </div>
+
+            <div className="p-6 bg-white border-t border-border flex items-center justify-between">
+              <span className="font-mono text-xs font-bold text-text-muted uppercase">
+                9.000 · 12.000 · 18.000 BTU
+              </span>
+              <Link
+                href="/catalogue?cat=climatiseur"
+                className="inline-flex items-center gap-2 font-bold text-accent hover:text-accent-hover text-sm group-hover:translate-x-1 transition-all"
+              >
+                Découvrir les splits <ArrowRight size={16} />
+              </Link>
             </div>
           </div>
 
         </div>
+
       </div>
     </section>
   )

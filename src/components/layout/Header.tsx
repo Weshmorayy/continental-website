@@ -3,25 +3,29 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Menu, X, ShoppingBag } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Menu, X, ShoppingBag, ShieldCheck, PhoneCall } from 'lucide-react'
+import { siteConfig } from '@/config/site'
 
 const navLinks = [
-  { label: 'Accueil',   href: '/' },
-  { label: 'Catalogue', href: '/catalogue' },
-  { label: 'Contact',   href: '#contact' },
+  { label: 'Accueil',       href: '/' },
+  { label: 'Catalogue',     href: '/catalogue' },
+  { label: 'Garantie & SAV',href: '/garantie' },
+  { label: 'À Propos',      href: '/a-propos' },
+  { label: 'Contact',       href: '/contact' },
 ]
 
 export default function Header() {
-  const [scrolled,   setScrolled]   = useState(false)
-  const [menuOpen,   setMenuOpen]   = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
+    const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Verrouiller le scroll quand le menu mobile est ouvert
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -29,54 +33,95 @@ export default function Header() {
 
   return (
     <>
+      {/* Top Banner d'assurance client */}
+      <div className="bg-bg-dark border-b border-border-dark text-text-light py-2 px-4 text-xs font-medium tracking-wide">
+        <div className="container-site flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-text-light-sub">Service Commercial Dakar :</span>
+            <a href={`tel:${siteConfig.contact.whatsapp}`} className="font-bold text-white hover:underline">
+              {siteConfig.contact.phone}
+            </a>
+          </div>
+          <div className="hidden sm:flex items-center gap-4 text-text-light-sub">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck size={14} className="text-accent-light" /> Garantie Fabricant 2 Ans
+            </span>
+            <span>•</span>
+            <span>Livraison Express Région Dakar</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Header Navigation Principal */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-bg-dark/95 backdrop-blur-sm border-b border-border-dark shadow-lg'
-            : 'bg-transparent'
+        className={`sticky top-0 left-0 right-0 z-50 transition-all duration-200 bg-white border-b ${
+          scrolled ? 'shadow-md border-border py-2.5' : 'border-border py-3.5'
         }`}
       >
-        <div className="container-site flex items-center justify-between h-16 md:h-20">
+        <div className="container-site flex items-center justify-between">
 
-          {/* Logo */}
-          <Link href="/" className="relative flex-shrink-0" aria-label="Continental — Accueil">
-            <Image
-              src="/brand/logo-dark-bg.png"
-              alt="Continental®"
-              width={160}
-              height={48}
-              className="h-9 md:h-11 w-auto object-contain"
-              priority
-            />
+          {/* Logo Continental — Toujours 100% lisible et contrasté sur fond blanc */}
+          <Link href="/" className="flex items-center gap-3 group" aria-label="Continental® Sénégal">
+            <div className="relative py-1">
+              <Image
+                src="/brand/logo-light.png"
+                alt="Continental®"
+                width={170}
+                height={50}
+                className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Navigation desktop */}
-          <nav className="hidden md:flex items-center gap-8" aria-label="Navigation principale">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-text-light/70 hover:text-text-light transition-colors duration-250 tracking-wide uppercase"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="hidden lg:flex items-center gap-8" aria-label="Navigation principale">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-semibold tracking-wide transition-colors duration-150 relative py-1 ${
+                    isActive
+                      ? 'text-accent font-bold'
+                      : 'text-text-body hover:text-accent'
+                  }`}
+                >
+                  {link.label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
+                  )}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* CTA desktop + hamburger mobile */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/catalogue"
-              className="hidden md:inline-flex btn-accent text-xs tracking-widest uppercase"
+              className="hidden sm:inline-flex btn-accent text-xs font-bold uppercase tracking-wider px-5 py-2.5"
             >
-              <ShoppingBag size={14} />
-              Commander
+              <ShoppingBag size={15} />
+              Catalogue
             </Link>
 
-            {/* Hamburger — mobile uniquement */}
+            <a
+              href={`https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent('Bonjour Continental, je souhaite être conseillé pour un achat.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:inline-flex items-center gap-2 border-2 border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-4 py-2 text-xs font-bold rounded-none uppercase tracking-wider transition-colors"
+            >
+              <PhoneCall size={14} />
+              Devis Direct
+            </a>
+
+            {/* Hamburger bouton mobile */}
             <button
               onClick={() => setMenuOpen(true)}
-              className="md:hidden text-white p-2 -mr-2"
+              className="lg:hidden p-2 text-text-primary hover:bg-bg-secondary border border-border"
               aria-label="Ouvrir le menu"
             >
               <Menu size={24} />
@@ -86,7 +131,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Drawer mobile — monté à la racine */}
+      {/* Drawer mobile */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-[999999] flex"
@@ -94,56 +139,58 @@ export default function Header() {
           aria-modal="true"
           aria-label="Menu navigation"
         >
-          {/* Overlay */}
+          {/* Overlay sombre */}
           <div
-            className="flex-1 bg-black/60"
+            className="flex-1 bg-black/70 backdrop-blur-sm"
             onClick={() => setMenuOpen(false)}
           />
 
-          {/* Panel droit */}
-          <div className="w-72 bg-bg-dark flex flex-col h-full">
-            {/* Header drawer */}
-            <div className="flex items-center justify-between px-6 h-16 border-b border-border-dark">
+          {/* Panneau latéral clair et ultra contrasté */}
+          <div className="w-80 bg-white flex flex-col h-full shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-bg-secondary">
               <Image
-                src="/brand/logo-dark-bg.png"
+                src="/brand/logo-light.png"
                 alt="Continental®"
-                width={120}
-                height={36}
-                className="h-8 w-auto object-contain"
+                width={140}
+                height={40}
+                className="h-9 w-auto object-contain"
               />
               <button
                 onClick={() => setMenuOpen(false)}
-                className="text-white/60 hover:text-white p-1"
+                className="p-2 text-text-primary hover:bg-white border border-border"
                 aria-label="Fermer le menu"
               >
-                <X size={22} />
+                <X size={20} />
               </button>
             </div>
 
-            {/* Liens */}
-            <nav className="flex flex-col gap-1 px-4 py-6">
+            <nav className="flex flex-col p-6 gap-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className="text-text-light/80 hover:text-text-light font-heading text-2xl font-bold py-3 px-2 border-b border-border-dark transition-colors"
+                  className={`text-lg font-bold py-3 px-3 border-b border-border transition-colors ${
+                    pathname === link.href ? 'text-accent bg-accent-light/50' : 'text-text-primary hover:text-accent'
+                  }`}
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            {/* CTA bas de drawer */}
-            <div className="mt-auto px-6 pb-8">
+            <div className="mt-auto p-6 bg-bg-secondary border-t border-border flex flex-col gap-3">
               <Link
                 href="/catalogue"
                 onClick={() => setMenuOpen(false)}
-                className="btn-accent w-full justify-center text-sm tracking-widest uppercase"
+                className="btn-accent w-full justify-center text-sm font-bold uppercase tracking-wider py-3.5"
               >
                 <ShoppingBag size={16} />
                 Voir le catalogue
               </Link>
+              <p className="text-xs text-text-muted text-center font-medium">
+                Service client : {siteConfig.contact.phone}
+              </p>
             </div>
           </div>
         </div>

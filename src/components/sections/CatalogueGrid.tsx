@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { products, categories, getProductsByCategory } from '@/data/products'
 import ProductCard from '@/components/ui/ProductCard'
+import { CheckCircle2, ShieldCheck, Zap } from 'lucide-react'
 
 export default function CatalogueGrid() {
   const [activeCategory, setActiveCategory] = useState<string>('all')
@@ -14,65 +15,97 @@ export default function CatalogueGrid() {
 
   return (
     <>
-      {/* Filtres */}
-      <div className="bg-bg-primary border-b border-border sticky top-16 md:top-20 z-40">
+      {/* Barre de filtres par catégories avec contraste franc */}
+      <div className="bg-white border-b-2 border-border sticky top-16 z-30 shadow-sm">
         <div className="container-site">
-          <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide py-0">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex-shrink-0 px-5 py-4 text-xs font-medium tracking-widest uppercase transition-all duration-250 border-b-2 ${
-                  activeCategory === cat.id
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar">
+            {categories.map((cat) => {
+              const isSelected = activeCategory === cat.id
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`flex-shrink-0 px-4 py-2 text-xs font-mono font-bold tracking-wider uppercase border-2 transition-all ${
+                    isSelected
+                      ? 'bg-accent text-white border-accent shadow-sm'
+                      : 'bg-bg-secondary text-text-body border-border hover:border-accent hover:text-accent'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
 
-      {/* Grille produits */}
-      <div className="bg-bg-primary py-10 md:py-14">
+      {/* Grille des produits isolés sur fond blanc */}
+      <section className="bg-bg-secondary py-12 md:py-16">
         <div className="container-site">
-          <p className="product-ref text-text-muted mb-8">
-            {filtered.length} produit{filtered.length > 1 ? 's' : ''} — {
-              categories.find(c => c.id === activeCategory)?.label
-            }
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
+            <div>
+              <p className="font-mono text-xs font-bold text-accent uppercase tracking-widest">
+                SÉLECTION EN TEMPS RÉEL
+              </p>
+              <h2 className="font-heading font-black text-text-primary text-2xl sm:text-3xl">
+                {categories.find((c) => c.id === activeCategory)?.label}
+              </h2>
+            </div>
+            <span className="text-xs font-mono font-bold text-text-muted bg-white px-3 py-1.5 border border-border self-start sm:self-auto">
+              {filtered.length} référence{filtered.length > 1 ? 's' : ''} certifiée{filtered.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
 
-          {/* Climatiseurs — placeholder */}
-          {(activeCategory === 'all' || activeCategory === 'climatiseur') && (
-            <div className="mt-8 p-8 md:p-12 bg-bg-dark flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <p className="product-ref text-text-light/30 tracking-widest mb-2">PROCHAINEMENT</p>
-                <h3 className="font-heading font-bold text-text-light text-2xl md:text-3xl">
-                  Climatiseurs Continental®
-                </h3>
-                <p className="text-text-light/50 text-sm mt-2 max-w-md">
-                  Notre gamme de climatiseurs arrive bientôt. Contactez-nous pour être informé de la disponibilité.
-                </p>
+          {/* Bandeau d'information technique */}
+          <div className="mt-14 bg-white border-2 border-border p-6 sm:p-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-accent/10 border border-accent/20 flex items-center justify-center text-accent flex-shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h4 className="font-heading font-bold text-text-primary text-lg">Garantie 24 Mois</h4>
+                  <p className="text-xs text-text-body mt-1 leading-relaxed">
+                    Remplacement ou réparation rapide pris en charge par notre équipe technique.
+                  </p>
+                </div>
               </div>
-              <a
-                href={`https://wa.me/221770000000?text=${encodeURIComponent('Bonjour, je souhaite être informé de la disponibilité des climatiseurs Continental.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-accent flex-shrink-0 text-sm tracking-widest uppercase"
-              >
-                Me prévenir
-              </a>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 flex-shrink-0">
+                  <Zap size={20} />
+                </div>
+                <div>
+                  <h4 className="font-heading font-bold text-text-primary text-lg">Moteurs 100% Cuivre</h4>
+                  <p className="text-xs text-text-body mt-1 leading-relaxed">
+                    Résistance renforcée à la chaleur continue et aux variations de tension.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-800 flex-shrink-0">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h4 className="font-heading font-bold text-text-primary text-lg">Conseil & Devis</h4>
+                  <p className="text-xs text-text-body mt-1 leading-relaxed">
+                    Assistance par WhatsApp avant chaque validation de commande.
+                  </p>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+
         </div>
-      </div>
+      </section>
     </>
   )
 }
