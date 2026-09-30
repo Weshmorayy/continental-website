@@ -151,9 +151,9 @@ export default function Header() {
               <Image
                 src="/brand/logo-light.png"
                 alt="Continental®"
-                width={180}
-                height={55}
-                className="h-11 sm:h-12 w-auto object-contain"
+                width={140}
+                height={40}
+                className="h-7 sm:h-8 w-auto object-contain"
               />
               <button
                 onClick={() => setMenuOpen(false)}
