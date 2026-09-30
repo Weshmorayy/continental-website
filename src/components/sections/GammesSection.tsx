@@ -2,23 +2,21 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
-const gammes = [
-  {
-    title: 'Ventilateurs',
-    description: 'Sur pied, muraux, orbitaux — pour chaque pièce de la maison ou du bureau.',
-    image: '/products/stand-fan-5-308r.jpg',
-    href: '/catalogue?cat=ventilateur-pied',
-    count: '6 modèles disponibles',
-  },
-  {
-    title: 'Climatiseurs',
-    description: 'Fraîcheur optimale, économie d\'énergie, installation professionnelle.',
-    image: null, // À fournir par le client
-    href: '/catalogue?cat=climatiseur',
-    count: 'Bientôt disponible',
-    comingSoon: true,
-  },
-]
+const ventilateurGamme = {
+  title: 'Ventilateurs',
+  description: 'Sur pied, muraux, orbitaux — pour chaque pièce de la maison ou du bureau.',
+  image: '/products/stand-fan-5-308r.jpg',
+  href: '/catalogue?cat=ventilateur-pied',
+  count: '6 modèles disponibles',
+}
+
+const climatiseurGamme = {
+  title: 'Climatiseurs',
+  description: 'Fraîcheur optimale, économie d\'énergie, installation professionnelle.',
+  href: '/catalogue?cat=climatiseur',
+  count: 'Bientôt disponible',
+  comingSoon: true,
+}
 
 export default function GammesSection() {
   return (
@@ -41,23 +39,23 @@ export default function GammesSection() {
           <div className="md:col-span-3 relative bg-bg-secondary overflow-hidden group">
             <div className="relative h-72 md:h-96 bg-white">
               <Image
-                src={gammes[0].image}
-                alt={gammes[0].title}
+                src={ventilateurGamme.image}
+                alt={ventilateurGamme.title}
                 fill
                 className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 60vw"
               />
             </div>
             <div className="p-6 md:p-8 flex flex-col gap-3">
-              <p className="product-ref text-text-muted tracking-widest">{gammes[0].count}</p>
+              <p className="product-ref text-text-muted tracking-widest">{ventilateurGamme.count}</p>
               <h3 className="font-heading font-bold text-text-primary text-3xl md:text-4xl">
-                {gammes[0].title}
+                {ventilateurGamme.title}
               </h3>
               <p className="text-text-body text-sm leading-relaxed max-w-sm">
-                {gammes[0].description}
+                {ventilateurGamme.description}
               </p>
               <Link
-                href={gammes[0].href}
+                href={ventilateurGamme.href}
                 className="inline-flex items-center gap-2 text-accent text-sm font-medium mt-2 hover:gap-3 transition-all duration-250"
               >
                 Explorer la gamme <ArrowRight size={15} />
@@ -80,12 +78,12 @@ export default function GammesSection() {
               </span>
             </div>
             <div className="p-6 md:p-8 flex flex-col gap-3">
-              <p className="product-ref text-text-light/30 tracking-widest">{gammes[1].count}</p>
+              <p className="product-ref text-text-light/30 tracking-widest">{climatiseurGamme.count}</p>
               <h3 className="font-heading font-bold text-text-light text-3xl md:text-4xl">
-                {gammes[1].title}
+                {climatiseurGamme.title}
               </h3>
               <p className="text-text-light/50 text-sm leading-relaxed max-w-sm">
-                {gammes[1].description}
+                {climatiseurGamme.description}
               </p>
             </div>
           </div>

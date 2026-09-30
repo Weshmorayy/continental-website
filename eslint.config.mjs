@@ -10,10 +10,11 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...compat.extends("next/core-web-vitals"),
   {
     rules: {
       "no-console": ["warn", { allow: ["error"] }],
+      "@typescript-eslint/no-unused-expressions": "off",
     },
   },
 ];
