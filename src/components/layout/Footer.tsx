@@ -47,13 +47,13 @@ export default function Footer() {
 
           {/* Colonne 1 : Marque & Présentation (4 colonnes) */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            <div className="bg-white p-2.5 inline-block self-start border border-border">
+            <div className="inline-block self-start py-1">
               <Image
-                src="/brand/logo-light.png"
+                src="/brand/logo-white-transparent.png"
                 alt="Continental®"
-                width={150}
-                height={45}
-                className="h-8 w-auto object-contain"
+                width={220}
+                height={65}
+                className="h-12 md:h-14 w-auto object-contain"
               />
             </div>
 

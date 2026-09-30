@@ -28,9 +28,13 @@ export default function HeroSection() {
           <div className="lg:col-span-7 flex flex-col items-start">
 
             {/* Surtitre Badge technique */}
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 bg-accent/20 border border-accent text-accent-light text-xs font-mono font-bold tracking-widest uppercase mb-6 rounded-none shadow-sm">
-              <Wind size={14} className="text-blue-400" />
-              <span>CONTINENTAL® DAKAR · ÉLECTROMÉNAGER CERTIFIÉ</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-accent/20 border border-accent text-accent-light text-xs font-mono font-bold tracking-widest uppercase mb-6 rounded-none shadow-sm">
+              <Wind size={14} className="text-blue-400 flex-shrink-0" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span>CONTINENTAL® DAKAR</span>
+                <span className="hidden sm:inline text-accent-light/50">·</span>
+                <span className="text-blue-300">ÉLECTROMÉNAGER CERTIFIÉ</span>
+              </div>
             </div>
 
             {/* Titre Principal percutant */}

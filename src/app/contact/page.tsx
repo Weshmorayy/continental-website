@@ -58,17 +58,17 @@ export default function ContactPage() {
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-5 p-6 bg-emerald-50 border-2 border-emerald-300 hover:bg-emerald-100 transition-colors group"
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 p-5 sm:p-6 bg-emerald-50 border-2 border-emerald-300 hover:bg-emerald-100 transition-colors group"
                 >
-                  <div className="w-14 h-14 bg-emerald-600 flex items-center justify-center text-white flex-shrink-0">
-                    <MessageCircle size={28} />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-600 flex items-center justify-center text-white flex-shrink-0">
+                    <MessageCircle size={26} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-heading font-bold text-xl text-emerald-900">WhatsApp — Commandes & Conseil</h3>
-                    <p className="text-emerald-800 text-sm mt-1">Réponse en moins de 15 minutes · 7j/7 · 08h–20h</p>
+                    <h3 className="font-heading font-bold text-lg sm:text-xl text-emerald-900">WhatsApp — Commandes & Conseil</h3>
+                    <p className="text-emerald-800 text-xs sm:text-sm mt-0.5">Réponse en moins de 15 minutes · 7j/7 · 08h–20h</p>
                     <p className="font-mono font-bold text-emerald-900 text-sm mt-1">{siteConfig.contact.phone}</p>
                   </div>
-                  <span className="text-emerald-700 font-bold text-xs uppercase tracking-wider bg-emerald-200 px-3 py-1 group-hover:bg-emerald-700 group-hover:text-white transition-colors">
+                  <span className="inline-block self-start sm:self-center text-emerald-700 font-bold text-xs uppercase tracking-wider bg-emerald-200 px-3 py-1.5 group-hover:bg-emerald-700 group-hover:text-white transition-colors">
                     Ouvrir WhatsApp →
                   </span>
                 </a>
@@ -76,15 +76,15 @@ export default function ContactPage() {
                 {/* Téléphone */}
                 <a
                   href={`tel:${siteConfig.contact.whatsapp}`}
-                  className="flex items-center gap-5 p-6 bg-bg-secondary border-2 border-border hover:border-accent transition-colors group"
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 p-5 sm:p-6 bg-bg-secondary border-2 border-border hover:border-accent transition-colors group"
                 >
-                  <div className="w-14 h-14 bg-accent/10 border-2 border-accent/30 flex items-center justify-center text-accent flex-shrink-0">
-                    <Phone size={28} />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-accent/10 border-2 border-accent/30 flex items-center justify-center text-accent flex-shrink-0">
+                    <Phone size={26} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-heading font-bold text-xl text-text-primary">Appel Téléphonique</h3>
-                    <p className="text-text-body text-sm mt-1">Pour toute urgence ou demande de devis immédiate</p>
-                    <p className="font-mono font-bold text-accent text-lg mt-1">{siteConfig.contact.phone}</p>
+                    <h3 className="font-heading font-bold text-lg sm:text-xl text-text-primary">Appel Téléphonique Direct</h3>
+                    <p className="text-text-body text-xs sm:text-sm mt-0.5">Pour toute urgence ou demande de devis immédiate</p>
+                    <p className="font-mono font-bold text-accent text-base sm:text-lg mt-1">{siteConfig.contact.phone}</p>
                   </div>
                 </a>
 

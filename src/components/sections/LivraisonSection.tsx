@@ -23,20 +23,20 @@ export default function LivraisonSection() {
               </p>
             </div>
 
-            {/* Grille des secteurs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            {/* Grille des secteurs — 3 colonnes comme avant */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 mb-6">
               {siteConfig.delivery.zones.map((zone) => (
                 <div
                   key={zone.name}
-                  className="p-4 bg-bg-secondary border border-border flex items-center justify-between"
+                  className="p-4 bg-bg-secondary border-2 border-border flex flex-col justify-between gap-2"
                 >
                   <div>
-                    <h3 className="text-sm font-bold text-text-primary">{zone.name}</h3>
-                    <span className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+                    <h3 className="text-sm font-bold text-text-primary leading-tight">{zone.name}</h3>
+                    <span className="text-xs text-text-muted flex items-center gap-1 mt-1 font-mono">
                       <Clock size={12} /> {zone.delay}
                     </span>
                   </div>
-                  <span className={`text-xs font-mono font-bold px-2 py-1 ${
+                  <span className={`text-xs font-mono font-bold px-2 py-1 inline-block self-start ${
                     zone.fee === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-white text-accent border border-border'
                   }`}>
                     {zone.fee === 0 ? 'GRATUIT' : `${zone.fee.toLocaleString('fr-FR')} FCFA`}

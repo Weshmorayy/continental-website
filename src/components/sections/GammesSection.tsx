@@ -72,7 +72,7 @@ export default function GammesSection() {
               />
             </div>
 
-            <div className="p-6 bg-white border-t border-border flex items-center justify-between">
+            <div className="p-5 sm:p-6 bg-white border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="font-mono text-xs font-bold text-text-muted uppercase">
                 Modèles dès 30.000 FCFA
               </span>
@@ -132,7 +132,7 @@ export default function GammesSection() {
               />
             </div>
 
-            <div className="p-6 bg-white border-t border-border flex items-center justify-between">
+            <div className="p-5 sm:p-6 bg-white border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="font-mono text-xs font-bold text-text-muted uppercase">
                 9.000 · 12.000 · 18.000 BTU
               </span>
