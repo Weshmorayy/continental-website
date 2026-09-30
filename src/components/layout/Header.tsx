@@ -67,9 +67,9 @@ export default function Header() {
               <Image
                 src="/brand/logo-light.png"
                 alt="Continental®"
-                width={220}
-                height={65}
-                className="h-12 sm:h-14 md:h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                width={160}
+                height={45}
+                className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-[1.02]"
                 priority
               />
             </div>

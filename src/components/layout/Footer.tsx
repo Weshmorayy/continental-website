@@ -51,9 +51,9 @@ export default function Footer() {
               <Image
                 src="/brand/logo-white-transparent.png"
                 alt="Continental®"
-                width={220}
-                height={65}
-                className="h-12 md:h-14 w-auto object-contain"
+                width={160}
+                height={45}
+                className="h-7 md:h-8 w-auto object-contain"
               />
             </div>
 
