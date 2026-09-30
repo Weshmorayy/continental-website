@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════════════════════════
+   PALETTE — Continental®
+   Extraite du logo noir + fiches produits
+   ════════════════════════════════════════════════════ */
+:root {
+  --color-bg-primary:    #FFFFFF;
+  --color-bg-secondary:  #F4F4F4;
+  --color-bg-dark:       #0D0D0D;
+  --color-bg-card:       #FAFAFA;
+
+  --color-text-primary:  #0D0D0D;
+  --color-text-light:    #FFFFFF;
+  --color-text-body:     #3D3D3D;
+  --color-text-muted:    #888888;
+
+  --color-accent:        #1A6FBF;
+  --color-accent-hover:  #1558A0;
+  --color-accent-light:  #E8F1FA;
+
+  --color-border:        #E0E0E0;
+  --color-border-dark:   #2A2A2A;
+
+  --font-heading: 'Barlow Condensed', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ════════════════════════════════════════════════════
+   RESET BASE
+   ════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-body);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ════════════════════════════════════════════════════
+   UTILITIES
+   ════════════════════════════════════════════════════ */
+@layer utilities {
+  .container-site { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .font-heading    { font-family: var(--font-heading); }
+  .font-mono-ref   { font-family: var(--font-mono); }
+
+  .bg-dark      { background-color: var(--color-bg-dark); }
+  .bg-secondary { background-color: var(--color-bg-secondary); }
+  .bg-card      { background-color: var(--color-bg-card); }
+
+  .text-primary-dark { color: var(--color-text-primary); }
+  .text-light        { color: var(--color-text-light); }
+  .text-muted        { color: var(--color-text-muted); }
+  .text-accent       { color: var(--color-accent); }
+
+  .border-dark { border-color: var(--color-border-dark); }
+
+  /* Boutons */
+  .btn-accent {
+    @apply inline-flex items-center gap-2 px-6 py-3 text-sm font-medium tracking-wide transition-all duration-250;
+    background-color: var(--color-accent);
+    color: #fff;
+  }
+  .btn-accent:hover { background-color: var(--color-accent-hover); }
+
+  .btn-outline-white {
+    @apply inline-flex items-center gap-2 px-6 py-3 text-sm font-medium tracking-wide border transition-all duration-250;
+    border-color: rgba(255,255,255,0.4);
+    color: #fff;
+  }
+  .btn-outline-white:hover {
+    border-color: #fff;
+    background-color: rgba(255,255,255,0.08);
+  }
+
+  /* Section plein viewport */
+  .section-hero { min-height: 100svh; @apply flex items-center; }
+
+  /* Référence produit */
+  .product-ref {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  /* Prix */
+  .price-tag {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+}
