@@ -10,101 +10,92 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, size = 'default' }: ProductCardProps) {
-  const waMessage = buildOrderMessage({ productName: product.name, ref: product.ref })
-  const waUrl = buildWhatsAppUrl(waMessage)
+  const waUrl = buildWhatsAppUrl(
+    buildOrderMessage({ productName: product.name, ref: product.ref })
+  )
 
   return (
-    <article className="flex flex-col bg-white border-2 border-border hover:border-accent transition-all duration-200 group shadow-sm hover:shadow-md">
-      {/* Zone Image Blanche Propre avec Badge Contrasté */}
-      <div className="relative bg-white border-b border-border overflow-hidden">
-        {/* Badge produit haute visibilité */}
+    <article className="flex flex-col bg-bg-primary border border-border rounded-3xl overflow-hidden transition-all duration-250 group hover:border-text-primary hover:shadow-[0_20px_50px_-32px_rgba(22,19,15,0.55)] hover:-translate-y-1">
+
+      {/* Scène produit — blanc pur, sans bordure dure */}
+      <div className="relative bg-white">
+        {/* Badge produit — hors du conteneur qui tronque */}
         {product.badge && (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider uppercase bg-bg-dark text-white border border-border-dark shadow-sm">
+          <span className="absolute top-4 left-4 z-10 rounded-full bg-text-primary text-white px-3 py-1 text-[10px] product-ref tracking-[0.14em]">
             {product.badge}
           </span>
         )}
 
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5">
-          <ShieldCheck size={12} className="text-emerald-600" />
-          <span>2 Ans Garantie</span>
-        </div>
-
         <Link
           href={`/produit/${product.slug}`}
-          className={`block relative ${size === 'large' ? 'h-64 sm:h-72' : 'h-52 sm:h-56'} w-full p-4`}
+          className={`block relative w-full ${size === 'large' ? 'h-64 sm:h-72' : 'h-52 sm:h-60'}`}
           aria-label={product.name}
         >
           <Image
             src={product.image}
             alt={`${product.name} (${product.ref})`}
             fill
-            className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+            className="object-contain p-8 transition-transform duration-300 group-hover:scale-[1.06]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </Link>
       </div>
 
-      {/* Informations Produits Claires et Contrastées */}
-      <div className="flex flex-col flex-1 p-5 gap-3 justify-between bg-white">
-        <div>
-          {/* Référence et Catégorie */}
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="font-mono text-xs font-bold text-accent tracking-wider uppercase">
-              RÉF. {product.ref}
-            </span>
-            <span className="text-[11px] font-medium text-text-muted">
-              {product.categoryLabel}
-            </span>
-          </div>
-
-          {/* Nom Produit */}
-          <Link href={`/produit/${product.slug}`}>
-            <h3 className="font-heading font-bold text-xl text-text-primary group-hover:text-accent transition-colors leading-snug line-clamp-2">
-              {product.name}
-            </h3>
-          </Link>
-
-          {/* Caractéristiques principales */}
-          <ul className="mt-3 space-y-1.5 border-t border-border pt-3">
-            {product.features.slice(0, 2).map((feat, i) => (
-              <li key={i} className="text-xs text-text-body font-medium flex items-start gap-1.5">
-                <span className="text-accent font-bold">•</span>
-                <span className="line-clamp-1">{feat}</span>
-              </li>
-            ))}
-          </ul>
+      {/* Informations */}
+      <div className="flex flex-col flex-1 p-6">
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <span className="product-ref text-accent tracking-[0.12em]">{product.ref}</span>
+          <span className="text-[11px] text-text-muted text-right">{product.categoryLabel}</span>
         </div>
 
-        {/* Footer Carte : Prix FCFA et Actions */}
-        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2.5">
-          <div className="flex items-baseline justify-between">
-            <span className="text-[11px] font-mono text-text-muted uppercase font-bold">Prix Indicatif</span>
-            <span className="font-heading font-black text-2xl text-text-primary">
-              {product.price.toLocaleString('fr-FR')} <span className="text-accent text-sm font-bold">FCFA</span>
+        <Link href={`/produit/${product.slug}`} className="block">
+          <h3 className="font-heading font-semibold text-lg leading-snug text-text-primary group-hover:text-accent transition-colors line-clamp-2">
+            {product.name}
+          </h3>
+        </Link>
+
+        <ul className="mt-4 space-y-1.5">
+          {product.features.slice(0, 2).map((feat, i) => (
+            <li key={i} className="text-xs text-text-muted leading-relaxed line-clamp-1">
+              {feat}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto pt-6">
+          <div className="flex items-baseline justify-between gap-3 pb-5">
+            <span className="text-[10px] product-ref text-text-muted">Prix indicatif</span>
+            <span className="font-heading font-semibold text-2xl text-text-primary">
+              {product.price.toLocaleString('fr-FR')}{' '}
+              <span className="text-sm font-medium text-text-muted">FCFA</span>
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-accent py-2 px-2 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5"
+              className="btn-wa flex-1 px-4 py-2.5 text-xs"
               aria-label={`Commander ${product.name} sur WhatsApp`}
             >
-              <MessageCircle size={14} />
+              <MessageCircle size={15} />
               WhatsApp
             </a>
-
             <Link
               href={`/produit/${product.slug}`}
-              className="btn-outline-dark py-2 px-2 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+              className="btn-outline-dark px-4 py-2.5 text-xs flex-shrink-0"
             >
-              Détails <ArrowRight size={13} />
+              Détails
+              <ArrowRight size={14} />
             </Link>
           </div>
-        </div>
 
+          <p className="mt-4 flex items-center gap-1.5 text-[11px] text-text-muted">
+            <ShieldCheck size={13} className="text-accent flex-shrink-0" />
+            Garantie fabricant 2 ans
+          </p>
+        </div>
       </div>
     </article>
   )

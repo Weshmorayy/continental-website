@@ -6,25 +6,21 @@ export default function NotFound() {
   return (
     <>
       <Header />
-      <main className="bg-bg-dark section-hero">
-        <div className="container-site text-center">
-          <p className="font-heading font-black text-text-light/10 leading-none select-none"
-            style={{ fontSize: 'clamp(6rem, 20vw, 16rem)' }}
-            aria-hidden="true">
-            404
-          </p>
-          <div className="-mt-8 md:-mt-16 relative z-10">
-            <h1 className="font-heading font-bold text-text-light text-3xl md:text-5xl mb-4">
-              Page introuvable.
+      <main className="bg-bg-primary section-hero">
+        <div className="container-site">
+          <div className="max-w-xl">
+            <p className="eyebrow mb-6">Erreur 404</p>
+            <h1 className="font-heading font-semibold text-text-primary text-4xl sm:text-5xl leading-[1.05] tracking-[-0.02em] mb-5">
+              Cette page n&apos;existe pas.
             </h1>
-            <p className="text-text-light/50 text-base mb-10 max-w-sm mx-auto">
-              Cette page n&apos;existe pas ou a été déplacée.
+            <p className="text-text-body text-lg leading-relaxed mb-10">
+              Le lien est peut-être ancien, ou le produit n&apos;est plus au catalogue.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/" className="btn-accent px-8 py-3.5 text-sm tracking-widest uppercase">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/" className="btn-accent px-8 py-4">
                 Retour à l&apos;accueil
               </Link>
-              <Link href="/catalogue" className="btn-outline-white px-8 py-3.5 text-sm tracking-widest uppercase">
+              <Link href="/catalogue" className="btn-outline-dark px-8 py-4">
                 Voir le catalogue
               </Link>
             </div>

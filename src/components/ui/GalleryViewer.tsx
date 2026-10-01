@@ -13,37 +13,40 @@ export default function GalleryViewer({ images, productName }: GalleryViewerProp
   const [active, setActive] = useState(0)
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Image principale */}
-      <div className="relative h-72 md:h-[440px] bg-white">
+    <div className="flex flex-col gap-4">
+      {/* Image principale — scène blanche, cadre arrondi */}
+      <div className="relative h-80 md:h-[460px] w-full plinth p-8 sm:p-12">
         <Image
           src={images[active]}
           alt={productName}
           fill
-          className="object-contain p-6 md:p-10"
+          className="object-contain p-2"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority
         />
       </div>
 
-      {/* Vignettes — seulement si plusieurs images */}
       {images.length > 1 && (
-        <div className="flex gap-2">
+        <div className="flex gap-3" role="tablist" aria-label="Vues du produit">
           {images.map((img, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`relative w-16 h-16 bg-white border-2 flex-shrink-0 transition-all duration-250 ${
-                active === i ? 'border-accent' : 'border-border hover:border-text-muted'
+              role="tab"
+              aria-selected={active === i}
+              aria-label={`Vue ${i + 1}`}
+              className={`relative w-20 h-20 flex-shrink-0 rounded-2xl border transition-all duration-200 ${
+                active === i
+                  ? 'border-text-primary'
+                  : 'border-border hover:border-text-muted'
               }`}
-              aria-label={`Image ${i + 1}`}
             >
               <Image
                 src={img}
                 alt={`${productName} vue ${i + 1}`}
                 fill
-                className="object-contain p-1"
-                sizes="64px"
+                className="object-contain p-2"
+                sizes="80px"
               />
             </button>
           ))}

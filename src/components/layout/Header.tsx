@@ -4,16 +4,20 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, ShoppingBag, ShieldCheck, PhoneCall } from 'lucide-react'
+import { Menu, X, ShoppingBag, PhoneCall, MapPin } from 'lucide-react'
 import { siteConfig } from '@/config/site'
 
 const navLinks = [
-  { label: 'Accueil',       href: '/' },
-  { label: 'Catalogue',     href: '/catalogue' },
-  { label: 'Garantie & SAV',href: '/garantie' },
-  { label: 'À Propos',      href: '/a-propos' },
-  { label: 'Contact',       href: '/contact' },
+  { label: 'Accueil',        href: '/' },
+  { label: 'Catalogue',      href: '/catalogue' },
+  { label: 'Garantie & SAV', href: '/garantie' },
+  { label: 'À Propos',       href: '/a-propos' },
+  { label: 'Contact',        href: '/contact' },
 ]
+
+const waHref = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
+  "Bonjour Continental, je souhaite être conseillé pour un achat."
+)}`
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -31,165 +35,164 @@ export default function Header() {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
+  // Ferme le tiroir à chaque navigation
+  useEffect(() => { setMenuOpen(false) }, [pathname])
+
   return (
     <>
-      {/* Top Banner d'assurance client */}
-      <div className="bg-bg-dark border-b border-border-dark text-text-light py-2 px-4 text-xs font-medium tracking-wide">
-        <div className="container-site flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-text-light-sub">Service Commercial Dakar :</span>
-            <a href={`tel:${siteConfig.contact.whatsapp}`} className="font-bold text-white hover:underline">
-              {siteConfig.contact.phone}
-            </a>
-          </div>
-          <div className="hidden sm:flex items-center gap-4 text-text-light-sub">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-accent-light" /> Garantie Fabricant 2 Ans
+      {/* Bandeau d'information — sable chaud, pas de bandeau noir */}
+      <div className="bg-bg-tertiary border-b border-border text-text-primary">
+        <div className="container-site flex items-center justify-between gap-4 py-2.5 text-[11px] sm:text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <MapPin size={13} className="text-accent flex-shrink-0" />
+            <span className="truncate">
+              Livraison &amp; installation à{' '}
+              <span className="font-semibold">Dakar et banlieue</span>
             </span>
-            <span>•</span>
-            <span>Livraison Express Région Dakar</span>
+          </div>
+          <div className="hidden md:flex items-center gap-5 text-text-body">
+            <span>Garantie fabricant 2 ans</span>
+            <span className="w-px h-3 bg-border-dark/20" />
+            <span>Paiement à la livraison</span>
           </div>
         </div>
       </div>
 
-      {/* Header Navigation Principal */}
+      {/* Navigation principale — transparente sur le hero, opaque au scroll */}
       <header
-        className={`sticky top-0 left-0 right-0 z-50 transition-all duration-200 bg-white border-b ${
-          scrolled ? 'shadow-md border-border py-2.5' : 'border-border py-3.5'
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-bg-primary/95 backdrop-blur-md border-b border-border shadow-[0_1px_20px_-12px_rgba(59,46,35,0.5)]'
+            : 'bg-transparent border-b border-transparent'
         }`}
       >
-        <div className="container-site flex items-center justify-between">
-
-          {/* Logo Continental — Toujours 100% lisible et contrasté sur fond blanc */}
-          <Link href="/" className="flex items-center gap-3 group" aria-label="Continental® Sénégal">
-            <div className="relative py-1">
-              <Image
-                src="/brand/logo-light.png"
-                alt="Continental®"
-                width={160}
-                height={45}
-                className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-[1.02]"
-                priority
-              />
-            </div>
+        <div className="container-site flex items-center justify-between gap-4 py-4">
+          <Link
+            href="/"
+            className="flex-shrink-0 group"
+            aria-label="Continental® Sénégal — accueil"
+          >
+            <Image
+              src="/brand/logo-light.png"
+              alt="Continental®"
+              width={170}
+              height={48}
+              className="h-8 sm:h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-[1.03]"
+              priority
+            />
           </Link>
 
-          {/* Navigation desktop */}
-          <nav className="hidden lg:flex items-center gap-8" aria-label="Navigation principale">
+          <nav className="hidden lg:flex items-center gap-9" aria-label="Navigation principale">
             {navLinks.map((link) => {
               const isActive = pathname === link.href
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-semibold tracking-wide transition-colors duration-150 relative py-1 ${
-                    isActive
-                      ? 'text-accent font-bold'
-                      : 'text-text-body hover:text-accent'
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`relative py-1 text-sm font-medium transition-colors duration-200 ${
+                    isActive ? 'text-accent font-semibold' : 'text-text-body hover:text-text-primary'
                   }`}
                 >
                   {link.label}
                   {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
+                    <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] rounded-full bg-accent" />
                   )}
                 </Link>
               )
             })}
           </nav>
 
-          {/* CTA desktop + hamburger mobile */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/catalogue"
-              className="hidden sm:inline-flex btn-accent text-xs font-bold uppercase tracking-wider px-5 py-2.5"
-            >
-              <ShoppingBag size={15} />
-              Catalogue
-            </Link>
-
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
-              href={`https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent('Bonjour Continental, je souhaite être conseillé pour un achat.')}`}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center gap-2 border-2 border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-4 py-2 text-xs font-bold rounded-none uppercase tracking-wider transition-colors"
+              className="btn-wa px-4 sm:px-5 py-2.5 text-xs sm:text-sm"
             >
-              <PhoneCall size={14} />
-              Devis Direct
+              <PhoneCall size={15} className="flex-shrink-0" />
+              <span className="hidden sm:inline">Devis gratuit</span>
+              <span className="sm:hidden">Devis</span>
             </a>
 
-            {/* Hamburger bouton mobile */}
             <button
               onClick={() => setMenuOpen(true)}
-              className="lg:hidden p-2 text-text-primary hover:bg-bg-secondary border border-border"
+              className="lg:hidden inline-flex items-center justify-center p-2.5 rounded-full text-text-primary border border-border hover:border-accent hover:text-accent transition-colors"
               aria-label="Ouvrir le menu"
+              aria-expanded={menuOpen}
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
           </div>
-
         </div>
       </header>
 
-      {/* Drawer mobile */}
+      {/* Tiroir mobile */}
       {menuOpen && (
-        <div
-          className="fixed inset-0 z-[999999] flex"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu navigation"
-        >
-          {/* Overlay sombre */}
-          <div
-            className="flex-1 bg-black/70 backdrop-blur-sm"
+        <div className="fixed inset-0 z-[999999] flex" role="dialog" aria-modal="true" aria-label="Menu navigation">
+          <button
+            className="flex-1 bg-text-primary/45 backdrop-blur-sm cursor-default"
             onClick={() => setMenuOpen(false)}
+            aria-label="Fermer le menu"
+            tabIndex={-1}
           />
 
-          {/* Panneau latéral clair et ultra contrasté */}
-          <div className="w-80 bg-white flex flex-col h-full shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-bg-secondary">
+          <div className="w-[85vw] max-w-sm bg-bg-primary flex flex-col h-full shadow-2xl overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <Image
                 src="/brand/logo-light.png"
                 alt="Continental®"
-                width={140}
-                height={40}
-                className="h-7 sm:h-8 w-auto object-contain"
+                width={150}
+                height={42}
+                className="h-8 w-auto object-contain"
               />
               <button
                 onClick={() => setMenuOpen(false)}
-                className="p-2 text-text-primary hover:bg-white border border-border"
+                className="p-2 rounded-full text-text-primary border border-border hover:border-accent hover:text-accent transition-colors"
                 aria-label="Fermer le menu"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <nav className="flex flex-col p-6 gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`text-lg font-bold py-3 px-3 border-b border-border transition-colors ${
-                    pathname === link.href ? 'text-accent bg-accent-light/50' : 'text-text-primary hover:text-accent'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <nav className="flex flex-col p-5 gap-1" aria-label="Navigation mobile">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`rounded-2xl px-4 py-3.5 text-base font-medium transition-colors ${
+                      isActive
+                        ? 'bg-accent-light text-accent font-semibold'
+                        : 'text-text-primary hover:bg-bg-secondary'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              })}
             </nav>
 
-            <div className="mt-auto p-6 bg-bg-secondary border-t border-border flex flex-col gap-3">
+            <div className="mt-auto p-5 border-t border-border flex flex-col gap-3 bg-bg-secondary">
               <Link
                 href="/catalogue"
-                onClick={() => setMenuOpen(false)}
-                className="btn-accent w-full justify-center text-sm font-bold uppercase tracking-wider py-3.5"
+                className="btn-accent w-full text-sm font-semibold"
               >
-                <ShoppingBag size={16} />
+                <ShoppingBag size={17} />
                 Voir le catalogue
               </Link>
-              <p className="text-xs text-text-muted text-center font-medium">
-                Service client : {siteConfig.contact.phone}
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-wa w-full text-sm font-semibold"
+              >
+                <PhoneCall size={16} />
+                {siteConfig.contact.phone}
+              </a>
+              <p className="text-xs text-text-muted text-center pt-1">
+                {siteConfig.hours.weekdays} · {siteConfig.hours.saturday}
               </p>
             </div>
           </div>

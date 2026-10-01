@@ -1,43 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════
-   PALETTE & CONTRAST TOKENS — Continental®
-   Optimisée pour un contraste irréprochable (WCAG AAA)
+   PALETTE — Continental®
+   ────────────────────────────────────────────────────
+   Structure « platinum » inspirée de samsung.com :
+   fond blanc, texte presque noir, CTA en pilule noire.
+   Le bleu de la référence est retiré et remplacé par UN
+   seul accent terre cuite, utilisé avec la même parcimonie.
+
+   ⚠ Les variables stockent des CANAUX RGB bruts
+     (`184 78 34`) et non une couleur hex. C'est ce qui
+     permet à Tailwind d'appliquer les modificateurs
+     d'opacité : bg-bg-primary/95, text-accent/60, etc.
+     Toute couleur CSS doit donc passer par rgb(var(--…)).
    ════════════════════════════════════════════════════ */
 :root {
   /* Fonds */
-  --color-bg-primary:    #FFFFFF;
-  --color-bg-secondary:  #F8F9FA;
-  --color-bg-tertiary:   #EEF2F6;
-  --color-bg-dark:       #0A0D12;
-  --color-bg-dark-card:  #141922;
-  --color-bg-card:       #FFFFFF;
+  --color-bg-primary:    255 255 255;  /* blanc pur — fond par défaut, scènes produit */
+  --color-bg-secondary:  248 246 243;  /* blanc cassé — sections alternées */
+  --color-bg-tertiary:   239 233 225;  /* sable — arguments + pied de page */
+  --color-bg-dark:       31 26 22;     /* RÉSERVÉ — aucune section sombre */
+  --color-bg-dark-card:  46 39 33;
+  --color-bg-card:       255 255 255;
 
-  /* Textes sur fond clair */
-  --color-text-primary:  #0F172A; /* Noir très profond et lisible */
-  --color-text-body:     #334155; /* Gris ardoise soutenu */
-  --color-text-muted:    #64748B; /* Lisibilité garantie */
+  /* Textes sur fond clair — noirs chauds, jamais gris bleutés */
+  --color-text-primary:  22 19 15;     /* presque noir */
+  --color-text-body:     74 68 62;
+  --color-text-muted:    139 131 122;
 
   /* Textes sur fond sombre */
-  --color-text-light:    #FFFFFF;
-  --color-text-light-sub:#CBD5E1; /* Gris clair très lisible */
-  --color-text-light-mute:#94A3B8;
+  --color-text-light:    255 255 255;
+  --color-text-light-sub:237 231 223;
+  --color-text-light-mute:179 170 160;
 
-  /* Accent bleu Continental® */
-  --color-accent:        #0056B3; /* Bleu royal intense, fort contraste */
-  --color-accent-hover:  #004494;
-  --color-accent-light:  #EBF3FC;
+  /* Accent unique — terre cuite, jamais en aplat de fond */
+  --color-accent:        184 78 34;    /* 5.2:1 sur blanc */
+  --color-accent-hover:  150 60 22;
+  --color-accent-light:  250 237 230;
 
-  /* Bordures */
-  --color-border:        #E2E8F0;
-  --color-border-dark:   #242D3D;
+  /* Accent secondaire — ocre, détails fins seulement */
+  --color-gold:          180 131 46;
+
+  /* Bordures — toujours 1px */
+  --color-border:        231 226 219;
+  --color-border-dark:   214 206 196;
 
   /* Typographie */
-  --font-heading: 'Barlow Condensed', sans-serif;
+  --font-heading: 'Fraunces', serif;
   --font-body:    'Plus Jakarta Sans', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 }
@@ -45,91 +58,199 @@
 /* ════════════════════════════════════════════════════
    RESET BASE
    ════════════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; }
+*, *before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-body);
+  background-color: rgb(var(--color-bg-primary));
+  color: rgb(var(--color-text-body));
   font-family: var(--font-body);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: rgb(var(--color-accent));
+  color: #FFFFFF;
+}
+
+/* Anneau de focus visible et cohérent sur tout le site */
+:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* ════════════════════════════════════════════════════
    UTILITIES
    ════════════════════════════════════════════════════ */
 @layer utilities {
-  .container-site { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
-  .font-heading    { font-family: var(--font-heading); }
-  .font-mono-ref   { font-family: var(--font-mono); }
+  .container-site { @apply max-w-7xl mx-auto px-5 sm:px-6 lg:px-8; }
 
-  .bg-dark        { background-color: var(--color-bg-dark); }
-  .bg-dark-card   { background-color: var(--color-bg-dark-card); }
-  .bg-secondary   { background-color: var(--color-bg-secondary); }
-  .bg-card        { background-color: var(--color-bg-card); }
+  /* ── Polices ─────────────────────────────────────── */
+  .font-heading   { font-family: var(--font-heading); }
+  .font-mono-ref  { font-family: var(--font-mono); }
 
-  .text-primary-dark { color: var(--color-text-primary); }
-  .text-light        { color: var(--color-text-light); }
-  .text-light-sub    { color: var(--color-text-light-sub); }
-  .text-muted        { color: var(--color-text-muted); }
-  .text-accent       { color: var(--color-accent); }
+  /* ── Fonds (doublent les tokens Tailwind pour les
+        usages sans modificateur d'opacité) ─────────── */
+  .bg-dark      { background-color: rgb(var(--color-bg-dark)); }
+  .bg-secondary { background-color: rgb(var(--color-bg-secondary)); }
+  .bg-tertiary  { background-color: rgb(var(--color-bg-tertiary)); }
+  .bg-card      { background-color: rgb(var(--color-bg-card)); }
 
-  .border-dark { border-color: var(--color-border-dark); }
+  /* ── Textes ──────────────────────────────────────── */
+  .text-primary-dark { color: rgb(var(--color-text-primary)); }
+  .text-light        { color: rgb(var(--color-text-light)); }
+  .text-light-sub    { color: rgb(var(--color-text-light-sub)); }
+  .text-muted        { color: rgb(var(--color-text-muted)); }
+  .text-accent       { color: rgb(var(--color-accent)); }
+  .text-gold         { color: rgb(var(--color-gold)); }
 
-  /* Bouton d'action principal haute visibilité */
+  .border-dark { border-color: rgb(var(--color-border-dark)); }
+
+  /* ── Surtitre éditorial : filet + petites capitales ──
+     Remplace le « badge pilule » flottant, interdit par
+     les règles anti-IA. Une fois par section maximum.   */
+  .eyebrow {
+    @apply inline-flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.18em];
+    color: rgb(var(--color-accent));
+  }
+  .eyebrow::before {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 1px;
+    background-color: currentColor;
+  }
+
+  /* ── Bloc produit « platinum » ──────────────────────
+     Fond blanc pur sans ombre : le produit est le héros. */
+  .plinth {
+    background-color: rgb(var(--color-bg-card));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 24px;
+  }
+
+  /* ── Carte arrondie standard ──────────────────────── */
+  .card-warm {
+    background-color: rgb(var(--color-bg-card));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 24px;
+    transition: border-color 250ms ease, transform 250ms ease, box-shadow 250ms ease;
+  }
+  .card-warm:hover {
+    border-color: rgb(var(--color-text-primary));
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -24px rgba(22, 19, 15, 0.28);
+  }
+
+  /* ── Boutons : pilules, comme sur la référence client ──
+     Le CTA primaire est une pilule presque noire — c'est
+     exactement le « Achetez » de la référence.            */
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide transition-all duration-200 shadow-md;
-    background-color: var(--color-accent);
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
+           text-sm font-semibold transition-all duration-200;
+    background-color: rgb(var(--color-text-primary));
     color: #FFFFFF;
   }
   .btn-accent:hover {
-    background-color: var(--color-accent-hover);
-    @apply shadow-lg -translate-y-0.5;
+    background-color: rgb(58 50 43);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -14px rgba(22, 19, 15, 0.8);
   }
+  .btn-accent:active { transform: translateY(0); }
 
-  /* Bouton secondaire sur fond sombre */
-  .btn-outline-white {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide border-2 transition-all duration-200;
-    border-color: rgba(255, 255, 255, 0.85);
+  /* Variante accent — points de conversion clés */
+  .btn-terracotta {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
+           text-sm font-semibold transition-all duration-200;
+    background-color: rgb(var(--color-accent));
     color: #FFFFFF;
-    background-color: rgba(255, 255, 255, 0.05);
   }
-  .btn-outline-white:hover {
-    border-color: #FFFFFF;
-    background-color: #FFFFFF;
-    color: var(--color-text-primary);
+  .btn-terracotta:hover {
+    background-color: rgb(var(--color-accent-hover));
+    transform: translateY(-1px);
   }
 
-  /* Bouton secondaire sur fond clair */
+  /* Secondaire — pilule blanche à contour fin */
   .btn-outline-dark {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-wide border-2 transition-all duration-200;
-    border-color: var(--color-text-primary);
-    color: var(--color-text-primary);
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
+           text-sm font-semibold transition-all duration-200;
+    border: 1.5px solid rgb(var(--color-text-primary));
+    background-color: rgb(var(--color-bg-primary));
+    color: rgb(var(--color-text-primary));
   }
   .btn-outline-dark:hover {
-    background-color: var(--color-text-primary);
+    background-color: rgb(var(--color-text-primary));
     color: #FFFFFF;
   }
 
-  /* Section plein viewport */
-  .section-hero { min-height: 92svh; @apply flex items-center; }
+  /* Secondaire sur fond sombre — conservé pour les rares
+     besoins futurs ; aucune section sombre n'est en place. */
+  .btn-outline-white {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
+           text-sm font-semibold transition-all duration-200;
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    color: #FFFFFF;
+  }
+  .btn-outline-white:hover {
+    background-color: #FFFFFF;
+    border-color: #FFFFFF;
+    color: rgb(var(--color-text-primary));
+  }
 
-  /* Référence produit & surtitre haute visibilité */
+  /* Bouton WhatsApp — le vert est une convention de marque
+     reconnue, ce n'est pas une couleur du site. */
+  .btn-wa {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5
+           text-sm font-semibold transition-all duration-200;
+    background-color: #1FA855;
+    color: #FFFFFF;
+  }
+  .btn-wa:hover { background-color: #178A46; transform: translateY(-1px); }
+
+  /* ── Section plein viewport ──────────────────────── */
+  .section-hero { min-height: 88svh; @apply flex items-center; }
+
+  /* ── Lien texte ──────────────────────────────────── */
+  .link-warm {
+    @apply inline-flex items-center gap-2 font-semibold transition-colors duration-200;
+    color: rgb(var(--color-accent));
+  }
+  .link-warm:hover { color: rgb(var(--color-accent-hover)); }
+
+  /* ── Référence produit & surtitre ────────────────── */
   .product-ref {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 
-  /* Prix percutant */
+  /* ── Prix ────────────────────────────────────────── */
   .price-tag {
     font-family: var(--font-heading);
-    font-size: 1.65rem;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    color: var(--color-accent);
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: rgb(var(--color-accent));
+  }
+
+  /* Masque la barre de défilement des filtres catégorie */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ════════════════════════════════════════════════════
+   ACCESSIBILITÉ
+   ════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

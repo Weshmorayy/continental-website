@@ -4,93 +4,119 @@ const differentiators = [
   {
     num: '01',
     icon: Award,
-    title: 'Moteur 100% Cuivre Pur',
-    subtitle: 'Rendement & Longévité Supérieurs',
-    desc: 'Contrairement aux moteurs standard en aluminium qui surchauffent et s\'usent en quelques mois, nos bobinages en cuivre pur résistent aux longues heures d\'utilisation continue sous forte chaleur.',
+    title: 'Moteur 100% cuivre pur',
+    desc: "Contrairement aux moteurs standard en aluminium qui surchauffent et s'usent en quelques mois, nos bobinages en cuivre pur résistent aux longues heures d'utilisation continue sous forte chaleur.",
+    meta: 'Rendement & longévité',
   },
   {
     num: '02',
     icon: ShieldCheck,
-    title: 'Garantie Constructeur 2 Ans',
-    subtitle: 'Pièces & Main-d\'Œuvre Incluses',
-    desc: 'Chaque appareil Continental® bénéficie d\'une garantie ferme de 24 mois. Notre service technique basé à Dakar intervient rapidement pour tout besoin de maintenance ou d\'échange.',
+    title: 'Garantie constructeur 2 ans',
+    desc: "Chaque appareil bénéficie d'une garantie ferme de 24 mois, pièces et main-d'œuvre incluses. Notre service technique basé à Dakar intervient rapidement.",
+    meta: 'Pièces incluses',
   },
   {
     num: '03',
     icon: Zap,
-    title: 'Performance Énergétique',
-    subtitle: 'Consommation Optimisée',
-    desc: 'Des compresseurs Inverter tropicalisés et des pales aérodynamiques étudiées pour délivrer un débit d\'air maximal tout en réduisant significativement votre facture Woyofal.',
+    title: 'Performance énergétique',
+    desc: "Des compresseurs Inverter tropicalisés et des pales aérodynamiques étudiées pour délivrer un débit d'air maximal tout en réduisant la facture.",
+    meta: 'Consommation optimisée',
   },
   {
     num: '04',
     icon: Truck,
-    title: 'Livraison Rapide Dakar',
-    subtitle: 'Paiement à la Réception',
-    desc: 'Service de livraison réactif à Dakar Plateau, Almadies, Ouakam, Médina, Guédiawaye, Pikine et Rufisque. Possibilité de tester l\'appareil à la livraison avant règlement.',
+    title: 'Livraison rapide à Dakar',
+    desc: "Dakar Plateau, Almadies, Ouakam, Médina, Guédiawaye, Pikine et Rufisque. Paiement à la réception, et vous testez l'appareil avant de valider.",
+    meta: 'Paiement à la livraison',
   },
 ]
 
 export default function ArgumentsSection() {
-  return (
-    <section className="bg-bg-dark text-text-light py-20 md:py-28 border-b border-border-dark relative overflow-hidden">
-      <div className="container-site relative z-10">
+  const [first, ...rest] = differentiators
 
-        {/* Section Header */}
-        <div className="max-w-3xl mb-16">
-          <div className="inline-flex items-center gap-2 text-accent-light font-mono font-bold text-xs uppercase tracking-widest mb-3">
-            <span className="w-6 h-0.5 bg-accent" />
-            <span>STANDARDS INDUSTRIELS CONTINENTAL®</span>
+  return (
+    <section className="bg-bg-tertiary py-20 md:py-28">
+      <div className="container-site">
+
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-14 md:mb-20">
+          <div className="max-w-2xl">
+            <p className="eyebrow mb-5">Nos engagements</p>
+            <h2 className="font-heading font-semibold text-text-primary text-3xl sm:text-4xl md:text-[3.25rem] leading-[1.08] tracking-[-0.02em]">
+              Ce qui sépare Continental du reste.
+            </h2>
           </div>
-          <h2 className="font-heading font-black text-white text-3xl sm:text-4xl md:text-5xl tracking-tight leading-tight">
-            Pourquoi Continental fait la différence.
-          </h2>
-          <p className="text-text-light-sub text-base md:text-lg mt-3 font-normal leading-relaxed">
-            Dans un marché saturé d&apos;appareils bas de gamme, Continental® s&apos;engage
-            sur la durabilité, la précision mécanique et un service local de proximité.
+          <p className="text-text-body leading-relaxed lg:max-w-sm lg:text-right">
+            Dans un marché saturé d&apos;appareils bas de gamme, nous misons sur la
+            durabilité et un service local de proximité.
           </p>
         </div>
 
-        {/* Grille 4 colonnes haute visibilité */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {differentiators.map((diff) => {
-            const IconComponent = diff.icon
+        {/* Grille asymétrique — la première carte domine, pas 4 cartes identiques */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5 lg:gap-6">
+
+          {/* Grande carte 4 colonnes */}
+          <article className="lg:col-span-4 bg-bg-primary rounded-3xl p-8 sm:p-10 border border-border flex flex-col justify-between min-h-[22rem]">
+            <div>
+              <div className="flex items-center gap-4 mb-7">
+                <span className="font-heading font-semibold text-5xl text-accent leading-none">
+                  {first.num}
+                </span>
+                <Award size={30} className="text-text-primary opacity-80" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-heading font-semibold text-text-primary text-2xl sm:text-3xl leading-tight mb-4">
+                {first.title}
+              </h3>
+              <p className="text-text-body leading-relaxed max-w-lg">{first.desc}</p>
+            </div>
+            <p className="product-ref text-text-muted mt-8 pt-5 border-t border-border">
+              {first.meta}
+            </p>
+          </article>
+
+          {/* Carte 2 colonnes */}
+          <article className="lg:col-span-2 bg-bg-primary rounded-3xl p-8 border border-border flex flex-col justify-between min-h-[22rem]">
+            <div>
+              <span className="font-heading font-semibold text-4xl text-accent leading-none block mb-6">
+                {rest[0].num}
+              </span>
+              <h3 className="font-heading font-semibold text-text-primary text-xl leading-snug mb-3">
+                {rest[0].title}
+              </h3>
+              <p className="text-text-body text-sm leading-relaxed">{rest[0].desc}</p>
+            </div>
+            <p className="product-ref text-text-muted mt-6 pt-4 border-t border-border">
+              {rest[0].meta}
+            </p>
+          </article>
+
+          {/* Deux cartes égales */}
+          {rest.slice(1).map((d) => {
+            const Icon = d.icon
             return (
-              <div
-                key={diff.num}
-                className="bg-bg-dark-card border-2 border-border-dark hover:border-accent p-8 flex flex-col justify-between transition-all duration-200 group"
+              <article
+                key={d.num}
+                className="lg:col-span-3 bg-bg-primary rounded-3xl p-8 sm:p-9 border border-border flex flex-col justify-between"
               >
                 <div>
-                  {/* Top Bar : Numéro & Icône bien visibles */}
                   <div className="flex items-center justify-between mb-6">
-                    <span className="font-heading font-black text-4xl text-accent">
-                      {diff.num}
+                    <span className="font-heading font-semibold text-4xl text-accent leading-none">
+                      {d.num}
                     </span>
-                    <div className="w-10 h-10 rounded-none bg-accent/20 border border-accent/40 flex items-center justify-center text-accent-light group-hover:bg-accent group-hover:text-white transition-colors">
-                      <IconComponent size={20} />
-                    </div>
+                    <Icon size={26} className="text-text-primary opacity-70" strokeWidth={1.5} />
                   </div>
-
-                  <h3 className="font-heading font-bold text-white text-2xl tracking-wide mb-1 leading-snug">
-                    {diff.title}
+                  <h3 className="font-heading font-semibold text-text-primary text-xl leading-snug mb-3">
+                    {d.title}
                   </h3>
-                  <p className="font-mono text-xs font-bold text-accent-light uppercase tracking-wider mb-4">
-                    {diff.subtitle}
-                  </p>
-                  <p className="text-text-light-sub text-sm leading-relaxed font-normal">
-                    {diff.desc}
-                  </p>
+                  <p className="text-text-body text-sm leading-relaxed">{d.desc}</p>
                 </div>
-
-                <div className="mt-8 pt-4 border-t border-border-dark/60 flex items-center gap-2 text-xs font-mono text-text-light-mute">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                  <span>Standard Continental®</span>
-                </div>
-              </div>
+                <p className="product-ref text-text-muted mt-6 pt-4 border-t border-border">
+                  {d.meta}
+                </p>
+              </article>
             )
           })}
-        </div>
 
+        </div>
       </div>
     </section>
   )

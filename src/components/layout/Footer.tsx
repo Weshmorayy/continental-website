@@ -1,165 +1,136 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Phone, MessageCircle, Mail, MapPin, ShieldCheck } from 'lucide-react'
+import { Phone, MessageCircle, MapPin, ShieldCheck } from 'lucide-react'
 import { siteConfig } from '@/config/site'
 
+const footerNav = [
+  { label: 'Accueil', href: '/' },
+  { label: 'Tous les modèles', href: '/catalogue' },
+  { label: 'Ventilateurs sur pied', href: '/catalogue?cat=ventilateur-pied' },
+  { label: 'Climatiseurs Inverter', href: '/catalogue?cat=climatiseur' },
+]
+
+const footerInfo = [
+  { label: 'Politique de garantie 2 ans', href: '/garantie' },
+  { label: 'À propos de la marque', href: '/a-propos' },
+  { label: 'Informations de contact', href: '/contact' },
+]
+
 export default function Footer() {
-  const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent('Bonjour Continental, je souhaite commander un appareil.')}`
+  const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
+    'Bonjour Continental, je souhaite commander un appareil.'
+  )}`
 
   return (
-    <footer className="bg-bg-dark text-text-light border-t-2 border-accent" id="contact">
-      {/* Bandeau supérieur de contact direct */}
-      <div className="border-b border-border-dark py-8 bg-bg-dark-card">
-        <div className="container-site flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <h3 className="font-heading font-black text-white text-2xl">
-              Prêt à équiper votre espace pour les fortes chaleurs ?
-            </h3>
-            <p className="text-text-light-sub text-sm mt-1">
-              Contactez directement notre service commercial basé à Dakar.
+    <footer className="bg-bg-tertiary" id="contact">
+      <div className="container-site py-16 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
+
+          {/* Marque */}
+          <div className="lg:col-span-4">
+            <Image
+              src="/brand/logo-light.png"
+              alt="Continental®"
+              width={170}
+              height={48}
+              className="h-9 w-auto object-contain mb-5"
+            />
+            <p className="text-text-body text-sm leading-relaxed max-w-xs mb-6">
+              Continental® — ventilation robuste et climatisation Inverter adaptés au
+              climat de Dakar.
+            </p>
+            <p className="inline-flex items-center gap-2 rounded-full bg-bg-primary border border-border px-4 py-2 text-xs font-medium text-text-primary">
+              <ShieldCheck size={15} className="text-accent flex-shrink-0" />
+              Garantie fabricant 2 ans
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-accent px-6 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-            >
-              <MessageCircle size={16} />
-              WhatsApp Direct
-            </a>
-            <a
-              href={`tel:${siteConfig.contact.whatsapp}`}
-              className="btn-outline-white px-6 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-            >
-              <Phone size={15} />
-              {siteConfig.contact.phone}
-            </a>
-          </div>
-        </div>
-      </div>
+          {/* Navigation */}
+          <nav className="lg:col-span-2" aria-label="Pied de page — catalogue">
+            <h2 className="product-ref text-text-muted mb-5">Catalogue</h2>
+            <ul className="space-y-3">
+              {footerNav.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="text-sm text-text-body hover:text-text-primary transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-      {/* Corps du Footer */}
-      <div className="container-site py-14 lg:py-18">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10">
+          <nav className="lg:col-span-2" aria-label="Pied de page — informations">
+            <h2 className="product-ref text-text-muted mb-5">Informations</h2>
+            <ul className="space-y-3">
+              {footerInfo.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="text-sm text-text-body hover:text-text-primary transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-          {/* Colonne 1 : Marque & Présentation (4 colonnes) */}
-          <div className="lg:col-span-4 flex flex-col gap-4">
-            <div className="inline-block self-start py-1">
-              <Image
-                src="/brand/logo-white-transparent.png"
-                alt="Continental®"
-                width={160}
-                height={45}
-                className="h-7 md:h-8 w-auto object-contain"
-              />
-            </div>
+          {/* Contact */}
+          <div className="lg:col-span-4">
+            <h2 className="product-ref text-text-muted mb-5">Service commercial Dakar</h2>
+            <ul className="space-y-4 text-sm">
+              <li className="flex items-start gap-3">
+                <MapPin size={17} className="text-accent mt-0.5 flex-shrink-0" />
+                <span className="text-text-body">
+                  <strong className="text-text-primary font-semibold block">Dakar, Sénégal</strong>
+                  Livraison sur Dakar Plateau, Almadies, Ouakam, Médina, Guédiawaye,
+                  Pikine et Rufisque.
+                </span>
+              </li>
 
-            <p className="text-text-light-sub text-sm leading-relaxed mt-2">
-              Continental® est la marque d&apos;électroménager spécialisée dans la ventilation
-              robuste et la climatisation Inverter à haut rendement pour le climat de Dakar.
-            </p>
+              <li className="flex items-center gap-3">
+                <Phone size={17} className="text-accent flex-shrink-0" />
+                <a
+                  href={`tel:${siteConfig.contact.whatsapp}`}
+                  className="text-text-primary font-semibold hover:underline"
+                >
+                  {siteConfig.contact.phone}
+                </a>
+              </li>
 
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-accent-light bg-accent/15 border border-accent/30 px-3 py-2 self-start mt-2">
-              <ShieldCheck size={16} className="text-accent" />
-              <span>Garantie Fabricant 2 Ans sur tout le catalogue</span>
-            </div>
-          </div>
-
-          {/* Colonne 2 : Pages & Gammes (3 colonnes) */}
-          <div className="lg:col-span-3">
-            <h4 className="font-heading font-bold text-white text-lg uppercase tracking-wider mb-4 border-b border-border-dark pb-2">
-              Navigation
-            </h4>
-            <ul className="space-y-2.5 text-sm text-text-light-sub">
-              <li>
-                <Link href="/" className="hover:text-white hover:underline transition-colors">
-                  Page d&apos;accueil
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalogue" className="hover:text-white hover:underline transition-colors">
-                  Tous les modèles
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalogue?cat=ventilateur-pied" className="hover:text-white hover:underline transition-colors">
-                  Ventilateurs sur pied
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalogue?cat=climatiseur" className="hover:text-white hover:underline transition-colors">
-                  Climatiseurs Inverter
-                </Link>
-              </li>
-              <li>
-                <Link href="/garantie" className="hover:text-white hover:underline transition-colors">
-                  Politique de garantie 2 ans
-                </Link>
-              </li>
-              <li>
-                <Link href="/a-propos" className="hover:text-white hover:underline transition-colors">
-                  À propos de la marque
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white hover:underline transition-colors">
-                  Informations de contact
-                </Link>
+              <li className="flex items-center gap-3">
+                <MessageCircle size={17} className="text-accent flex-shrink-0" />
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-primary font-semibold hover:underline"
+                >
+                  Commandes WhatsApp
+                </a>
               </li>
             </ul>
-          </div>
 
-          {/* Colonne 3 : Coordonnées Dakar (5 colonnes) */}
-          <div className="lg:col-span-5">
-            <h4 className="font-heading font-bold text-white text-lg uppercase tracking-wider mb-4 border-b border-border-dark pb-2">
-              Service Client & Showroom Dakar
-            </h4>
-            <div className="space-y-3.5 text-sm text-text-light-sub">
-              <div className="flex items-start gap-3">
-                <MapPin size={18} className="text-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-white block">Région de Dakar, Sénégal</strong>
-                  <span>Livraison assurée sur Dakar Plateau, Almadies, Ouakam, Médina, Guédiawaye, Pikine, Rufisque.</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Phone size={18} className="text-accent flex-shrink-0" />
-                <div>
-                  <span className="text-xs text-text-light-mute uppercase font-mono block">Ligne commerciale</span>
-                  <a href={`tel:${siteConfig.contact.whatsapp}`} className="text-white font-bold hover:underline">
-                    {siteConfig.contact.phone}
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <MessageCircle size={18} className="text-emerald-400 flex-shrink-0" />
-                <div>
-                  <span className="text-xs text-text-light-mute uppercase font-mono block">Commandes WhatsApp</span>
-                  <span className="text-white font-medium">Réponse 7j/7 de 08h à 20h</span>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-border-dark text-xs text-text-light-mute">
-                <p>Paiements acceptés : Wave · Orange Money · Free Money · Espèces à la livraison</p>
-              </div>
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="btn-wa text-sm">
+                <MessageCircle size={16} />
+                Écrire sur WhatsApp
+              </a>
+              <a href={`tel:${siteConfig.contact.whatsapp}`} className="btn-outline-dark text-sm">
+                <Phone size={16} />
+                Appeler
+              </a>
             </div>
           </div>
 
         </div>
 
-        {/* Barre inférieure des droits */}
-        <div className="mt-14 pt-6 border-t border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-text-light-mute">
+        <div className="mt-14 pt-7 border-t border-border-dark/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted">
           <p>© {new Date().getFullYear()} Continental®. Marque déposée. Tous droits réservés.</p>
-          <div className="flex items-center gap-4">
-            <Link href="/garantie" className="hover:text-white">Garantie 2 ans</Link>
-            <span>•</span>
-            <Link href="/contact" className="hover:text-white">SAV & Support</Link>
-          </div>
+          <p>Paiements : Wave · Orange Money · Free Money · Espèces</p>
         </div>
       </div>
     </footer>

@@ -1,48 +1,91 @@
 # [2] Guide Design — Continental®
 
+> Réécrit après le retour client : « trop générique », refus du noir et du bleu.
+> Nouvelle référence de structure : samsung.com — **structure** reprise, **couleurs** non.
+
+## Origine de la décision
+
+Le client a envoyé des captures de samsung.com en demandant « quelque chose comme ça ».
+Volontairement **non copié** :
+
+- Le HTML de samsung.com/fr fait 372 Ko dont **73 % sont des `<script>`**, un seul `<h1>`
+  (caché, `class="blind"`), et tout le style vit dans 32 bundles CSS minifiés hashés.
+  Un scrap ne rendrait ni le contenu ni le design.
+- L'accent de Samsung est **bleu** — le client refuse explicitement le bleu.
+- Their design system is a protected brand asset.
+
+Ce qui est repris, c'est le **système** : fond blanc « platinum », texte presque noir,
+CTA en pilule noire, angles très arrondis, espace généreux, photo produit en héros,
+un accent unique et rare.
+
 ## Palette
 
 | Variable CSS | Valeur | Rôle |
 |---|---|---|
-| `--color-bg-primary` | `#FFFFFF` | Fond principal, fond produits |
-| `--color-bg-secondary` | `#F4F4F4` | Sections alternées (bestseller, livraison, produits similaires) |
-| `--color-bg-dark` | `#0D0D0D` | Hero, arguments, footer, header catalogue |
-| `--color-bg-card` | `#FAFAFA` | Fond des cartes produit |
-| `--color-text-primary` | `#0D0D0D` | Titres sur fond clair |
-| `--color-text-light` | `#FFFFFF` | Texte sur fond sombre |
-| `--color-text-body` | `#3D3D3D` | Corps de texte |
-| `--color-text-muted` | `#888888` | Labels, références, secondaire |
-| `--color-accent` | `#1A6FBF` | CTA, badges, liens actifs, check icons |
-| `--color-accent-hover` | `#1558A0` | Hover sur boutons accent |
-| `--color-accent-light` | `#E8F1FA` | Fond léger accent (info boxes) |
-| `--color-border` | `#E0E0E0` | Bordures sur fond clair |
-| `--color-border-dark` | `#2A2A2A` | Bordures sur fond sombre |
+| `--color-bg-primary` | `#FFFFFF` | Blanc pur — fond par défaut, scènes produit |
+| `--color-bg-secondary` | `#F8F6F3` | Blanc cassé — sections alternées |
+| `--color-bg-tertiary` | `#EFE9E1` | Sable — arguments et pied de page |
+| `--color-bg-card` | `#FFFFFF` | Fond des cartes produit |
+| `--color-text-primary` | `#16130F` | Titres, texte fort, **pilules CTA principales** |
+| `--color-text-body` | `#4A443E` | Corps de texte |
+| `--color-text-muted` | `#8B837A` | Labels, références |
+| `--color-accent` | `#B84E22` | **Accent unique** — prix, liens actifs, surtitres |
+| `--color-accent-hover` | `#963C16` | Hover accent |
+| `--color-accent-light` | `#FAEDE6` | Fonds de badge, sans aplat plein |
+| `--color-gold` | `#B4832E` | Détails fins seulement |
+| `--color-border` | `#E7E2DB` | Bordures, 1px — jamais 2px |
+| `--color-border-dark` | `#D6CEC4` | Séparateurs |
+
+**Interdits absolus :** le bleu (`blue-*`, `sky-*`, `indigo-*`, `slate-*`), les sections
+sombre, les dégradés Tailwind génériques, `rounded-none`.
+
+> `--color-bg-dark` / `--color-bg-dark-card` restent déclarés pour la compatibilité
+> Tailwind mais **ne doivent plus être utilisés**.
 
 ## Typographie
 
 | Rôle | Police | Graisses | Source |
-|------|--------|---------|--------|
-| Titres | Barlow Condensed | 700, 800 | Google Fonts |
-| Corps | Inter | 400, 500 | Google Fonts |
-| Références produits | JetBrains Mono | 400 | Google Fonts |
+|------|--------|----------|--------|
+| Titres | Fraunces | 400, 600, 700 | Google Fonts |
+| Corps | Plus Jakarta Sans | 400, 500, 600, 700 | Google Fonts |
+| Références produits | JetBrains Mono | 500, 700 | Google Fonts |
 
-**H1 hero :** `clamp(3rem, 8vw, 6.5rem)` / Barlow Condensed 900  
-**H1 page :** `clamp(2.5rem, 6vw, 5rem)` / Barlow Condensed 900  
-**H2 section :** `2.5–3rem` / Barlow Condensed 700  
-**H3 carte :** `1.125rem` / Barlow Condensed 700  
-**Prix :** `1.5–2.2rem` / Barlow Condensed 700 / couleur accent  
-**Références :** `0.7rem` / JetBrains Mono 400 / text-muted
+Fraunces remplace Barlow Condensed : la condensée industrielle contribuant à l'effet
+« template ». Un serif chaleureux sur fond blanc donne une signature premium.
 
-## Direction visuelle
+**H1 hero :** `clamp(2.75rem, 7vw, 4.75rem)` / Fraunces 600 / `tracking-[-0.02em]`
+**H1 page :** `clamp(2.5rem, 6vw, 4.25rem)` / Fraunces 600
+**H2 section :** `3–3.25rem` / Fraunces 600
+**H3 :** `1.125–1.25rem` / Fraunces 600
+**Prix :** Fraunces 600, couleur accent
+**Références :** `0.7rem` / JetBrains Mono 700
 
-**"Precision Noire"** — fond noir pour les sections impact, blanc pur pour les produits, bleu #1A6FBF exclusivement sur les CTA et badges. Asymétrie construite (grilles 3+2, 60/40). Numéros géants en ghost text (#0D0D0D @ 7% opacity) à la place des icônes.
+## Composants
 
-## Alternance des fonds — Page Accueil
+| Nom | Rendu |
+|---|---|
+| `.btn-accent` | **Pilule noire** — CTA principal (équivalent du « Achetez ») |
+| `.btn-outline-dark` | Pilule blanche, contour 1.5px noir — CTA secondaire |
+| `.btn-wa` | Pilule verte WhatsApp — convention de marque, pas couleur de site |
+| `.btn-terracotta` | Pilule accent — points de conversion clés, usage rare |
+| `.plinth` | Scène produit blanche, rayon 24px, bordure 1px |
+| `.card-warm` | Carte blanche arrondie, élévation au survol |
+| `.eyebrow` | Surtitre mono + filet — **une fois par section**, jamais de badge flottant |
 
-1. `bg-dark` — Hero
-2. `bg-primary` — Gammes
-3. `bg-secondary` — Bestseller
-4. `bg-dark` — Arguments
-5. `bg-primary` — Catalogue aperçu
-6. `bg-secondary` — Livraison
-7. `bg-dark` — Footer
+## Rythme des fonds — Page Accueil
+
+1. `bg-primary` (blanc) — Hero
+2. `bg-secondary` (blanc cassé) — Gammes
+3. `bg-primary` (blanc) — Bestseller
+4. `bg-tertiary` (sable) — Arguments
+5. `bg-primary` (blanc) — Catalogue aperçu
+6. `bg-secondary` (blanc cassé) — Livraison
+7. `bg-tertiary` (sable) — Footer
+
+Aucune section sombre. Jamais 3 fonds consécutifs identiques.
+
+## Images
+
+Les visuels `public/aesthetic/` sont des **photos stock trouvées en ligne**, pas des
+photos du client. Signalé au commanditaire — à remplacer avant livraison finale.
+Les photos `public/products/` sont à confirmer avec le client.

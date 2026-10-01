@@ -1,11 +1,23 @@
+import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
-import { ShieldCheck, Clock, Wrench, Phone, CheckCircle2, AlertCircle } from 'lucide-react'
+import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { siteConfig } from '@/config/site'
+import {
+  ShieldCheck,
+  Wrench,
+  Clock,
+  MessageCircle,
+  CheckCircle2,
+  X,
+  Phone,
+} from 'lucide-react'
 
 export const metadata = generatePageMetadata({
   title: 'Garantie Fabricant 2 Ans — Continental®',
-  description: "Politique de garantie complète Continental® : 24 mois pièces et main-d'œuvre. Procédure SAV, conditions et contact technique Dakar.",
+  description:
+    "Politique de garantie complète Continental® : 24 mois pièces et main-d'œuvre. Procédure SAV, conditions et contact technique Dakar.",
   path: '/garantie',
 })
 
@@ -24,127 +36,253 @@ const nonCovered = [
 ]
 
 const steps = [
-  { num: '01', title: 'Contactez notre SAV', desc: 'Appelez ou envoyez un WhatsApp avec votre numéro de commande et la description du problème constaté.' },
-  { num: '02', title: 'Diagnostic à distance', desc: 'Notre technicien vous guide pour vérifier l\'origine du dysfonctionnement en 5 à 15 minutes.' },
-  { num: '03', title: 'Intervention ou échange', desc: 'Selon le diagnostic, un technicien se déplace à Dakar ou procède à l\'échange direct de l\'appareil.' },
-  { num: '04', title: 'Clôture du dossier', desc: 'Dossier traité en 48h à 72h ouvrables. Rapport d\'intervention remis à la clôture.' },
+  {
+    num: '01',
+    title: 'Contactez notre SAV',
+    desc: 'Appelez ou envoyez un WhatsApp avec votre numéro de commande et la description du problème constaté.',
+  },
+  {
+    num: '02',
+    title: 'Diagnostic à distance',
+    desc: 'Notre technicien vous guide pour vérifier l\'origine du dysfonctionnement en 5 à 15 minutes.',
+  },
+  {
+    num: '03',
+    title: 'Intervention ou échange',
+    desc: 'Selon le diagnostic, un technicien se déplace à Dakar ou procède à l\'échange direct de l\'appareil.',
+  },
+  {
+    num: '04',
+    title: 'Clôture du dossier',
+    desc: 'Dossier traité en 48h à 72h ouvrables. Rapport d\'intervention remis à la clôture.',
+  },
+]
+
+const keyFigures = [
+  {
+    icon: ShieldCheck,
+    value: '24 Mois',
+    label: 'Durée de garantie',
+    text: "Couverture complète 2 ans, sans frais supplémentaires pour les pièces ou la main-d'œuvre.",
+  },
+  {
+    icon: Wrench,
+    value: 'SAV Dakar',
+    label: 'Intervention locale',
+    text: 'Notre équipe technique basée à Dakar intervient à domicile pour diagnostic et réparation.',
+  },
+  {
+    icon: Clock,
+    value: '48–72h',
+    label: 'Délai de traitement',
+    text: 'Réponse technique garantie en 48 à 72 heures ouvrables après ouverture du dossier.',
+  },
 ]
 
 export default function GarantiePage() {
+  const waUrl = buildWhatsAppUrl(
+    'Bonjour Continental, je souhaite déclarer une panne sous garantie.',
+  )
+
   return (
     <>
       <Header />
       <main>
-        <section className="bg-bg-dark text-text-light pb-16 md:pb-24">
-          <div className="container-site py-16 md:py-20">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 text-accent font-mono font-bold text-xs uppercase tracking-widest mb-4">
-                <ShieldCheck size={16} />
-                <span>PROTECTION COMPLÈTE CONTINENTAL®</span>
+        {/* ── Ouverture ── */}
+        <section className="bg-bg-primary pt-14 pb-14 md:pt-20 md:pb-20">
+          <div className="container-site">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+              <div className="lg:col-span-7">
+                <p className="eyebrow mb-6">Protection complète Continental®</p>
+                <h1
+                  className="font-heading font-black text-text-primary leading-[1.02] tracking-[-0.02em]"
+                  style={{ fontSize: 'clamp(2.75rem, 7vw, 5.25rem)' }}
+                >
+                  Garantie fabricant
+                  <br />
+                  24 mois.
+                </h1>
               </div>
-              <h1 className="font-heading font-black text-white leading-tight mb-5" style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}>
-                Garantie Fabricant<br />24 Mois.
-              </h1>
-              <p className="text-text-light-sub text-lg leading-relaxed max-w-2xl">
-                Chaque appareil Continental® bénéficie d&apos;une garantie officielle de <strong className="text-white">24 mois pièces et main-d&apos;œuvre</strong> à compter de la date d&apos;achat.
-              </p>
+              <div className="lg:col-span-5 lg:pb-2">
+                <p className="text-text-body text-lg leading-relaxed">
+                  Chaque appareil Continental® bénéficie d&apos;une garantie officielle de{' '}
+                  <strong className="text-text-primary font-semibold">
+                    24 mois pièces et main-d&apos;œuvre
+                  </strong>{' '}
+                  à compter de la date d&apos;achat.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-white py-16 md:py-20 border-b border-border">
+        {/* ── Chiffres clés : ligne de spécification, pas trois cartes ── */}
+        <section className="bg-bg-secondary border-y border-border">
           <div className="container-site">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { icon: ShieldCheck, label: '24 Mois', sub: 'Durée de garantie', text: "Couverture complète 2 ans, sans frais supplémentaires pour les pièces ou la main-d'œuvre." },
-                { icon: Wrench, label: 'SAV Dakar', sub: 'Intervention locale', text: 'Notre équipe technique basée à Dakar intervient à domicile pour diagnostic et réparation.' },
-                { icon: Clock, label: '48–72h', sub: 'Délai de traitement', text: 'Réponse technique garantie en 48 à 72 heures ouvrables après ouverture du dossier.' },
-              ].map((item) => {
-                const Icon = item.icon
+            <dl className="grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-y-0">
+              {keyFigures.map((k, i) => {
+                const Icon = k.icon
                 return (
-                  <div key={item.label} className="bg-bg-secondary border-2 border-border p-8 text-center flex flex-col items-center">
-                    <div className="w-14 h-14 bg-accent/10 border-2 border-accent/30 flex items-center justify-center text-accent mb-5">
-                      <Icon size={28} />
+                  <div
+                    key={k.value}
+                    className={
+                      i > 0
+                        ? 'md:border-l md:border-border-dark md:pl-8 lg:pl-10'
+                        : 'md:pr-8 lg:pr-10'
+                    }
+                  >
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <Icon size={18} className="text-accent" strokeWidth={1.7} />
+                      <dt className="product-ref text-text-muted">{k.label}</dt>
                     </div>
-                    <span className="font-heading font-black text-4xl text-accent mb-1">{item.label}</span>
-                    <span className="font-mono text-xs font-bold text-text-muted uppercase tracking-widest mb-3">{item.sub}</span>
-                    <p className="text-text-body text-sm leading-relaxed">{item.text}</p>
+                    <dd>
+                      <span
+                        className="font-heading font-black text-text-primary block leading-none tracking-[-0.02em]"
+                        style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)' }}
+                      >
+                        {k.value}
+                      </span>
+                      <p className="text-text-body text-sm leading-relaxed mt-3 max-w-xs">
+                        {k.text}
+                      </p>
+                    </dd>
                   </div>
                 )
               })}
-            </div>
+            </dl>
           </div>
         </section>
 
-        <section className="bg-bg-secondary py-16 md:py-20 border-b border-border">
+        {/* ── Couverture / Exclusions : une plaque divisée, lue d'un bloc ── */}
+        <section className="bg-bg-primary py-20 md:py-28">
           <div className="container-site">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="bg-white border-2 border-emerald-300 p-8">
-                <h2 className="font-heading font-black text-text-primary text-2xl mb-6 flex items-center gap-3">
-                  <CheckCircle2 size={24} className="text-emerald-600" />
-                  Ce que la garantie couvre
-                </h2>
-                <ul className="space-y-4">
-                  {conditions.map((c, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-text-body">
-                      <CheckCircle2 size={17} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <span>{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-white border-2 border-red-200 p-8">
-                <h2 className="font-heading font-black text-text-primary text-2xl mb-6 flex items-center gap-3">
-                  <AlertCircle size={24} className="text-red-600" />
-                  Cas d&apos;exclusion de garantie
-                </h2>
-                <ul className="space-y-4">
-                  {nonCovered.map((c, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-text-body">
-                      <AlertCircle size={17} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      <span>{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white py-16 md:py-20">
-          <div className="container-site">
-            <div className="max-w-2xl mb-12">
-              <div className="inline-flex items-center gap-2 text-accent font-mono font-bold text-xs uppercase tracking-widest mb-3">
-                <span className="w-6 h-0.5 bg-accent" />
-                PROCÉDURE SAV
-              </div>
-              <h2 className="font-heading font-black text-text-primary text-3xl sm:text-4xl">
-                Activer votre garantie en 4 étapes simples.
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-              {steps.map((step) => (
-                <div key={step.num} className="bg-bg-secondary border-2 border-border p-6 flex flex-col gap-4">
-                  <span className="font-heading font-black text-5xl text-accent/30 leading-none">{step.num}</span>
-                  <h3 className="font-heading font-bold text-text-primary text-xl">{step.title}</h3>
-                  <p className="text-text-body text-sm leading-relaxed">{step.desc}</p>
+            <div className="plinth overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                {/* Couverture */}
+                <div className="p-7 sm:p-10 lg:p-12">
+                  <div className="flex items-center gap-3 pb-6 mb-2 border-b border-border">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-light text-accent">
+                      <CheckCircle2 size={19} strokeWidth={1.8} />
+                    </span>
+                    <h2 className="font-heading font-bold text-text-primary text-xl sm:text-2xl tracking-[-0.01em]">
+                      Ce que la garantie couvre
+                    </h2>
+                  </div>
+                  <ul>
+                    {conditions.map((c) => (
+                      <li
+                        key={c}
+                        className="flex items-start gap-4 py-5 border-b border-border last:border-b-0"
+                      >
+                        <CheckCircle2
+                          size={16}
+                          className="mt-1 shrink-0 text-accent"
+                          strokeWidth={2}
+                        />
+                        <span className="text-text-body leading-relaxed">{c}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-            </div>
-            <div className="bg-bg-dark text-text-light p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-t-4 border-accent">
-              <div>
-                <h3 className="font-heading font-black text-white text-2xl mb-1">Déclarer une panne sous garantie</h3>
-                <p className="text-text-light-sub text-sm">Service technique 7j/7 · 08h–20h · Dakar</p>
+
+                {/* Exclusions — filet vertical plutôt qu'une seconde carte */}
+                <div className="p-7 sm:p-10 lg:p-12 lg:border-l lg:border-border bg-bg-secondary">
+                  <div className="flex items-center gap-3 pb-6 mb-2 border-b border-border-dark">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-text-primary">
+                      <X size={18} strokeWidth={2.2} />
+                    </span>
+                    <h2 className="font-heading font-bold text-text-primary text-xl sm:text-2xl tracking-[-0.01em]">
+                      Cas d&apos;exclusion de garantie
+                    </h2>
+                  </div>
+                  <ul>
+                    {nonCovered.map((c) => (
+                      <li
+                        key={c}
+                        className="flex items-start gap-4 py-5 border-b border-border-dark last:border-b-0"
+                      >
+                        <X size={15} className="mt-1 shrink-0 text-text-muted" strokeWidth={2.2} />
+                        <span className="text-text-body leading-relaxed">{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <a
-                href="https://wa.me/221770000000?text=Bonjour%20Continental%2C%20je%20souhaite%20d%C3%A9clarer%20une%20panne%20sous%20garantie."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-accent px-6 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 flex-shrink-0"
-              >
-                <Phone size={15} />
-                WhatsApp SAV
-              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Procédure SAV : quatre rangs numérotés ── */}
+        <section className="bg-bg-secondary py-20 md:py-28">
+          <div className="container-site">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+              <div className="lg:col-span-4">
+                <p className="product-ref text-text-muted mb-5">Procédure SAV</p>
+                <h2 className="font-heading font-black text-text-primary text-3xl sm:text-4xl leading-[1.1] tracking-[-0.02em]">
+                  Activer votre garantie en 4 étapes simples.
+                </h2>
+              </div>
+
+              <div className="lg:col-span-8">
+                <ol className="border-t border-border-dark">
+                  {steps.map((step) => (
+                    <li
+                      key={step.num}
+                      className="group grid grid-cols-[auto_1fr] gap-x-6 sm:gap-x-10 py-8 border-b border-border-dark"
+                    >
+                      <span className="font-heading font-black text-3xl md:text-4xl leading-none text-[#C9C1B7] tabular-nums transition-colors duration-200 group-hover:text-accent">
+                        {step.num}
+                      </span>
+                      <div className="sm:flex sm:gap-8">
+                        <h3 className="font-heading font-bold text-text-primary text-xl sm:text-2xl sm:w-64 sm:shrink-0 leading-snug tracking-[-0.01em]">
+                          {step.title}
+                        </h3>
+                        <p className="text-text-body leading-relaxed mt-2 sm:mt-0 sm:max-w-md">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Déclaration SAV : bandeau sable, jamais sombre ── */}
+        <section className="bg-bg-tertiary py-14 md:py-20">
+          <div className="container-site">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-12">
+              <div className="flex-1">
+                <h3 className="font-heading font-black text-text-primary text-2xl sm:text-3xl leading-tight tracking-[-0.015em]">
+                  Déclarer une panne sous garantie
+                </h3>
+                <p className="text-text-body text-sm mt-2">
+                  Service technique 7j/7 · 08h–20h · {siteConfig.contact.city}
+                </p>
+                <a
+                  href={`tel:${siteConfig.contact.whatsapp}`}
+                  className="link-warm mt-4 font-mono text-sm"
+                >
+                  <Phone size={15} />
+                  {siteConfig.contact.phone}
+                </a>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 lg:shrink-0">
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-wa"
+                >
+                  <MessageCircle size={17} />
+                  WhatsApp SAV
+                </a>
+                <Link href="/contact" className="btn-outline-dark">
+                  Autres canaux
+                </Link>
+              </div>
             </div>
           </div>
         </section>
