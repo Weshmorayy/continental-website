@@ -1,71 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ════════════════════════════════════════════════════
-   PALETTE — Continental®
+   PALETTE — Continental® — MONOCHROME
    ────────────────────────────────────────────────────
-   Reconstruit d'après les captures de samsung.com/us
-   relevées par le commanditaire.
+   Valeurs extraites de la CSS réelle de samsung.com
+   (clientlib-base-ux25.min + page-home-v2) :
 
-   samsung.com utilise **SamsungOne** (police propriétaire,
-   sous licence — non réutilisable). Les captures montrent
-   une grotesque géométrique neutre, très grasse, sans
-   empattement. Substitute : **Archivo** (titres) +
-   **Inter** (texte).
+     .bg-white       → #fff
+     .bg-light-gray  → #f7f7f7
+     .bg-dark-gray   → #313131
+     .cta--black     → background #000 / color #fff
+     .cta--outlined  → background transparent / border #000
 
-   C'est le changement le plus visible par rapport à la
-   version précédente, qui utilisait Fraunces (serif) —
-   c'est précisément ce qui faisait que le site ne
-   ressemblait PAS du tout à Samsung.
+   Échelle de gris relevée : #f7f7f7 #eee #ddd #aaa #8f8f8f #757575 #555 #313131
+   Rayons relevés : 50% (pilules), 24px, 20px, 8px, 6px
 
-   Le bleu d'accent de Samsung est retiré (refus client) et
-   remplacé par UN accent terre cuite, avec la même parcimonie
-   que Samsung utilise son bleu (« Available now »).
+   AUCUNE couleur chaude. Le bleu Samsung (#2189ff) est retiré car
+   refusé par le client → l'accent devient le noir.
 
-   ⚠ Variables = canaux RGB bruts → modificateurs d'opacité
-     Tailwind fonctionnels (ex. bg-bg-secondary/60).
+   Les visuels produits sont des JPEG à FOND BLANC : toute surface
+   produit doit donc être BLANCHE, sinon un rectangle blanc apparaît.
+   C'est aussi la règle du projet.
    ════════════════════════════════════════════════════ */
 :root {
-  /* Fonds — surfaces grises, comme sur samsung.com */
-  --color-bg-primary:    255 255 255;  /* blanc — fond de page */
-  --color-bg-secondary:  245 245 245;  /* gris clair — cartes produit, héros */
-  --color-bg-tertiary:   235 235 235;  /* gris soutenu — bandeaux, pied de page */
-  --color-bg-dark:       26 26 26;     /* RÉSERVÉ — aucune section sombre */
-  --color-bg-dark-card:  42 42 42;
+  /* Surfaces */
+  --color-bg-primary:    255 255 255;  /* #fff   — surface produit, cartes */
+  --color-bg-secondary:  247 247 247;  /* #f7f7f7 — bandes de section */
+  --color-bg-tertiary:   238 238 238;  /* #eee   — contraste de ton */
+  --color-bg-dark:       49 49 49;     /* #313131 — réservé */
+  --color-bg-dark-card:  49 49 49;
   --color-bg-card:       255 255 255;
 
-  /* Textes */
-  --color-text-primary:  0 0 0;        /* noir — titres, comme Samsung */
-  --color-text-body:     51 51 51;
-  --color-text-muted:    117 117 117;  /* #757575, gris standard Samsung */
-
+  /* Texte */
+  --color-text-primary:  0 0 0;        /* #000 */
+  --color-text-body:     51 51 51;     /* #333 */
+  --color-text-muted:    117 117 117;  /* #757575 */
   --color-text-light:    255 255 255;
-  --color-text-light-sub:237 237 237;
-  --color-text-light-mute:170 170 170;
+  --color-text-light-sub:238 238 238;
+  --color-text-light-mute:143 143 143; /* #8f8f8f */
 
-  /* Accent unique — terre cuite, rare comme le bleu de Samsung */
-  --color-accent:        184 78 34;    /* 5.2:1 sur blanc */
-  --color-accent-hover:  150 60 22;
-  --color-accent-light:  250 237 230;
+  /* Accent = NOIR. Remplace le bleu #2189ff de la référence. */
+  --color-accent:        0 0 0;
+  --color-accent-hover:  49 49 49;     /* #313131 */
+  --color-accent-light:  247 247 247;  /* #f7f7f7 */
 
-  /* Accent secondaire — ocre, détails fins */
-  --color-gold:          180 131 46;
+  --color-gold:          85 85 85;     /* #555 — plus aucune teinte chaude */
 
-  /* Filets — toujours 1px, comme les séparateurs de samsung.com */
-  --color-border:        229 229 229;
-  --color-border-dark:   212 212 212;
+  /* Filets */
+  --color-border:        229 229 229;  /* #e5e5e5 */
+  --color-border-dark:   221 221 221;  /* #ddd */
 
-  /* Typographie — grotesque géométrique, jamais serif */
-  --font-heading: 'Archivo', sans-serif;
-  --font-body:    'Inter', sans-serif;
+  /* Typographie — SamsungOne est propriétaire ; Archivo le remplace */
+  --font-heading: 'Archivo', Arial, sans-serif;
+  --font-body:    'Inter', Arial, sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 }
 
 /* ════════════════════════════════════════════════════
-   RESET BASE
+   RESET
    ════════════════════════════════════════════════════ */
 *, *before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
@@ -76,189 +72,134 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
-::selection {
-  background-color: rgb(var(--color-accent));
-  color: #FFFFFF;
-}
+::selection { background-color: #000; color: #fff; }
 
-:focus-visible {
-  outline: 2px solid rgb(var(--color-accent));
-  outline-offset: 3px;
-  border-radius: 4px;
-}
+:focus-visible { outline: 2px solid #000; outline-offset: 3px; border-radius: 4px; }
 
 /* ════════════════════════════════════════════════════
-   TYPOGRAPHIE & UTILITAIRES
+   COMPOSANTS
+   ────────────────────────────────────────────────────
+   ⚠ Tout est dans @layer components, PAS utilities.
+   Tailwind émet components AVANT utilities, donc une classe
+   utilitaire comme `hidden` l'emporte toujours.
+
+   Dans @layer utilities, `.btn-accent { display:inline-flex }`
+   arrivait APRÈS `.hidden { display:none }` et le battait : le
+   bouton « Devis gratuit » débordait sur mobile malgré
+   `hidden xl:inline-flex`. Corrigé en passant ici.
    ════════════════════════════════════════════════════ */
-@layer utilities {
+@layer components {
   .container-site { @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-8; }
 
   .font-heading  { font-family: var(--font-heading); }
   .font-mono-ref { font-family: var(--font-mono); }
 
-  /* Titres — gras et très serrés, comme samsung.com */
-  .display-xl {
-    font-family: var(--font-heading);
-    font-weight: 800;
-    line-height: 1.02;
-    letter-spacing: -0.03em;
-  }
-  .display-lg {
-    font-family: var(--font-heading);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.025em;
-  }
-  .display-md {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-  .display-sm {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-  }
+  /* Titres */
+  .display-xl { font-family: var(--font-heading); font-weight: 800; line-height: 1.02; letter-spacing: -0.03em; }
+  .display-lg { font-family: var(--font-heading); font-weight: 800; line-height: 1.05; letter-spacing: -0.025em; }
+  .display-md { font-family: var(--font-heading); font-weight: 700; line-height: 1.1;  letter-spacing: -0.02em; }
+  .display-sm { font-family: var(--font-heading); font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
 
-  /* ── Fonds ───────────────────────────────────────── */
   .bg-dark      { background-color: rgb(var(--color-bg-dark)); }
   .bg-secondary { background-color: rgb(var(--color-bg-secondary)); }
   .bg-tertiary  { background-color: rgb(var(--color-bg-tertiary)); }
   .bg-card      { background-color: rgb(var(--color-bg-card)); }
 
-  /* ── Textes ──────────────────────────────────────── */
-  .text-primary-dark { color: rgb(var(--color-text-primary)); }
   .text-light        { color: rgb(var(--color-text-light)); }
   .text-light-sub    { color: rgb(var(--color-text-light-sub)); }
-  .text-muted        { color: rgb(var(--color-text-muted)); }
   .text-accent       { color: rgb(var(--color-accent)); }
-  .text-gold         { color: rgb(var(--color-gold)); }
-
   .border-dark { border-color: rgb(var(--color-border-dark)); }
 
-  /* Sur-surtitre — gras, accent, centré dans les héros */
-  .eyebrow {
-    @apply inline-flex items-center font-heading text-sm font-bold tracking-normal;
-    color: rgb(var(--color-accent));
-  }
+  /* Sur-surtitre — équivalent du « Available now » bleu, en noir */
+  .eyebrow { @apply inline-flex items-center font-heading text-sm font-bold; color: #000; }
   .eyebrow-center { @apply justify-center; }
 
-  /* ── Surface produit : gris clair, SANS bordure ────
-     Différence visible avec la version précédente : les
-     cartes ne sont plus des boîtes blanches bordées. */
+  /* Surface produit : BLANCHE — obligatoire, les visuels ont un
+     fond blanc. Jeton 20px + filet 1px comme la référence. */
   .stage {
-    background-color: rgb(var(--color-bg-secondary));
-    border-radius: 16px;
+    background-color: #fff;
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 20px;
+    overflow: hidden;
   }
+
+  .card-product {
+    background-color: #fff;
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 20px;
+    overflow: hidden;
+    transition: border-color 200ms ease;
+  }
+  .card-product:hover { border-color: #000; }
 
   .hairline { border-bottom: 1px solid rgb(var(--color-border)); }
 
-  .card-product {
-    background-color: rgb(var(--color-bg-secondary));
-    border-radius: 16px;
-    overflow: hidden;
-    transition: transform 250ms ease;
-  }
-  .card-product:hover { transform: translateY(-2px); }
-
-  /* ── Boutons : pilules, comme « Buy » / « Sign up » ── */
+  /* CTA principal — équivalent de .cta--black */
   .btn-accent {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
-           text-sm font-semibold transition-all duration-200;
-    background-color: rgb(var(--color-text-primary));
-    color: #FFFFFF;
+           text-sm font-semibold transition-colors duration-200;
+    background-color: #000;
+    color: #fff;
   }
-  .btn-accent:hover {
-    background-color: rgb(64 64 64);
-    transform: translateY(-1px);
-  }
+  .btn-accent:hover { background-color: #313131; }
 
-  .btn-terracotta {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
-           text-sm font-semibold transition-all duration-200;
-    background-color: rgb(var(--color-accent));
-    color: #FFFFFF;
-  }
-  .btn-terracotta:hover {
-    background-color: rgb(var(--color-accent-hover));
-    transform: translateY(-1px);
-  }
-
-  /* Pilule contour — « View all », « En savoir plus » */
+  /* CTA secondaire — contour noir */
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
-           text-sm font-semibold transition-all duration-200;
-    border: 1.5px solid rgb(var(--color-text-primary));
+           text-sm font-semibold transition-colors duration-200;
+    border: 1.5px solid #000;
     background-color: transparent;
-    color: rgb(var(--color-text-primary));
+    color: #000;
   }
-  .btn-outline:hover {
-    background-color: rgb(var(--color-text-primary));
-    color: #FFFFFF;
-  }
+  .btn-outline:hover { background-color: #000; color: #fff; }
 
   .btn-outline-white {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5
-           text-sm font-semibold transition-all duration-200;
+           text-sm font-semibold transition-colors duration-200;
     border: 1.5px solid rgba(255, 255, 255, 0.8);
-    color: #FFFFFF;
+    color: #fff;
   }
-  .btn-outline-white:hover { background-color: #FFFFFF; color: rgb(var(--color-text-primary)); }
+  .btn-outline-white:hover { background-color: #fff; color: #000; }
 
-  /* Lien texte souligné — « Learn more » sur samsung.com */
+  /* Lien souligné — « Learn more » */
   .link-underline {
     @apply inline-flex items-center gap-2 font-semibold transition-opacity duration-200;
     color: inherit;
   }
-  .link-underline > span {
-    border-bottom: 1.5px solid currentColor;
-    padding-bottom: 3px;
-  }
-  .link-underline:hover { opacity: 0.65; }
+  .link-underline > span { border-bottom: 1.5px solid currentColor; padding-bottom: 3px; }
+  .link-underline:hover { opacity: 0.6; }
 
+  /* Le vert WhatsApp est une convention de marque reconnue,
+     pas une couleur du site. */
   .btn-wa {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5
-           text-sm font-semibold transition-all duration-200;
+           text-sm font-semibold transition-colors duration-200;
     background-color: #1FA855;
-    color: #FFFFFF;
+    color: #fff;
   }
-  .btn-wa:hover { background-color: #178A46; transform: translateY(-1px); }
+  .btn-wa:hover { background-color: #178A46; }
 
   .section-hero { min-height: 85svh; @apply flex items-center; }
 
-  .link-warm {
-    @apply inline-flex items-center gap-2 font-semibold transition-colors duration-200;
-    color: rgb(var(--color-accent));
-  }
-  .link-warm:hover { color: rgb(var(--color-accent-hover)); }
+  .link-warm { @apply inline-flex items-center gap-2 font-semibold transition-colors duration-200; color: #000; }
+  .link-warm:hover { color: #757575; }
 
-  .product-ref {
-    font-family: var(--font-body);
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-  }
+  .product-ref { font-family: var(--font-body); font-size: 0.72rem; font-weight: 500; }
 
   .price-tag {
     font-family: var(--font-heading);
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.015em;
-    color: rgb(var(--color-text-primary));
+    color: #000;
   }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-}
 
-/* Rangée façon carrousel : la carte suivante dépasse à droite,
-   exactement comme sur samsung.com */
-@layer components {
+  /* Rangée façon carrousel : la carte suivante dépasse à droite */
   .carousel-row {
     @apply flex gap-4 overflow-x-auto no-scrollbar;
     scroll-snap-type: x mandatory;
@@ -267,9 +208,6 @@ body {
   .carousel-row > * { scroll-snap-align: start; flex-shrink: 0; }
 }
 
-/* ════════════════════════════════════════════════════
-   ACCESSIBILITÉ
-   ════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

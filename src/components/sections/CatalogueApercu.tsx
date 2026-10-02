@@ -12,7 +12,7 @@ export default function CatalogueApercu() {
   )}`
 
   return (
-    <section className="bg-bg-primary py-20 sm:py-28">
+    <section className="bg-bg-secondary py-20 sm:py-28">
       <div className="container-site">
 
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">

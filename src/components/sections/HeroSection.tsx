@@ -18,7 +18,7 @@ const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComp
  */
 export default function HeroSection() {
   return (
-    <section className="bg-bg-secondary">
+    <section className="bg-bg-primary">
       <div className="container-site pt-14 sm:pt-20 lg:pt-24 pb-12 sm:pb-16 text-center">
 
         <p className="eyebrow eyebrow-center">Disponible maintenant</p>
@@ -53,7 +53,7 @@ export default function HeroSection() {
         <div className="mt-12 sm:mt-16">
           <div className="relative mx-auto w-full max-w-[520px] aspect-square">
             <Image
-              src="/products/ventilateur-pied-fs4011.png"
+              src="/products/ventilateur-pied-fs4011.jpg"
               alt="Ventilateur sur pied Continental FS4011 avec télécommande"
               fill
               priority

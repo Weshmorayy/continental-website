@@ -11,7 +11,7 @@ const gammes = [
     meta: 'Modèles dès 30.000 FCFA',
     cta: 'Voir les ventilateurs',
     href: '/catalogue?cat=ventilateur-pied',
-    image: '/products/ventilateur-sol-louisiane-45cm.png',
+    image: '/products/ventilateur-sol-louisiane-45cm.jpg',
     alt: 'Brasseur d’air sol Continental',
   },
   {
@@ -22,14 +22,14 @@ const gammes = [
     meta: '9.000 · 12.000 · 18.000 BTU',
     cta: 'Découvrir les splits',
     href: '/catalogue?cat=climatiseur',
-    image: '/products/climatiseur-split-pro-inverter.png',
+    image: '/products/climatiseur-split-pro-inverter.jpg',
     alt: 'Climatiseur Inverter Continental',
   },
 ]
 
 export default function GammesSection() {
   return (
-    <section className="bg-bg-primary py-20 sm:py-28">
+    <section className="bg-bg-secondary py-20 sm:py-28">
       <div className="container-site">
 
         {/* Ouverture centrée, comme samsung.com */}

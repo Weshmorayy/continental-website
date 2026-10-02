@@ -7,7 +7,7 @@ const bestseller = {
   ref: 'CT-12INV-PRO',
   name: 'Climatiseur Split Inverter 12000 BTU Tropicalisé',
   slug: 'climatiseur-split-pro-inverter',
-  image: '/products/climatiseur-split-pro-inverter.png',
+  image: '/products/climatiseur-split-pro-inverter.jpg',
   price: 195000,
   features: [
     "Compresseur Inverter intelligent : jusqu'à 60% d'économie d'énergie",

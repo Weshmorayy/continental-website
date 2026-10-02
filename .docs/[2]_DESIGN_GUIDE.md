@@ -43,24 +43,34 @@ Substitute gratuit retenu :
 Archivo est une grotesque géométrique neutre, sturdy et très grasse en Display —
 le plus proche disponible de SamsungOne. **Ne jamais réintroduire un serif.**
 
-## Palette
+## Palette — valeurs extraites de la CSS réelle de samsung.com
+
+Tokens relevés dans `clientlib-base-ux25.min.css` et `page-home-v2/compact.min.css` :
+
+```css
+.bg-white      { background-color:#fff !important; color:#000 }
+.bg-light-gray { background-color:#f7f7f7 !important; color:#000 }
+.bg-dark-gray  { background-color:#313131 !important; color:#fff }
+.cta--black    { background-color:#000 !important; color:#fff !important; border-color:transparent }
+.cta--outlined { background-color:transparent; color:#000; border-color:#000 }
+```
+
+Échelle de gris relevée : `#f7f7f7 #eee #ddd #aaa #8f8f8f #757575 #555 #313131`
+Rayons relevés : `50%` (pilules), `24px`, `20px`, `8px`, `6px`
+Bleu Samsung relevé : `#2189ff` (39 occurrences), `#006bea`, `#68aeff`
 
 | Variable CSS | Valeur | Rôle |
 |---|---|---|
-| `--color-bg-primary` | `#FFFFFF` | Blanc — fond de page, cartes de contenu |
-| `--color-bg-secondary` | `#F5F5F5` | Gris clair — héros, surfaces produit, tuiles |
-| `--color-bg-tertiary` | `#EBEBEB` | Gris soutenu — contraste de ton, panneaux |
-| `--color-text-primary` | `#000000` | Titres — noir franc, comme Samsung |
+| `--color-bg-primary` | `#FFFFFF` | **Surface produit** — obligatoire |
+| `--color-bg-secondary` | `#F7F7F7` | Bandes de section |
+| `--color-bg-tertiary` | `#EEEEEE` | Contraste de ton |
+| `--color-text-primary` | `#000000` | Titres |
 | `--color-text-body` | `#333333` | Corps de texte |
-| `--color-text-muted` | `#757575` | Labels, gris standard Samsung |
-| `--color-accent` | `#B84E22` | **Accent unique** — sur-surtitre, prix, points |
-| `--color-accent-hover` | `#963C16` | Hover accent |
-| `--color-accent-light` | `#FAEDE6` | Fond de badge, jamais en aplat de section |
-| `--color-gold` | `#B4832E` | Détails fins |
+| `--color-text-muted` | `#757575` | Labels |
+| `--color-accent` | `#000000` | Remplace le bleu `#2189ff` |
 | `--color-border` | `#E5E5E5` | Filets 1px |
 
-Équivalent du « Available now » bleu de Samsung → notre sur-surtitre terre cuite,
-utilisé **une seule fois par section**, jamais en aplat.
+**Aucune couleur chaude.** Terracotta et crème ont été explicitement refusées.
 
 **Interdits :** `blue-*`, `sky-*`, `indigo-*`, `slate-*`, `cyan-*` ; sections de fond
 sombre ; dégradés Tailwind génériques ; `rounded-none` ; `border-2`.
@@ -84,22 +94,24 @@ sombre ; dégradés Tailwind génériques ; `rounded-none` ; `border-2`.
 | `.eyebrow` / `.eyebrow-center` | Sur-surtitre accent — **une fois par section** |
 | `.display-xl/.lg/.md/.sm` | Échelle de titres Archivo |
 
-## Assets produits — détourage obligatoire
+## Assets produits — surfaces BLANCHES obligatoires
 
-Les six visuels de `public/products/` étaient des **JPEG à fond blanc pur**
-(vérifié : coins à `srgb(255,255,255)`). Posés sur une surface grise, ils
-laisseraient un rectangle blanc visible.
+Les six visuels de `public/products/` sont des **JPEG à fond blanc pur**
+(coins vérifiés à `srgb(255,255,255)`). Conséquence directe : toute surface
+qui accueille un produit doit être **BLANCHE**, sinon un rectangle blanc
+apparaît sur le gris.
 
-Ils ont été détourés en PNG transparents :
+**Tentative de détourage en PNG transparent : ABANDONNÉE.** Deux pièges rencontrés,
+à ne pas reproduire :
 
-```sh
-convert "$f" -alpha set -fuzz 8% -fill none -draw "matte 0,0 floodfill" \
-  -trim +repage -resize '1000x1000>' -strip "${f%.*}.png"
-```
+1. `-trim` remplit la zone rognée avec la couleur du coin — il **détruit** la
+   transparence. Les PNG générés étaient opaques (corner alpha = 1).
+2. ImageMagick 7 a **supprimé la primitive `matte`**. `-draw "matte 0,0 floodfill"`
+   échoue en silence ; le bon mot-clé est `alpha`. Le `2>/dev/null` avait masqué
+   l'erreur, et une planche-témoin avait été produite à partir des fichiers
+   *avant* trim — masquant la panne.
 
-Le `floodfill` part du coin (0,0) : il ne mange que le fond extérieur connecté,
-**pas le corps blanc des climatiseurs** (vérifié visuellement sur les six).
-Les originaux `.jpg`/`.webp` sont conservés comme sources.
+D'où la décision : visuels d'origine + surfaces blanches.
 
 ## Rythme des fonds — Page Accueil
 

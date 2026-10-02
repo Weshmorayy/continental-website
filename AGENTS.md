@@ -32,34 +32,43 @@
 - **Toutes les données métier** viennent de `src/config/site.ts` et `src/data/products.ts`
 - **Aucune donnée** hardcodée dans les composants
 
-## Palette (reconstruite d'après les captures samsung.com)
+## Palette — MONOCHROME, valeurs extraites de la CSS réelle de samsung.com
 
-Deux versions ont été refusées (« trop générique », puis « ça ne ressemble pas à
-Samsung »). Base actuelle, relevée sur les captures de référence :
+Tokens relevés dans leurs bundles (`clientlib-base-ux25.min`, `page-home-v2`) :
+`.bg-white #fff`, `.bg-light-gray #f7f7f7`, `.bg-dark-gray #313131`,
+`.cta--black` = fond `#000` / texte `#fff`. Gris relevés : `#f7f7f7 #eee #ddd
+#aaa #8f8f8f #757575 #555 #313131`. Rayons : `50%`, `24px`, `20px`, `8px`, `6px`.
 
 ```
-bg-primary:   #FFFFFF   ← fond de page
-bg-secondary: #F5F5F5   ← héros + surfaces produit (gris clair Samsung)
-bg-tertiary:  #EBEBEB   ← contraste de ton
-text-primary: #000000   ← titres ET pilules CTA principales
-text-muted:   #757575   ← gris standard Samsung
-accent:       #B84E22   ← accent UNIQUE — sur-surtitre, prix
+bg-primary:   #FFFFFF   ← surface PRODUIT (obligatoire : visuels à fond blanc)
+bg-secondary: #F7F7F7   ← bandes de section
+bg-tertiary:  #EEEEEE   ← contraste de ton
+text-primary: #000000   ← titres ET pilules CTA
+text-muted:   #757575
+accent:       #000000   ← remplace le bleu #2189ff de la référence
 ```
 
-**Typographie : Archivo (titres) + Inter (texte).** samsung.com utilise SamsungOne,
-propriétaire et sous licence — Archivo est le substitute gratuit le plus proche.
-**Ne jamais réintroduire de serif** (Fraunces a été essayé et refusé).
+**Zéro couleur chaude.** Les versions terracotta et crème ont été refusées
+explicitement par le commanditaire. Le seul vert restant est `.btn-wa`
+(convention de marque WhatsApp, pas une couleur du site).
 
-Interdits : `blue-*` / `sky-*` / `indigo-*` / `slate-*`, sections de fond sombre,
-dégradés Tailwind génériques, `rounded-none`, `border-2`.
+**Typographie : Archivo (titres) + Inter (texte).** SamsungOne est propriétaire ;
+Archivo est le substitute gratuit le plus proche. Aucun serif.
+
+⚠ **Les classes custom vivent dans `@layer components`, jamais `utilities`.**
+Sinon `.btn-accent { display:inline-flex }` passe après `.hidden { display:none }`
+et le bouton déborde sur mobile malgré `hidden xl:inline-flex`.
+
+Interdits : `blue-*` / `sky-*` / `indigo-*` / `slate-*`, fonds sombres,
+dégradés génériques, `rounded-none`, `border-2`.
 Détail complet dans `.docs/[2]_DESIGN_GUIDE.md`.
 
 ## Images
 
-- `public/products/*.png` : fonds détourés en transparent — les sources `.jpg`
-  étaient à fond blanc pur et laissaient un rectangle blanc sur les surfaces grises.
-- `public/aesthetic/` : photos **stock** trouvées en ligne, pas des photos du client
-  — signalé au commanditaire, à remplacer avant livraison.
+Les visuels de `public/products/` sont des **JPEG à fond blanc pur**. Ils doivent
+impérativement être posés sur une surface **blanche** (`.stage`, `.card-product`,
+`.card-white`) — sinon un rectangle blanc apparaît. La tentative de détourage en
+PNG transparent a été **abandonnée** (voir le guide design).
 
 ## Composants créés
 
