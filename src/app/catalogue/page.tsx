@@ -15,17 +15,17 @@ export default function CataloguePage() {
     <>
       <Header />
       <main>
-        {/* En-tête de page — blanc, pas de bandeau sombre */}
-        <section className="bg-bg-primary pt-14 sm:pt-20 pb-12 sm:pb-16 border-b border-border">
+        {/* Ouverture centrée sur gris clair — structure samsung.com */}
+        <section className="bg-bg-secondary py-16 sm:py-24 text-center">
           <div className="container-site">
-            <p className="eyebrow mb-5">Catalogue complet</p>
+            <p className="eyebrow eyebrow-center">Catalogue complet</p>
             <h1
-              className="font-heading font-semibold text-text-primary leading-[1.05] tracking-[-0.02em]"
-              style={{ fontSize: 'clamp(2.5rem, 6vw, 4.25rem)' }}
+              className="display-xl text-text-primary mx-auto mt-4 max-w-4xl"
+              style={{ fontSize: 'clamp(2.5rem, 7vw, 4.75rem)' }}
             >
               Tous nos modèles.
             </h1>
-            <p className="text-text-body text-base md:text-lg mt-5 max-w-xl leading-relaxed">
+            <p className="mt-5 mx-auto max-w-xl text-text-body text-base sm:text-lg">
               Ventilateurs sur pied, muraux et orbitaux — chaque modèle livré avec
               garantie 2 ans et paiement à la réception.
             </p>

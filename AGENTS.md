@@ -32,28 +32,34 @@
 - **Toutes les données métier** viennent de `src/config/site.ts` et `src/data/products.ts`
 - **Aucune donnée** hardcodée dans les composants
 
-## Palette (révisée après brief client — ne plus revenir au noir/bleu)
+## Palette (reconstruite d'après les captures samsung.com)
 
-Le client a refusé « noir et bleu » comme « trop générique ». Nouvelle base :
-fond blanc « platinum », texte presque noir, CTA en pilule noire, **un** accent
-terre cuite utilisé avec parcimonie. Structure inspirée de samsung.com, couleurs non.
+Deux versions ont été refusées (« trop générique », puis « ça ne ressemble pas à
+Samsung »). Base actuelle, relevée sur les captures de référence :
 
 ```
-bg-primary:   #FFFFFF   ← Fond par défaut, scènes produit
-bg-secondary: #F8F6F3   ← Sections alternées
-bg-tertiary:  #EFE9E1   ← Arguments + footer
-text-primary: #16130F   ← Titres ET pilules CTA principales
-accent:       #B84E22   ← Accent UNIQUE — prix, liens actifs, surtitres
+bg-primary:   #FFFFFF   ← fond de page
+bg-secondary: #F5F5F5   ← héros + surfaces produit (gris clair Samsung)
+bg-tertiary:  #EBEBEB   ← contraste de ton
+text-primary: #000000   ← titres ET pilules CTA principales
+text-muted:   #757575   ← gris standard Samsung
+accent:       #B84E22   ← accent UNIQUE — sur-surtitre, prix
 ```
 
-Interdits : toute classe `blue-*` / `sky-*` / `indigo-*` / `slate-*`, les sections
-de fond sombre, les dégradés Tailwind génériques, `rounded-none`, et les bordures `border-2`.
+**Typographie : Archivo (titres) + Inter (texte).** samsung.com utilise SamsungOne,
+propriétaire et sous licence — Archivo est le substitute gratuit le plus proche.
+**Ne jamais réintroduire de serif** (Fraunces a été essayé et refusé).
+
+Interdits : `blue-*` / `sky-*` / `indigo-*` / `slate-*`, sections de fond sombre,
+dégradés Tailwind génériques, `rounded-none`, `border-2`.
 Détail complet dans `.docs/[2]_DESIGN_GUIDE.md`.
 
 ## Images
 
-Les visuels de `public/aesthetic/` sont des photos **stock** trouvées en ligne, pas des
-photos du client — signalé au commanditaire, à remplacer avant livraison.
+- `public/products/*.png` : fonds détourés en transparent — les sources `.jpg`
+  étaient à fond blanc pur et laissaient un rectangle blanc sur les surfaces grises.
+- `public/aesthetic/` : photos **stock** trouvées en ligne, pas des photos du client
+  — signalé au commanditaire, à remplacer avant livraison.
 
 ## Composants créés
 

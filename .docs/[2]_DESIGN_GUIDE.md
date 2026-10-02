@@ -1,91 +1,129 @@
 # [2] Guide Design — Continental®
 
-> Réécrit après le retour client : « trop générique », refus du noir et du bleu.
-> Nouvelle référence de structure : samsung.com — **structure** reprise, **couleurs** non.
+> Reconstruit d'après les captures de samsung.com/us fournies par le commanditaire.
+> **Structure et typographie : oui. Couleurs : non** (le client refuse le bleu).
 
 ## Origine de la décision
 
-Le client a envoyé des captures de samsung.com en demandant « quelque chose comme ça ».
-Volontairement **non copié** :
+Deux tentatives ont précédé ce document :
 
-- Le HTML de samsung.com/fr fait 372 Ko dont **73 % sont des `<script>`**, un seul `<h1>`
-  (caché, `class="blind"`), et tout le style vit dans 32 bundles CSS minifiés hashés.
-  Un scrap ne rendrait ni le contenu ni le design.
-- L'accent de Samsung est **bleu** — le client refuse explicitement le bleu.
-- Their design system is a protected brand asset.
+1. **« Precision Noire »** — fond noir + bleu royal. Refusé : « trop générique ».
+2. **« Chaleureuse Premium »** — crème, serif Fraunces, split deux colonnes.
+   Refusé : le client a constaté que le rendu ne ressemblait pas du tout à Samsung.
 
-Ce qui est repris, c'est le **système** : fond blanc « platinum », texte presque noir,
-CTA en pilule noire, angles très arrondis, espace généreux, photo produit en héros,
-un accent unique et rare.
+Le serif était le signal le plus visible de l'échec. Cette version part des
+**captures réelles** du site de référence, pas d'une interprétation.
+
+## Pourquoi pas de scraping
+
+Les outils existent et fonctionnent — [Picker.Design](https://picker.design/),
+[MiroMiro](https://miromiro.app/website-to-code), [SingleFile](https://www.getsinglefile.com/),
+[monolith](https://github.com/y2z/monolith). Deux blocages concrets :
+
+- Tous exigent un Chromium de bureau, absent de l'environnement de build (Termux/Android).
+- `monolith` et SingleFile n'exécutent pas JavaScript. Or `samsung.com/fr` renvoie
+  372 Ko dont **73 % de `<script>`**, un seul `<h1>` — caché, `class="blind"` — et
+  tout le style dans 32 bundles CSS minifiés hashés. Un scrape rend une page vide.
+
+**Les captures fournies restent la meilleure source disponible.**
+
+## Police
+
+samsung.com utilise **SamsungOne** — police propriétaire sous licence, non
+réutilisable. D'après [l'analyse de sa CSS](https://www.sitefontcheck.com/fontsusedby/samsung.com),
+la pile est `samsungone, arial, sans-serif` avec `samsungsharpsans` en repli.
+
+Substitute gratuit retenu :
+
+| Rôle | Police | Graisses | Source |
+|------|--------|----------|--------|
+| Titres | **Archivo** | 500, 600, 700, 800, 900 | Google Fonts |
+| Corps | **Inter** | 400, 500, 600, 700 | Google Fonts |
+
+Archivo est une grotesque géométrique neutre, sturdy et très grasse en Display —
+le plus proche disponible de SamsungOne. **Ne jamais réintroduire un serif.**
 
 ## Palette
 
 | Variable CSS | Valeur | Rôle |
 |---|---|---|
-| `--color-bg-primary` | `#FFFFFF` | Blanc pur — fond par défaut, scènes produit |
-| `--color-bg-secondary` | `#F8F6F3` | Blanc cassé — sections alternées |
-| `--color-bg-tertiary` | `#EFE9E1` | Sable — arguments et pied de page |
-| `--color-bg-card` | `#FFFFFF` | Fond des cartes produit |
-| `--color-text-primary` | `#16130F` | Titres, texte fort, **pilules CTA principales** |
-| `--color-text-body` | `#4A443E` | Corps de texte |
-| `--color-text-muted` | `#8B837A` | Labels, références |
-| `--color-accent` | `#B84E22` | **Accent unique** — prix, liens actifs, surtitres |
+| `--color-bg-primary` | `#FFFFFF` | Blanc — fond de page, cartes de contenu |
+| `--color-bg-secondary` | `#F5F5F5` | Gris clair — héros, surfaces produit, tuiles |
+| `--color-bg-tertiary` | `#EBEBEB` | Gris soutenu — contraste de ton, panneaux |
+| `--color-text-primary` | `#000000` | Titres — noir franc, comme Samsung |
+| `--color-text-body` | `#333333` | Corps de texte |
+| `--color-text-muted` | `#757575` | Labels, gris standard Samsung |
+| `--color-accent` | `#B84E22` | **Accent unique** — sur-surtitre, prix, points |
 | `--color-accent-hover` | `#963C16` | Hover accent |
-| `--color-accent-light` | `#FAEDE6` | Fonds de badge, sans aplat plein |
-| `--color-gold` | `#B4832E` | Détails fins seulement |
-| `--color-border` | `#E7E2DB` | Bordures, 1px — jamais 2px |
-| `--color-border-dark` | `#D6CEC4` | Séparateurs |
+| `--color-accent-light` | `#FAEDE6` | Fond de badge, jamais en aplat de section |
+| `--color-gold` | `#B4832E` | Détails fins |
+| `--color-border` | `#E5E5E5` | Filets 1px |
 
-**Interdits absolus :** le bleu (`blue-*`, `sky-*`, `indigo-*`, `slate-*`), les sections
-sombre, les dégradés Tailwind génériques, `rounded-none`.
+Équivalent du « Available now » bleu de Samsung → notre sur-surtitre terre cuite,
+utilisé **une seule fois par section**, jamais en aplat.
 
-> `--color-bg-dark` / `--color-bg-dark-card` restent déclarés pour la compatibilité
-> Tailwind mais **ne doivent plus être utilisés**.
+**Interdits :** `blue-*`, `sky-*`, `indigo-*`, `slate-*`, `cyan-*` ; sections de fond
+sombre ; dégradés Tailwind génériques ; `rounded-none` ; `border-2`.
 
-## Typographie
-
-| Rôle | Police | Graisses | Source |
-|------|--------|----------|--------|
-| Titres | Fraunces | 400, 600, 700 | Google Fonts |
-| Corps | Plus Jakarta Sans | 400, 500, 600, 700 | Google Fonts |
-| Références produits | JetBrains Mono | 500, 700 | Google Fonts |
-
-Fraunces remplace Barlow Condensed : la condensée industrielle contribuant à l'effet
-« template ». Un serif chaleureux sur fond blanc donne une signature premium.
-
-**H1 hero :** `clamp(2.75rem, 7vw, 4.75rem)` / Fraunces 600 / `tracking-[-0.02em]`
-**H1 page :** `clamp(2.5rem, 6vw, 4.25rem)` / Fraunces 600
-**H2 section :** `3–3.25rem` / Fraunces 600
-**H3 :** `1.125–1.25rem` / Fraunces 600
-**Prix :** Fraunces 600, couleur accent
-**Références :** `0.7rem` / JetBrains Mono 700
+> `--color-bg-dark` reste déclaré pour la compatibilité Tailwind mais **ne doit
+> plus être utilisé**.
 
 ## Composants
 
 | Nom | Rendu |
 |---|---|
-| `.btn-accent` | **Pilule noire** — CTA principal (équivalent du « Achetez ») |
-| `.btn-outline-dark` | Pilule blanche, contour 1.5px noir — CTA secondaire |
+| `.btn-accent` | **Pilule noire** — CTA principal (`border-radius: 9999px`) |
+| `.btn-outline` | Pilule contour noir — CTA secondaire (« View all ») |
 | `.btn-wa` | Pilule verte WhatsApp — convention de marque, pas couleur de site |
-| `.btn-terracotta` | Pilule accent — points de conversion clés, usage rare |
-| `.plinth` | Scène produit blanche, rayon 24px, bordure 1px |
-| `.card-warm` | Carte blanche arrondie, élévation au survol |
-| `.eyebrow` | Surtitre mono + filet — **une fois par section**, jamais de badge flottant |
+| `.btn-terracotta` | Pilule accent — usage rare |
+| `.link-underline` | Lien souligné — « Learn more » |
+| `.stage` | Surface produit **grise, sans bordure**, rayon 16px |
+| `.card-product` | Tuile produit grise, élévation au survol |
+| `.hairline` | Filet 1px pleine largeur |
+| `.carousel-row` | Rangée à défilement horizontal avec accroche |
+| `.eyebrow` / `.eyebrow-center` | Sur-surtitre accent — **une fois par section** |
+| `.display-xl/.lg/.md/.sm` | Échelle de titres Archivo |
+
+## Assets produits — détourage obligatoire
+
+Les six visuels de `public/products/` étaient des **JPEG à fond blanc pur**
+(vérifié : coins à `srgb(255,255,255)`). Posés sur une surface grise, ils
+laisseraient un rectangle blanc visible.
+
+Ils ont été détourés en PNG transparents :
+
+```sh
+convert "$f" -alpha set -fuzz 8% -fill none -draw "matte 0,0 floodfill" \
+  -trim +repage -resize '1000x1000>' -strip "${f%.*}.png"
+```
+
+Le `floodfill` part du coin (0,0) : il ne mange que le fond extérieur connecté,
+**pas le corps blanc des climatiseurs** (vérifié visuellement sur les six).
+Les originaux `.jpg`/`.webp` sont conservés comme sources.
 
 ## Rythme des fonds — Page Accueil
 
-1. `bg-primary` (blanc) — Hero
-2. `bg-secondary` (blanc cassé) — Gammes
-3. `bg-primary` (blanc) — Bestseller
-4. `bg-tertiary` (sable) — Arguments
-5. `bg-primary` (blanc) — Catalogue aperçu
-6. `bg-secondary` (blanc cassé) — Livraison
-7. `bg-tertiary` (sable) — Footer
+1. `bg-secondary` (gris) — Héros, centré
+2. `bg-primary` (blanc) — Gammes
+3. `bg-secondary` (gris) — Bestseller
+4. `bg-secondary` (gris) — Arguments *(léger changement de rythme via les filets)*
+5. `bg-primary` (blanc) — Catalogue aperçu (carrousel)
+6. `bg-primary` (blanc) — Livraison
+7. `bg-primary` (blanc) — Footer à filets
 
-Aucune section sombre. Jamais 3 fonds consécutifs identiques.
+Aucune section sombre. Jamais 3 fonds consécutifs strictement identiques.
 
 ## Images
 
-Les visuels `public/aesthetic/` sont des **photos stock trouvées en ligne**, pas des
-photos du client. Signalé au commanditaire — à remplacer avant livraison finale.
-Les photos `public/products/` sont à confirmer avec le client.
+`public/aesthetic/` = photos **stock** trouvées en ligne, pas des photos du client.
+Signalé au commanditaire — à remplacer avant livraison finale.
+Les photos produits sont également des visuels stock (dossier « Stock-Images/Products »).
+
+## Données non sourcées — supprimées
+
+- « Réponse en moins de 15 minutes » → engagement de délai **inventé**, retiré.
+- « 7j/7 » → contredisait `siteConfig.hours.sunday: 'Fermé'`. Les horaires
+  affichés sont désormais dérivés de `siteConfig.hours` pour ne plus pouvoir diverger.
+
+> **À confirmer client :** l'atelier est-il ouvert le dimanche ? Si oui, corriger
+> `siteConfig.hours.sunday`.

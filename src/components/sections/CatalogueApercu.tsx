@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, MessageCircle } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { products } from '@/data/products'
 import { siteConfig } from '@/config/site'
 import ProductCard from '@/components/ui/ProductCard'
@@ -12,45 +12,46 @@ export default function CatalogueApercu() {
   )}`
 
   return (
-    <section className="bg-bg-primary py-20 md:py-28">
+    <section className="bg-bg-primary py-20 sm:py-28">
       <div className="container-site">
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-14">
-          <div>
-            <p className="eyebrow mb-5">Collection 2026</p>
-            <h2 className="font-heading font-semibold text-text-primary text-3xl sm:text-4xl md:text-[3rem] leading-[1.1] tracking-[-0.02em]">
-              Quelques modèles en stock.
-            </h2>
-          </div>
-
-          <Link href="/catalogue" className="btn-outline-dark flex-shrink-0">
-            Tous les modèles ({products.length})
-            <ArrowRight size={16} />
-          </Link>
+        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+          <p className="eyebrow eyebrow-center">Collection 2026</p>
+          <h2 className="display-lg text-text-primary mt-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.25rem)' }}>
+            Quelques modèles en stock.
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+        {/* Rangée façon carrousel : la carte suivante dépasse à droite,
+            comme sur samsung.com. Molette et tactile fonctionnent. */}
+        <div className="carousel-row -mx-5 px-5 sm:mx-0 sm:px-0 pb-2">
           {previewProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <div key={p.id} className="w-[78vw] max-w-[340px]">
+              <ProductCard product={p} />
+            </div>
           ))}
         </div>
 
-        {/* Bandeau conseil — intégré, pas une section centrée isolée */}
-        <div className="mt-16 bg-bg-secondary rounded-3xl p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-7">
-          <div className="max-w-xl">
-            <h3 className="font-heading font-semibold text-text-primary text-2xl leading-snug mb-2">
-              Pas sûr du modèle adapté à votre pièce ?
-            </h3>
-            <p className="text-text-body text-sm leading-relaxed">
-              Dites-nous la surface de la pièce et votre budget, on vous conseille un modèle
-              précis — sans vous faire perdre de temps au téléphone.
-            </p>
-          </div>
+        <div className="mt-10 text-center">
+          <Link href="/catalogue" className="btn-outline">
+            Tous les modèles ({products.length})
+          </Link>
+        </div>
+
+        {/* Bandeau conseil — pleine largeur, ton gris */}
+        <div className="mt-16 bg-bg-secondary rounded-2xl px-8 py-10 sm:px-12 sm:py-12 text-center">
+          <h3 className="display-md text-text-primary text-2xl sm:text-3xl">
+            Pas sûr du modèle adapté à votre pièce ?
+          </h3>
+          <p className="mt-3 text-text-body max-w-xl mx-auto">
+            Donnez-nous la surface de la pièce et votre budget, on vous conseille un modèle
+            précis — sans vous faire perdre de temps au téléphone.
+          </p>
           <a
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-accent flex-shrink-0"
+            className="btn-wa mt-7"
           >
             <MessageCircle size={17} />
             Demander un conseil

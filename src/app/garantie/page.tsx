@@ -88,63 +88,88 @@ export default function GarantiePage() {
     <>
       <Header />
       <main>
-        {/* ── Ouverture ── */}
-        <section className="bg-bg-primary pt-14 pb-14 md:pt-20 md:pb-20">
-          <div className="container-site">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end">
-              <div className="lg:col-span-7">
-                <p className="eyebrow mb-6">Protection complète Continental®</p>
-                <h1
-                  className="font-heading font-black text-text-primary leading-[1.02] tracking-[-0.02em]"
-                  style={{ fontSize: 'clamp(2.75rem, 7vw, 5.25rem)' }}
-                >
-                  Garantie fabricant
-                  <br />
-                  24 mois.
-                </h1>
-              </div>
-              <div className="lg:col-span-5 lg:pb-2">
-                <p className="text-text-body text-lg leading-relaxed">
-                  Chaque appareil Continental® bénéficie d&apos;une garantie officielle de{' '}
-                  <strong className="text-text-primary font-semibold">
-                    24 mois pièces et main-d&apos;œuvre
-                  </strong>{' '}
-                  à compter de la date d&apos;achat.
-                </p>
-              </div>
+        {/* ── Ouverture centrée sur gris clair, comme le héros samsung.com ── */}
+        <section className="bg-bg-secondary">
+          <div className="container-site pt-14 sm:pt-20 lg:pt-24 pb-14 sm:pb-20 text-center">
+            <p className="eyebrow eyebrow-center">Protection complète Continental®</p>
+
+            <h1
+              className="display-xl text-text-primary mx-auto mt-5 max-w-4xl"
+              style={{ fontSize: 'clamp(2.4rem, 7.5vw, 5.25rem)' }}
+            >
+              Garantie fabricant
+              <br />24 mois.
+            </h1>
+
+            <p className="mt-7 mx-auto max-w-2xl text-base sm:text-lg text-text-body leading-relaxed">
+              Chaque appareil Continental® bénéficie d&apos;une garantie officielle de{' '}
+              <strong className="text-text-primary font-semibold">
+                24 mois pièces et main-d&apos;œuvre
+              </strong>{' '}
+              à compter de la date d&apos;achat.
+            </p>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-wa px-8"
+              >
+                <MessageCircle size={17} />
+                Déclarer une panne
+              </a>
+              <a
+                href={`tel:${siteConfig.contact.whatsapp}`}
+                className="btn-outline px-8"
+              >
+                <Phone size={16} />
+                {siteConfig.contact.phone}
+              </a>
             </div>
           </div>
         </section>
 
-        {/* ── Chiffres clés : ligne de spécification, pas trois cartes ── */}
-        <section className="bg-bg-secondary border-y border-border">
+        {/* ── Chiffres clés — lignes de spécification à filets, pas trois cartes ── */}
+        <section className="bg-bg-primary py-14 sm:py-20">
           <div className="container-site">
-            <dl className="grid grid-cols-1 md:grid-cols-3 gap-y-10 md:gap-y-0">
+            <p className="product-ref uppercase tracking-[0.14em] text-text-muted mb-8">
+              En résumé
+            </p>
+
+            <dl className="border-t border-border">
               {keyFigures.map((k, i) => {
                 const Icon = k.icon
+                const isLast = i === keyFigures.length - 1
                 return (
                   <div
                     key={k.value}
                     className={
-                      i > 0
-                        ? 'md:border-l md:border-border-dark md:pl-8 lg:pl-10'
-                        : 'md:pr-8 lg:pr-10'
+                      'grid sm:grid-cols-12 gap-x-8 gap-y-5 py-8 sm:py-9 items-start' +
+                      (isLast ? '' : ' hairline')
                     }
                   >
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Icon size={18} className="text-accent" strokeWidth={1.7} />
-                      <dt className="product-ref text-text-muted">{k.label}</dt>
+                    <div className="sm:col-span-4 flex items-center gap-2.5">
+                      <Icon
+                        size={18}
+                        strokeWidth={1.7}
+                        className="text-accent flex-shrink-0"
+                      />
+                      <dt className="product-ref uppercase tracking-[0.12em] text-text-muted">
+                        {k.label}
+                      </dt>
                     </div>
-                    <dd>
+
+                    <dd className="sm:col-span-8 sm:flex sm:items-baseline sm:gap-10">
                       <span
-                        className="font-heading font-black text-text-primary block leading-none tracking-[-0.02em]"
-                        style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)' }}
+                        className="display-lg block sm:flex-shrink-0 text-text-primary"
+                        style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}
                       >
                         {k.value}
                       </span>
-                      <p className="text-text-body text-sm leading-relaxed mt-3 max-w-xs">
+                      <span className="mt-3 block sm:mt-0 max-w-lg text-sm text-text-body leading-relaxed">
                         {k.text}
-                      </p>
+                      </span>
                     </dd>
                   </div>
                 )
@@ -153,136 +178,172 @@ export default function GarantiePage() {
           </div>
         </section>
 
-        {/* ── Couverture / Exclusions : une plaque divisée, lue d'un bloc ── */}
-        <section className="bg-bg-primary py-20 md:py-28">
+        {/* ── Couverture / Exclusions — deux tons de surface nettement distincts ── */}
+        <section className="bg-bg-primary pb-16 sm:pb-24">
           <div className="container-site">
-            <div className="plinth overflow-hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                {/* Couverture */}
-                <div className="p-7 sm:p-10 lg:p-12">
-                  <div className="flex items-center gap-3 pb-6 mb-2 border-b border-border">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-light text-accent">
-                      <CheckCircle2 size={19} strokeWidth={1.8} />
-                    </span>
-                    <h2 className="font-heading font-bold text-text-primary text-xl sm:text-2xl tracking-[-0.01em]">
-                      Ce que la garantie couvre
-                    </h2>
-                  </div>
-                  <ul>
-                    {conditions.map((c) => (
-                      <li
-                        key={c}
-                        className="flex items-start gap-4 py-5 border-b border-border last:border-b-0"
-                      >
-                        <CheckCircle2
-                          size={16}
-                          className="mt-1 shrink-0 text-accent"
-                          strokeWidth={2}
-                        />
-                        <span className="text-text-body leading-relaxed">{c}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Exclusions — filet vertical plutôt qu'une seconde carte */}
-                <div className="p-7 sm:p-10 lg:p-12 lg:border-l lg:border-border bg-bg-secondary">
-                  <div className="flex items-center gap-3 pb-6 mb-2 border-b border-border-dark">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-text-primary">
-                      <X size={18} strokeWidth={2.2} />
-                    </span>
-                    <h2 className="font-heading font-bold text-text-primary text-xl sm:text-2xl tracking-[-0.01em]">
-                      Cas d&apos;exclusion de garantie
-                    </h2>
-                  </div>
-                  <ul>
-                    {nonCovered.map((c) => (
-                      <li
-                        key={c}
-                        className="flex items-start gap-4 py-5 border-b border-border-dark last:border-b-0"
-                      >
-                        <X size={15} className="mt-1 shrink-0 text-text-muted" strokeWidth={2.2} />
-                        <span className="text-text-body leading-relaxed">{c}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+            <div className="max-w-2xl">
+              <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
+                Périmètre de la garantie
+              </p>
+              <h2
+                className="display-md text-text-primary mt-3"
+                style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
+              >
+                Ce qui est couvert, ce qui ne l&apos;est pas.
+              </h2>
             </div>
-          </div>
-        </section>
 
-        {/* ── Procédure SAV : quatre rangs numérotés ── */}
-        <section className="bg-bg-secondary py-20 md:py-28">
-          <div className="container-site">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
-              <div className="lg:col-span-4">
-                <p className="product-ref text-text-muted mb-5">Procédure SAV</p>
-                <h2 className="font-heading font-black text-text-primary text-3xl sm:text-4xl leading-[1.1] tracking-[-0.02em]">
-                  Activer votre garantie en 4 étapes simples.
-                </h2>
-              </div>
+            <div className="mt-12 sm:mt-14 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {/* Couvert — accent terre cuite */}
+              <div className="stage p-7 sm:p-10">
+                <p className="product-ref uppercase tracking-[0.14em] text-accent">
+                  Couvert
+                </p>
 
-              <div className="lg:col-span-8">
-                <ol className="border-t border-border-dark">
-                  {steps.map((step) => (
+                <div className="flex items-center gap-3 mt-3 pb-6 hairline">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-light text-accent">
+                    <CheckCircle2 size={19} strokeWidth={1.8} />
+                  </span>
+                  <h3 className="display-sm text-xl sm:text-2xl text-text-primary">
+                    Ce que la garantie couvre
+                  </h3>
+                </div>
+
+                <ul>
+                  {conditions.map((c, i) => (
                     <li
-                      key={step.num}
-                      className="group grid grid-cols-[auto_1fr] gap-x-6 sm:gap-x-10 py-8 border-b border-border-dark"
+                      key={c}
+                      className={
+                        'flex items-start gap-4 py-5' +
+                        (i === conditions.length - 1 ? '' : ' hairline')
+                      }
                     >
-                      <span className="font-heading font-black text-3xl md:text-4xl leading-none text-[#C9C1B7] tabular-nums transition-colors duration-200 group-hover:text-accent">
-                        {step.num}
-                      </span>
-                      <div className="sm:flex sm:gap-8">
-                        <h3 className="font-heading font-bold text-text-primary text-xl sm:text-2xl sm:w-64 sm:shrink-0 leading-snug tracking-[-0.01em]">
-                          {step.title}
-                        </h3>
-                        <p className="text-text-body leading-relaxed mt-2 sm:mt-0 sm:max-w-md">
-                          {step.desc}
-                        </p>
-                      </div>
+                      <CheckCircle2
+                        size={17}
+                        strokeWidth={2}
+                        className="mt-0.5 shrink-0 text-accent"
+                      />
+                      <span className="text-text-body leading-relaxed">{c}</span>
                     </li>
                   ))}
-                </ol>
+                </ul>
+              </div>
+
+              {/* Exclu — surface neutre, marqueurs gris */}
+              <div className="rounded-2xl bg-bg-tertiary p-7 sm:p-10">
+                <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
+                  Non couvert
+                </p>
+
+                <div className="flex items-center gap-3 mt-3 pb-6 hairline">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg-primary text-text-primary">
+                    <X size={18} strokeWidth={2.2} />
+                  </span>
+                  <h3 className="display-sm text-xl sm:text-2xl text-text-primary">
+                    Cas d&apos;exclusion de garantie
+                  </h3>
+                </div>
+
+                <ul>
+                  {nonCovered.map((c, i) => (
+                    <li
+                      key={c}
+                      className={
+                        'flex items-start gap-4 py-5' +
+                        (i === nonCovered.length - 1 ? '' : ' hairline')
+                      }
+                    >
+                      <X
+                        size={17}
+                        strokeWidth={2.2}
+                        className="mt-0.5 shrink-0 text-text-muted"
+                      />
+                      <span className="text-text-body leading-relaxed">{c}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Déclaration SAV : bandeau sable, jamais sombre ── */}
-        <section className="bg-bg-tertiary py-14 md:py-20">
+        {/* ── Procédure SAV — quatre rangs numérotés ── */}
+        <section className="bg-bg-secondary py-16 sm:py-24">
           <div className="container-site">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-12">
-              <div className="flex-1">
-                <h3 className="font-heading font-black text-text-primary text-2xl sm:text-3xl leading-tight tracking-[-0.015em]">
-                  Déclarer une panne sous garantie
-                </h3>
-                <p className="text-text-body text-sm mt-2">
-                  Service technique 7j/7 · 08h–20h · {siteConfig.contact.city}
-                </p>
-                <a
-                  href={`tel:${siteConfig.contact.whatsapp}`}
-                  className="link-warm mt-4 font-mono text-sm"
-                >
-                  <Phone size={15} />
-                  {siteConfig.contact.phone}
-                </a>
-              </div>
+            <div className="max-w-2xl">
+              <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
+                Procédure SAV
+              </p>
+              <h2
+                className="display-md text-text-primary mt-3"
+                style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
+              >
+                Activer votre garantie en 4 étapes simples.
+              </h2>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 lg:shrink-0">
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-wa"
-                >
-                  <MessageCircle size={17} />
-                  WhatsApp SAV
-                </a>
-                <Link href="/contact" className="btn-outline-dark">
-                  Autres canaux
-                </Link>
-              </div>
+            <ol className="mt-12 sm:mt-16 border-t border-border">
+              {steps.map((step, i) => {
+                const isLast = i === steps.length - 1
+                return (
+                  <li
+                    key={step.num}
+                    className={
+                      'grid grid-cols-[auto_1fr] gap-x-6 sm:gap-x-10 py-8 sm:py-10' +
+                      (isLast ? '' : ' hairline')
+                    }
+                  >
+                    <span className="font-heading font-black text-3xl sm:text-4xl leading-none text-text-muted tabular-nums">
+                      {step.num}
+                    </span>
+                    <div className="max-w-3xl">
+                      <h3 className="display-sm text-xl sm:text-2xl text-text-primary">
+                        {step.title}
+                      </h3>
+                      <p className="mt-3 text-text-body leading-relaxed">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── Déclaration SAV — bande gris soutenu, jamais sombre ── */}
+        <section className="bg-bg-tertiary py-12 sm:py-16">
+          <div className="container-site grid gap-8 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-7">
+              <h2 className="display-sm text-xl sm:text-2xl text-text-primary">
+                Déclarer une panne sous garantie
+              </h2>
+              <p className="mt-2 text-sm text-text-body">
+                Service technique · {siteConfig.hours.weekdays} · {siteConfig.hours.saturday} ·{' '}
+                dimanche {siteConfig.hours.sunday.toLowerCase()} · {siteConfig.contact.city}
+              </p>
+              <a
+                href={`tel:${siteConfig.contact.whatsapp}`}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-text-primary hover:underline"
+              >
+                <Phone size={15} className="text-accent flex-shrink-0" />
+                {siteConfig.contact.phone}
+              </a>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 lg:col-span-5 lg:justify-end">
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-wa"
+              >
+                <MessageCircle size={17} />
+                WhatsApp SAV
+              </a>
+              <Link href="/contact" className="btn-outline">
+                Autres canaux
+              </Link>
             </div>
           </div>
         </section>
