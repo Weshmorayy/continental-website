@@ -1,11 +1,17 @@
 import Link from 'next/link'
+import type { Product } from '@/data/products'
 import { MessageCircle } from 'lucide-react'
-import { products } from '@/data/products'
 import { siteConfig } from '@/config/site'
 import ProductCard from '@/components/ui/ProductCard'
 
-export default function CatalogueApercu() {
-  const previewProducts = products.slice(0, 4)
+interface CatalogueApercuProps {
+  products: Product[]
+  totalCount: number
+}
+
+/** Reçoit les produits du serveur : même rendu, source pilotée par le contenu. */
+export default function CatalogueApercu({ products: allProducts, totalCount }: CatalogueApercuProps) {
+  const previewProducts = allProducts.slice(0, 4)
 
   const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
     "Bonjour Continental, j'ai besoin d'aide pour choisir mon appareil."
@@ -34,7 +40,7 @@ export default function CatalogueApercu() {
 
         <div className="mt-10 text-center">
           <Link href="/catalogue" className="btn-outline">
-            Tous les modèles ({products.length})
+            Tous les modèles ({totalCount})
           </Link>
         </div>
 

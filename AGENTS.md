@@ -70,6 +70,26 @@ impérativement être posés sur une surface **blanche** (`.stage`, `.card-produ
 `.card-white`) — sinon un rectangle blanc apparaît. La tentative de détourage en
 PNG transparent a été **abandonnée** (voir le guide design).
 
+## Portail Atelier (contenu distant)
+
+Le contenu peut venir de l'administration multi-clients
+(`~/atelier/atelier-admin`) au lieu des fichiers du dépôt.
+
+```bash
+ATELIER_ADMIN_URL=https://admin.votredomaine.sn   # vide = données locales
+ATELIER_TENANT=continental
+```
+
+- `src/lib/atelier.ts` est le SEUL point d'accès au contenu distant. Les
+  composants ne savent pas d'où viennent les données : c'est ce qui permet de
+  brancher l'admin sans les modifier.
+- **Repli automatique** : API absente ou injoignable → données locales. Le build
+  n'échoue jamais sur ce point.
+- `generateStaticParams` lit le contenu réel : un produit ajouté dans l'admin
+  obtient sa page au prochain rebuild, déclenché par un deploy hook Coolify.
+- Ne jamais importer `@/data/products` depuis un composant : passer par
+  `getSiteProducts()` / `getSiteProduct()`.
+
 ## Composants créés
 
 | Composant | Chemin |

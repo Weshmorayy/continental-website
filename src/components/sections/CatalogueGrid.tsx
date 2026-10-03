@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { products, categories, getProductsByCategory } from '@/data/products'
+import type { Product } from '@/data/products'
 import ProductCard from '@/components/ui/ProductCard'
 import { ShieldCheck, Wind, MessageCircle } from 'lucide-react'
 
@@ -23,10 +23,25 @@ const reassurances = [
   },
 ]
 
-export default function CatalogueGrid() {
+interface CatalogueGridProps {
+  products: Product[]
+  categories: { id: string; label: string }[]
+}
+
+/**
+ * Reçoit ses produits du serveur : le composant ne connaît pas la source.
+ * Un catalogue alimenté par l'admin et un catalogue local se rendent
+ * exactement de la même façon.
+ */
+export default function CatalogueGrid({ products, categories }: CatalogueGridProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all')
 
-  const filtered = useMemo(() => getProductsByCategory(activeCategory), [activeCategory])
+  const filtered = useMemo(
+    () => activeCategory === 'all'
+      ? products
+      : products.filter((p) => p.category === activeCategory),
+    [products, activeCategory],
+  )
 
   return (
     <>

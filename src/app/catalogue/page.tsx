@@ -2,6 +2,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CatalogueGrid from '@/components/sections/CatalogueGrid'
 import { generatePageMetadata } from '@/lib/seo'
+import { getSiteProducts, getSiteCategories } from '@/lib/atelier'
+import { categories as fallbackCategories } from '@/data/products'
 
 export const metadata = generatePageMetadata({
   title: 'Catalogue — Ventilateurs & Climatiseurs',
@@ -10,7 +12,19 @@ export const metadata = generatePageMetadata({
   path: '/catalogue',
 })
 
-export default function CataloguePage() {
+export default async function CataloguePage() {
+  const [{ products }, adminCategories] = await Promise.all([
+    getSiteProducts(),
+    getSiteCategories(),
+  ])
+
+  // Le filtre « all » est une entrée d'interface, pas une catégorie produit.
+  const categories = [
+    { id: 'all', label: 'Tous les produits' },
+    ...(adminCategories.length > 0
+      ? adminCategories.map((c) => ({ id: c.slug, label: c.label }))
+      : fallbackCategories.filter((c) => c.id !== 'all').map((c) => ({ id: c.id, label: c.label }))),
+  ]
   return (
     <>
       <Header />
@@ -32,7 +46,7 @@ export default function CataloguePage() {
           </div>
         </section>
 
-        <CatalogueGrid />
+        <CatalogueGrid products={products} categories={categories} />
       </main>
       <Footer />
     </>

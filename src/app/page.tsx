@@ -7,6 +7,7 @@ import ArgumentsSection from '@/components/sections/ArgumentsSection'
 import CatalogueApercu from '@/components/sections/CatalogueApercu'
 import LivraisonSection from '@/components/sections/LivraisonSection'
 import { generatePageMetadata } from '@/lib/seo'
+import { getSiteProducts } from '@/lib/atelier'
 
 export const metadata = generatePageMetadata({
   title: 'Ventilateurs & Climatiseurs à Dakar',
@@ -15,7 +16,8 @@ export const metadata = generatePageMetadata({
   path: '/',
 })
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { products, source } = await getSiteProducts()
   return (
     <>
       <Header />
@@ -24,7 +26,7 @@ export default function HomePage() {
         <GammesSection />
         <BestsellerSection />
         <ArgumentsSection />
-        <CatalogueApercu />
+        <CatalogueApercu products={products} totalCount={products.length} />
         <LivraisonSection />
       </main>
       <Footer />

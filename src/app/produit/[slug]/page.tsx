@@ -7,17 +7,24 @@ import GalleryViewer from '@/components/ui/GalleryViewer'
 import TechSpecTable from '@/components/ui/TechSpecTable'
 import ProductCard from '@/components/ui/ProductCard'
 import { products, getProductBySlug, getRelatedProducts } from '@/data/products'
+import { getSiteProduct, getSiteProducts } from '@/lib/atelier'
 import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 import { generatePageMetadata } from '@/lib/seo'
 import { siteConfig } from '@/config/site'
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }))
+/**
+ * Les routes sont générées depuis le contenu RÉEL (admin s'il répond, données
+ * locales sinon). Sans cela, un produit ajouté dans l'admin n'aurait pas de
+ * page tant qu'aucun rebuild n'aurait eu lieu.
+ */
+export async function generateStaticParams() {
+  const { products: list } = await getSiteProducts()
+  return list.map((p) => ({ slug: p.slug }))
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const product = (await getSiteProduct(slug)) ?? getProductBySlug(slug)
   if (!product) return {}
   return generatePageMetadata({
     title: `${product.name} — Réf. ${product.ref}`,
@@ -29,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProduitPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const product = (await getSiteProduct(slug)) ?? getProductBySlug(slug)
   if (!product) notFound()
 
   const related = getRelatedProducts(product)
