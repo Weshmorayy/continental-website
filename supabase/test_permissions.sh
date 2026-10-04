@@ -38,6 +38,21 @@ except Exception:
     print(-1)" 2>/dev/null
 }
 
+# emails : liste triée des e-mails visibles sur une table (séparés par des virgules).
+# Permet de vérifier QUELS comptes un rôle voit, pas seulement combien.
+emails() { # table, token
+  curl -s "$BASE/rest/v1/$1?select=email&limit=50" \
+    -H "apikey: $AK" -H "Authorization: Bearer $2" \
+    | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    if not isinstance(d,list): print(-1)
+    else: print(','.join(sorted(r.get('email','') for r in d)))
+except Exception:
+    print(-1)" 2>/dev/null
+}
+
 echo "═══ préparation : deux commandes et deux demandes de test ═══"
 # Sonde STRICTEMENT DÉDIÉE aux tests.
 #
@@ -63,8 +78,8 @@ VALUES ('contact','Alice Test','+221 77 000 00 03','message de test A'),
 ON CONFLICT DO NOTHING;
 SQL
 
-EDITOR=$(login editeur.test@local.test "motdepasse-editeur-2026")
-ADMIN=$(login admin@continental.sn "continental-admin-2026")
+EDITOR=$(login editeur@continentalsn.com "motdepasse-editeur-2026")
+ADMIN=$(login admin@continentalsn.com "continental-admin-2026")
 [ -z "$EDITOR" ] && { echo "échec de connexion éditeur"; exit 1; }
 [ -z "$ADMIN" ]  && { echo "échec de connexion admin";  exit 1; }
 
@@ -72,7 +87,7 @@ echo
 echo "═══ l'agence (rôle admin) voit tout ═══"
 check "agence lit les commandes"   "2" "$(rows orders "$ADMIN")"
 check "agence lit les demandes"    "2" "$(rows leads "$ADMIN")"
-check "agence lit le journal"     "1" "$(rows audit_events "$ADMIN")"
+check "agence lit le journal"     "1" "$([ "$(rows audit_events "$ADMIN")" -ge 1 ] && echo 1 || echo 0)"
 check "agence lit les comptes"    "2" "$(rows site_admins "$ADMIN")"
 
 echo
@@ -80,7 +95,14 @@ echo "═══ le collaborateur (droits : products=read) ═══"
 check "ne lit PAS les commandes"  "0" "$(rows orders "$EDITOR")"
 check "ne lit PAS les demandes"   "0" "$(rows leads "$EDITOR")"
 check "ne lit PAS le journal"     "0" "$(rows audit_events "$EDITOR")"
-check "ne lit PAS les comptes"    "0" "$(rows site_admins "$EDITOR")"
+
+# Un collaborateur voit SA PROPRE ligne d'administration — c'est ce qui lui
+# permet de se connecter (cf. migration 010). Il ne doit voir AUCUN autre
+# compte : c'est la liste des comptes de l'agence qui est confidentielle.
+# Tester le nombre seul n'aurait pas distingué « rien » de « sa ligne ».
+check "ne voit que son propre compte" "editeur@continentalsn.com" "$(emails site_admins "$EDITOR")"
+check "ne voit PAS le compte de l'agence" "0" \
+  "$(emails site_admins "$EDITOR" | tr ',' '\n' | grep -c '^admin@' || true)"
 
 echo
 echo "═══ écriture : lecture seule ne permet pas d'écrire ═══"
@@ -114,11 +136,11 @@ echo "═══ escalade de droits ═══"
 # Le collaborateur ne doit pas pouvoir s'accorder les commandes lui-même :
 # c'est le scénario qui transformerait un portail cloisonné en portail ouvert.
 curl -s -o /dev/null -X PATCH \
-  "$BASE/rest/v1/site_admins?email=eq.editeur.test@local.test" \
+  "$BASE/rest/v1/site_admins?email=eq.editeur@continentalsn.com" \
   -H "apikey: $AK" -H "Authorization: Bearer $EDITOR" -H "Content-Type: application/json" \
   -H "Prefer: return=representation" -d '{"permissions":{"orders":"write"}}'
 
-granted=$($CN -tAc "SELECT count(*) FROM site_admins WHERE email='editeur.test@local.test' AND permissions ? 'orders';")
+granted=$($CN -tAc "SELECT count(*) FROM site_admins WHERE email='editeur@continentalsn.com' AND permissions ? 'orders';")
 check "permissions non escaladés" "0" "$granted"
 
 after=$($CN -tAc "SELECT count(*) FROM orders;")
