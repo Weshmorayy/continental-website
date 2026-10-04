@@ -227,12 +227,6 @@ body {
     border-color: rgb(var(--color-border));
   }
 
-  /* Panneau collé à l'en-tête : le rayon disparaît du haut */
-  .panel-flat {
-    @apply border-x-0 border-b-0 bg-white;
-    border-color: rgb(var(--color-border));
-  }
-
   /* Petites capitales d'un libellé de section — équivalent du `.product-ref` */
   .admin-label {
     @apply font-body text-[0.68rem] font-semibold uppercase tracking-[0.14em];
@@ -281,16 +275,15 @@ body {
     color: #fff;
   }
 
-  /* Étiquette d'état — fond neutre, texte encre */
+  /* Étiquette d'état.
+     La forme seulement : la COULEUR vient d'une classe utilitaire choisie dans
+     `ui.tsx` (`PILL_TONE`). Elle ne peut pas vivre ici — un nom de classe
+     construit par interpolation (`pill-${tone}`) est invisible pour le
+     scanner de Tailwind, qui purge alors la règle sans un bruit. */
   .pill {
     @apply inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5
            text-[0.62rem] font-bold uppercase tracking-wide;
   }
-  .pill-neutral { @apply bg-bg-tertiary; color: rgb(var(--color-text-body)); }
-  .pill-dark    { @apply bg-black text-white; }
-  .pill-ok      { @apply bg-emerald-100 text-emerald-900; }
-  .pill-warn    { @apply bg-amber-100 text-amber-900; }
-  .pill-danger  { @apply bg-red-100 text-red-800; }
 
   /* Tableau — l'en-tête reprend le sur-titre du site */
   .admin-table { @apply w-full border-collapse; }

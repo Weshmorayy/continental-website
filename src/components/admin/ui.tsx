@@ -244,13 +244,35 @@ export function Button({
   )
 }
 
+/**
+ * Classes de ton écrites EN LITTÉRAL, jamais par interpolation.
+ *
+ * ⚠ `pill-${tone}` produit exactement la même chaîne à l'exécution, mais
+ *   Tailwind scanne le SOURCE, pas le résultat : il voit « pill- » et ne peut
+ *   rien en déduire. Les six variantes partaient donc du CSS compilé — vérifié
+ *   — et toutes les pastilles de statut s'affichaient sans fond ni couleur.
+ *
+ *   Les fonctions utilitaires ci-dessous sont écrites telles quelles, donc
+ *   repérables par le scanner.
+ */
+const PILL_TONE: Record<
+  'neutral' | 'dark' | 'warn' | 'ok' | 'danger',
+  string
+> = {
+  neutral: 'bg-bg-tertiary text-text-body',
+  dark: 'bg-black text-white',
+  warn: 'bg-amber-100 text-amber-900',
+  ok: 'bg-emerald-100 text-emerald-900',
+  danger: 'bg-red-100 text-red-800',
+}
+
 export function Pill({
   children, tone = 'neutral',
 }: {
   children: React.ReactNode
   tone?: 'neutral' | 'dark' | 'warn' | 'ok' | 'danger'
 }) {
-  return <span className={`pill pill-${tone}`}>{children}</span>
+  return <span className={`pill ${PILL_TONE[tone]}`}>{children}</span>
 }
 
 /* ────────────────────────────────────────────────────── notifications ─── */
