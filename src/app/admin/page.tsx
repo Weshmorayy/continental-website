@@ -29,6 +29,7 @@ import {
   FileText, BarChart3, Users, ScrollText,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
+import { missingEnvVars } from '@/lib/supabase'
 import type { ModuleKey } from '@/lib/admin-types'
 import { Button, Toast, ConfirmDialog } from '@/components/admin/ui'
 import OrdersTab from '@/components/admin/OrdersTab'
@@ -142,13 +143,37 @@ export default function AdminPage() {
             fonctionner. Sans elles, il ne peut ni lire le catalogue, ni enregistrer
             une commande.
           </p>
-          <pre className="admin-scroll mt-5 rounded-2xl bg-bg-secondary p-4 text-xs leading-relaxed">
-{`NEXT_PUBLIC_SUPABASE_URL=https://tbaizfoircknsznmpcvb.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
+          <div className="mt-5 rounded-2xl bg-bg-secondary p-4">
+            <p className="admin-label mb-2">Variables manquantes</p>
+            <ul className="space-y-1">
+              {(missingEnvVars.length ? missingEnvVars : [
+                'NEXT_PUBLIC_SUPABASE_URL',
+                'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+              ]).map((v) => (
+                <li key={v} className="font-mono-ref text-xs text-red-700">{v}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Valeurs en EXEMPLE, jamais les vraies : aucune clé ne doit
+              dormir dans le dépôt, même pour une clé publiable. Les valeurs
+              réelles se trouvent dans le tableau de bord Supabase. */}
+          <pre className="admin-scroll mt-4 rounded-2xl bg-bg-secondary p-4 text-xs leading-relaxed">
+{`NEXT_PUBLIC_SUPABASE_URL=https://<ref-projet>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…
+NEXT_PUBLIC_SUPABASE_BUCKET=<nom-du-bucket>`}
           </pre>
-          <p className="mt-3 text-xs text-text-muted">
-            À placer dans <code className="rounded bg-bg-tertiary px-1">.env.local</code>,
+
+          <p className="mt-4 text-xs leading-relaxed text-text-muted">
+            En local : à placer dans <code className="rounded bg-bg-tertiary px-1">.env.local</code>,
             puis relancer le serveur.
+          </p>
+          <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+            <strong>En hébergement, ces variables doivent exister au moment de la
+            construction</strong>, pas seulement au démarrage : Next.js les
+            remplace par leur valeur dans le fichier construit. Les ajouter puis
+            redémarrer ne suffit pas — il faut <strong>redéployer</strong> pour
+            qu&apos;elles soient prises en compte.
           </p>
         </div>
       </div>

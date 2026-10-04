@@ -37,6 +37,19 @@ export const isSupabaseConfigured =
   url!.startsWith('https://') &&
   !url!.includes('votre-projet')
 
+/**
+ * Variables manquantes, nommées une à une.
+ *
+ * Un message du type « base non configurée » oblige à deviner laquelle des
+ * deux manquent, alors qu'un écran en affiche trois : URL, clé, ou URL saisie
+ * dans le mauvais format. La liste ci-dessous est directement affichée.
+ */
+export const missingEnvVars: string[] = [
+  ...(url ? [] : ['NEXT_PUBLIC_SUPABASE_URL']),
+  ...(anonKey ? [] : ['NEXT_PUBLIC_SUPABASE_ANON_KEY']),
+  ...(url && !url.startsWith('https://') ? ['NEXT_PUBLIC_SUPABASE_URL (doit commencer par https://)'] : []),
+]
+
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url!, anonKey!, {
       auth: {
