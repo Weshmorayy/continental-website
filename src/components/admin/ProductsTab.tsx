@@ -18,6 +18,7 @@ import {
   Card, Button, Field, TextInput, TextArea, Select, Toggle, Pill,
   LineList, SpecEditor, EmptyState, ConfirmDialog, Th, Td, formatFcfa,
 } from '@/components/admin/ui'
+import ImagePicker from '@/components/admin/ImagePicker'
 
 type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
 
@@ -126,9 +127,26 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
         </div>
       </Card>
 
-      {/* ── édition ── */}
+      {/* ── édition : plein écran, pas une carte qui pousse la liste ──
+          Sur mobile, une carte d'édition insérée AU-DESSUS de la liste
+          obligait à faire défiler tout le catalogue pour atteindre les champs,
+          puis encore défiler pour revenir à la liste. */}
       {editing && (
-        <Card title={editing.id ? `Modifier — ${editing.name}` : 'Nouveau produit'}>
+        <div className="fixed inset-0 z-[65] flex items-start justify-center overflow-y-auto bg-black/70 p-0 sm:p-6">
+          <Card
+            className="w-full max-w-3xl shadow-2xl"
+            title={editing.id ? `Modifier — ${editing.name}` : 'Nouveau produit'}
+            action={
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                aria-label="Fermer"
+                className="admin-btn w-9 px-0"
+              >
+                ×
+              </button>
+            }
+          >
           <div className="space-y-5 p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nom">
@@ -190,12 +208,12 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               </Field>
             </div>
 
-            <Field label="Image principale" hint="Chemin ou URL. Ex. : /products/ventilateur-pied-fs4011.jpg">
-              <TextInput
-                value={editing.image ?? ''}
-                onChange={(e) => setEditing({ ...editing, image: e.target.value })}
-              />
-            </Field>
+            <ImagePicker
+              label="Image principale"
+              value={editing.image ?? null}
+              onChange={(next) => setEditing({ ...editing, image: next })}
+              hint="Choisissez dans la médiathèque, ou saisissez un chemin /products/…"
+            />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Description courte">
@@ -257,14 +275,15 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <div className="sticky bottom-0 -mx-5 flex justify-end gap-2 border-t border-border bg-white px-5 py-4">
               <Button onClick={() => setEditing(null)}>Annuler</Button>
               <Button variant="primary" onClick={save} disabled={saving || !editing.name}>
                 {saving ? 'Enregistrement…' : 'Enregistrer'}
               </Button>
             </div>
           </div>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {/* ── liste ── */}

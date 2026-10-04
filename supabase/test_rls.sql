@@ -16,6 +16,38 @@
 --   pour le second, un bloc BEGIN/EXCEPTION pour le premier.
 -- =============================================================================
 
+-- ══════════════════════════════════════════════════════════════════════════
+-- DONNÉES DE TEST — à poser AVANT `SET ROLE anon`
+-- ══════════════════════════════════════════════════════════════════════════
+-- Pourquoi cette étape existe :
+--
+--   Un contrôle « l'anonyme ne voit rien » ne prouve RIEN sur une table vide.
+--   Zéro ligne est compatible avec une politique correcte ET avec une table
+--   sans aucune politique. Le test passait donc à vide — c'est ainsi que la
+--   absence de RLS sur `media` et `site_backups` a survécu à une suite
+--   annoncée « 20/20 ».
+--
+--   On insère donc une ligne par table à vérifier. Si l'isolation fonctionne,
+--   l'anonyme renverra 0 ligne SUR DES DONNÉES RÉELLES. Sinon, il en verra
+--   une — et le contrôle échoue pour la bonne raison.
+--
+-- Nettoyage en fin de fichier.
+
+INSERT INTO public.media (path, url, mime, folder)
+VALUES ('test/rls-sonde.jpg', 'https://example.test/rls.jpg', 'image/jpeg', 'test')
+ON CONFLICT (path) DO NOTHING;
+
+INSERT INTO public.site_backups (backup_name, products_data, banners_data)
+VALUES ('Sonde RLS', '[]'::jsonb, '[]'::jsonb);
+
+INSERT INTO public.orders (ref_command, customer_name, customer_phone)
+VALUES ('RLS-SONDE-1', 'Sonde RLS', '+221 00 00 00 00')
+ON CONFLICT (ref_command) DO NOTHING;
+
+INSERT INTO public.leads (kind, name, phone, message)
+VALUES ('contact', 'Sonde RLS', '+221 00 00 00 00', 'sonde')
+ON CONFLICT DO NOTHING;
+
 SET ROLE anon;
 
 DO $$
@@ -163,4 +195,15 @@ DELETE FROM public.orders WHERE ref_command LIKE 'TEST-RLS-%' OR ref_command LIK
 DELETE FROM public.leads  WHERE name IN ('Test RLS', 'Fraudeur 2');
 DELETE FROM public.products WHERE slug = 'pirate';
 DELETE FROM public.site_admins WHERE email = 'pirate@exemple.com';
+-- =============================================================================
+-- ══════════════════════════════════════════════════════════════════════════
+-- Nettoyage des sondes posées en tête de fichier
+-- ══════════════════════════════════════════════════════════════════════════
+-- Elles sont supprimées ICI, et non à l'intérieur du bloc `SET ROLE anon` :
+-- ce rôle n'a aucun droit d'écriture, et le fichier doit finir sans laisser
+-- de trace en base.
+DELETE FROM public.orders        WHERE ref_command = 'RLS-SONDE-1';
+DELETE FROM public.leads         WHERE name = 'Sonde RLS';
+DELETE FROM public.media         WHERE path = 'test/rls-sonde.jpg';
+DELETE FROM public.site_backups  WHERE backup_name = 'Sonde RLS';
 -- =============================================================================

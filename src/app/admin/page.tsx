@@ -26,8 +26,10 @@ import {
   ShieldCheck, ExternalLink, Menu, X, LogOut, Package, ShoppingBag,
   MessageSquare, Image as ImageIcon, Truck, HelpCircle, Settings,
   Database, FolderSync, ChevronRight, AlertTriangle, Loader2, Eye, Home,
+  FileText, BarChart3, Users, ScrollText,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
+import type { ModuleKey } from '@/lib/admin-types'
 import { Button, Toast, ConfirmDialog } from '@/components/admin/ui'
 import OrdersTab from '@/components/admin/OrdersTab'
 import ProductsTab from '@/components/admin/ProductsTab'
@@ -38,10 +40,15 @@ import FaqTab from '@/components/admin/FaqTab'
 import MediaTab from '@/components/admin/MediaTab'
 import BackupsTab from '@/components/admin/BackupsTab'
 import SettingsTab from '@/components/admin/SettingsTab'
+import ContentTab from '@/components/admin/ContentTab'
+import LogsTab from '@/components/admin/LogsTab'
+import StatsTab from '@/components/admin/StatsTab'
+import UsersTab from '@/components/admin/UsersTab'
 
 type TabKey =
   | 'orders' | 'products' | 'leads' | 'banners'
-  | 'shipping' | 'faq' | 'media' | 'backups' | 'settings'
+  | 'shipping' | 'faq' | 'media' | 'content'
+  | 'stats' | 'logs' | 'backups' | 'users' | 'settings'
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'orders',   label: 'Commandes',   icon: ShoppingBag },
@@ -50,8 +57,12 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'banners',  label: 'Bannières',   icon: ImageIcon },
   { key: 'shipping', label: 'Livraison',   icon: Truck },
   { key: 'faq',      label: 'Questions',   icon: HelpCircle },
+  { key: 'content',  label: 'Contenu',     icon: FileText },
   { key: 'media',    label: 'Médiathèque', icon: FolderSync },
+  { key: 'stats',    label: 'Statistiques',icon: BarChart3 },
+  { key: 'logs',     label: 'Journal',     icon: ScrollText },
   { key: 'backups',  label: 'Sauvegardes', icon: Database },
+  { key: 'users',    label: 'Utilisateurs',icon: Users },
   { key: 'settings', label: 'Réglages',    icon: Settings },
 ]
 
@@ -63,7 +74,11 @@ const TAB_TITLE: Record<TabKey, string> = {
   shipping: 'Zones et frais de livraison',
   faq: 'Questions fréquentes',
   media: 'Médiathèque',
+  content: 'Contenu du site public',
+  stats: 'Statistiques',
+  logs: 'Journal des actions',
   backups: 'Instantanés de configuration',
+  users: 'Utilisateurs et droits',
   settings: 'Coordonnées et réglages',
 }
 
@@ -71,6 +86,7 @@ export default function AdminPage() {
   const {
     loading, supabaseEnabled, session, authEmail, isAdmin,
     orders, products, leads, banners, shippingZones, faqs, media, backups,
+    blocks, audits, admins, can, isOwner,
     signIn, signOut,
   } = useStore()
 
@@ -214,14 +230,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
     shipping: shippingZones.length,
     faq: faqs.length,
     media: media.length,
+    content: blocks.length,
+    stats: 0,
+    logs: audits.length,
     backups: backups.length,
+    users: admins.length,
   }
   const newOrders = orders.filter((o) => o.order_status === 'new').length
   const newLeads = leads.filter((l) => l.status === 'new').length
 
+  /**
+   * Modules visibles pour ce compte.
+   *
+   * `stats`, `logs` et `users` n'ont pas d'équivalent dans la liste des
+   * droits : ce sont des lectures d'agence, accordées par le rôle seul.
+   */
+  const visibleTabs = TABS.filter(({ key }) => {
+    if (key === 'stats' || key === 'logs' || key === 'users') return isOwner
+    return can(key as ModuleKey, 'read')
+  })
+
   const NavList = ({ onPick }: { onPick?: () => void }) => (
     <nav className="space-y-0.5" aria-label="Modules">
-      {TABS.map(({ key, label, icon: Icon }) => {
+      {visibleTabs.map(({ key, label, icon: Icon }) => {
         const badge = key === 'orders' ? newOrders : key === 'leads' ? newLeads : 0
         const active = tab === key
         return (
@@ -260,14 +291,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
       <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur">
         <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <button
-              onClick={() => setDrawer(true)}
-              className="admin-btn w-10 shrink-0 px-0 lg:hidden"
-              aria-label="Ouvrir le menu"
-              aria-expanded={drawer}
-            >
-              <Menu className="h-4 w-4" />
-            </button>
             <Link href="/" aria-label="Retour au site" className="shrink-0">
               <Image
                 src="/brand/logo-light.png"
@@ -280,8 +303,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
             <span className="admin-label hidden sm:inline">Administration</span>
           </div>
 
+          {/* Le hamburger est ici, à droite : il n'a de sens que sur les
+              écrans étroits, et à gauche il vole la place au logo. */}
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden max-w-[180px] truncate text-xs text-text-muted md:inline">
+            <span className="hidden max-w-[180px] truncate text-xs text-text-muted lg:inline">
               {authEmail}
             </span>
             <Link
@@ -293,14 +318,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
               <Eye className="h-3.5 w-3.5" />
               <span className="hidden md:inline">Voir le site</span>
             </Link>
-            <Button
-              variant="ghost"
-              onClick={() => setLogoutAsk(true)}
-              aria-label="Se déconnecter"
-              title="Se déconnecter"
+            <button
+              onClick={() => setDrawer(true)}
+              className="admin-btn w-10 px-0 lg:hidden"
+              aria-label="Ouvrir le menu"
+              aria-expanded={drawer}
             >
-              <LogOut className="h-4 w-4" />
-            </Button>
+              <Menu className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -334,8 +359,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…`}
           {tab === 'banners'  && <BannersTab  notify={setToast} />}
           {tab === 'shipping' && <ShippingTab notify={setToast} />}
           {tab === 'faq'      && <FaqTab      notify={setToast} />}
+          {tab === 'content'  && <ContentTab  notify={setToast} />}
           {tab === 'media'    && <MediaTab    notify={setToast} />}
+          {tab === 'stats'    && <StatsTab />}
+          {tab === 'logs'     && <LogsTab />}
           {tab === 'backups'  && <BackupsTab  notify={setToast} />}
+          {tab === 'users'    && <UsersTab    notify={setToast} />}
           {tab === 'settings' && <SettingsTab notify={setToast} />}
         </main>
       </div>

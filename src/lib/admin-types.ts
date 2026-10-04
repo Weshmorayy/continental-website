@@ -225,3 +225,109 @@ export const PAYMENT_METHOD_LABEL: Record<string, string> = {
   free_money: 'Free Money',
   cash: 'Espèces',
 }
+
+/* ──────────────────────────── contenu éditorial du site ───────────────── */
+
+/**
+ * Un morceau de texte ou d'image du site public.
+ *
+ * `slot` = la section ('hero', 'gammes', 'engagements'…), `key` = l'emplacement
+ * dans cette section ('gamme-1', 'engagement-2'). Le site lit ces lignes au
+ * build puis à chaque revalidation : les modifier dans l'administration suffit,
+ * aucun redéploiement.
+ */
+export interface ContentBlock {
+  id: string
+  slot: string
+  key: string
+  eyebrow: string | null
+  title: string | null
+  subtitle: string | null
+  body: string | null
+  meta: string | null
+  cta_label: string | null
+  cta_href: string | null
+  image: string | null
+  image_alt: string | null
+  icon: string | null
+  num: string | null
+  data: Record<string, unknown>
+  position: number
+  active: boolean
+}
+
+/* ──────────────────────────────── journal ────────────────────────────── */
+
+export type AuditAction =
+  | 'create' | 'update' | 'delete' | 'login' | 'logout' | 'publish' | 'restore'
+
+export const AUDIT_ACTION_LABEL: Record<string, string> = {
+  create: 'Création',
+  update: 'Modification',
+  delete: 'Suppression',
+  login: 'Connexion',
+  logout: 'Déconnexion',
+  publish: 'Publication',
+  restore: 'Restauration',
+  export: 'Export',
+}
+
+export interface AuditEvent {
+  id: number
+  actor_email: string | null
+  actor_role: string | null
+  action: string
+  entity: string
+  entity_id: string | null
+  label: string | null
+  meta: Record<string, unknown>
+  created_at: string
+}
+
+/* ────────────────────────── utilisateurs et droits ────────────────────── */
+
+/** Modules sur lesquels une permission peut porter. */
+export type ModuleKey =
+  | 'orders' | 'products' | 'leads' | 'content'
+  | 'banners' | 'shipping' | 'faq' | 'media'
+  | 'backups' | 'users' | 'settings' | 'stats' | 'logs'
+
+export const MODULE_LABEL: Record<ModuleKey, string> = {
+  orders: 'Commandes',
+  products: 'Catalogue',
+  leads: 'Demandes',
+  content: 'Contenu du site',
+  banners: 'Bannières',
+  shipping: 'Livraison',
+  faq: 'Questions',
+  media: 'Médiathèque',
+  backups: 'Sauvegardes',
+  users: 'Utilisateurs',
+  settings: 'Réglages',
+  stats: 'Statistiques',
+  logs: 'Journal',
+}
+
+/**
+ * Modules proposéS au configuration des droits.
+ *
+ * `stats` et `logs` n'y figurent pas : ces deux lectures agrègent des données
+ * Commerciales et nomment les personnes qui ont travaillé. Elles restent
+ * réservées à l'agence, sans exception — un droit à cocher serait de toute
+ * façonoco ncerné par la base.
+ */
+export const GRANTABLE_MODULE_KEYS = [
+  'products', 'content', 'banners', 'shipping', 'faq',
+  'media', 'backups', 'orders', 'leads', 'settings',
+] as ModuleKey[]
+
+/** `{ orders: 'read', products: 'read,write' }`. Une clé absente = refus. */
+export type Permissions = Partial<Record<ModuleKey, string>>
+
+export interface SiteAdmin {
+  email: string
+  full_name: string | null
+  role: 'admin' | 'editor'
+  permissions: Permissions
+  created_at: string
+}

@@ -100,7 +100,7 @@ export default function BackupsTab({ notify }: { notify: Notify }) {
         <Card>
           <ul className="divide-y divide-border">
             {backups.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <li key={b.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-heading font-bold">{b.backup_name}</p>
                   <p className="text-xs text-text-muted">{formatDate(b.created_at)}</p>

@@ -132,7 +132,7 @@ export default function ShippingTab({ notify }: { notify: Notify }) {
         <Card>
           <ul className="divide-y divide-border">
             {shippingZones.map((z) => (
-              <li key={z.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <li key={z.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-heading text-base font-bold">{z.name}</p>
                   <p className="text-xs text-text-muted">

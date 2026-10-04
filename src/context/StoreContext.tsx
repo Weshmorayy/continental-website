@@ -21,7 +21,8 @@ import { supabase, isSupabaseConfigured, storageBucket } from '@/lib/supabase'
 import type {
   Product, Category, Banner, ShippingZone, Faq, Order, Lead,
   SiteSettings, MediaAsset, SiteBackup, OrderStatus, PaymentStatus,
-  LeadStatus, LeadKind,
+  LeadStatus, LeadKind, ContentBlock, AuditEvent, SiteAdmin,
+  Permissions, ModuleKey,
 } from '@/lib/admin-types'
 
 /* ─────────────────────────────────────────────────── valeurs de repli ──── */
@@ -54,12 +55,29 @@ interface StoreValue {
   leads: Lead[]
   media: MediaAsset[]
   backups: SiteBackup[]
+  /** Blocs de texte/image du site public. */
+  blocks: ContentBlock[]
+  /** Journal des actions d'administration. */
+  audits: AuditEvent[]
+  /** Comptes administrateurs. Seul un rôle `admin` les voit tous. */
+  admins: SiteAdmin[]
+  /** Droits du compte connecté. `{}` = pas d'accès. */
+  myPermissions: Permissions
+  /** Le compte connecté a-t-il le droit demandé sur ce module ? */
+  can: (module: ModuleKey, level?: 'read' | 'write') => boolean
+  /** Ce compte peut-il gérer les autres comptes ? */
+  isOwner: boolean
 
   /* auth */
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
 
   /* écritures admin */
+  saveBlock: (block: Partial<ContentBlock> & { id?: string }) => Promise<string | null>
+  deleteBlock: (id: string) => Promise<string | null>
+  saveUser: (u: { email: string; full_name?: string | null; role?: string; permissions?: Permissions }) => Promise<string | null>
+  deleteUser: (email: string) => Promise<string | null>
+
   saveProduct: (p: Partial<Product> & { id?: string }) => Promise<string | null>
   deleteProduct: (id: string) => Promise<string | null>
   toggleProduct: (id: string, patch: Partial<Product>) => Promise<string | null>
@@ -78,6 +96,8 @@ interface StoreValue {
 
   /* médias */
   uploadImage: (file: File, folder?: string) => Promise<string | null>
+  /** Chemin du dernier dépôt réussi — permet de le sélectionner aussitôt. */
+  lastUploadedPath: string | null
   deleteMedia: (id: string) => Promise<string | null>
 
   /* sauvegardes */
@@ -137,13 +157,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([])
   const [media, setMedia] = useState<MediaAsset[]>([])
   const [backups, setBackups] = useState<SiteBackup[]>([])
+  const [lastUploadedPath, setLastUploadedPath] = useState<string | null>(null)
+  const [blocks, setBlocks] = useState<ContentBlock[]>([])
+  const [audits, setAudits] = useState<AuditEvent[]>([])
+  const [admins, setAdmins] = useState<SiteAdmin[]>([])
+  const [myPermissions, setMyPermissions] = useState<Permissions>({})
+  const [isOwner, setIsOwner] = useState(false)
 
   /* ────────────────────────────────────────── contenu public ─────────── */
 
   const loadPublic = useCallback(async () => {
     if (!supabase) return
 
-    const [p, c, b, s, f, st] = await Promise.all([
+    const [p, c, b, s, f, st, cb] = await Promise.all([
       supabase
         .from('products')
         .select('*, category:categories(id, slug, label, kind, position, image, intro)')
@@ -153,10 +179,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       supabase.from('shipping_zones').select('*').order('position', { ascending: true }),
       supabase.from('faqs').select('*').order('position', { ascending: true }),
       supabase.from('site_settings').select('*').limit(1),
+      supabase.from('content_blocks').select('*').order('position', { ascending: true }),
     ])
 
     // Une seule alerte : la page doit rester lisible même si une table manque.
-    const failed = [p, c, b, s, f, st].find((r) => r.error)
+    const failed = [p, c, b, s, f, st, cb].find((r) => r.error)
     if (failed) console.error('[Continental] chargement public :', frError(failed.error))
 
     setProducts((p.data ?? []).map((x) => ({
@@ -173,13 +200,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setShippingZones((s.data ?? []).map((z) => ({ ...z, price: Number(z.price) })) as ShippingZone[])
     setFaqs((f.data ?? []) as Faq[])
     setSettings(st.data?.[0] ? ({ ...EMPTY_SETTINGS, ...st.data[0] }) : EMPTY_SETTINGS)
+    setBlocks((cb.data ?? []) as ContentBlock[])
   }, [])
 
   /* ────────────────────────────────── contenu privé (admin) ──────────── */
 
   const loadPrivate = useCallback(async () => {
     if (!supabase) return
-    const [o, l, m, b] = await Promise.all([
+    const [o, l, m, b, a] = await Promise.all([
+      supabase
+        .from('audit_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(400),
       supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(500),
       supabase
         .from('leads')
@@ -189,7 +222,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       supabase.from('media').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('site_backups').select('*').order('created_at', { ascending: false }).limit(30),
     ])
-    const failed = [o, l, m, b].find((r) => r.error)
+    const failed = [o, l, m, b, a].find((r) => r.error)
     if (failed) console.error('[Continental] chargement privé :', frError(failed.error))
 
     setOrders((o.data ?? []).map((x) => ({
@@ -202,6 +235,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLeads((l.data ?? []) as Lead[])
     setMedia((m.data ?? []) as MediaAsset[])
     setBackups((b.data ?? []) as SiteBackup[])
+    setAudits((a.data ?? []) as AuditEvent[])
   }, [])
 
   /* ────────────────────────────────────────── authentification ────────── */
@@ -217,11 +251,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const email = s.user?.email ?? ''
     const { data, error } = await supabase
       .from('site_admins')
-      .select('email, role')
+      .select('email, role, permissions')
       .eq('email', email)
       .maybeSingle()
     if (error) console.error('[Continental] vérification administrateur :', error.message)
+
     const allowed = Boolean(data)
+    setMyPermissions((data?.permissions as Permissions) ?? {})
+    setIsOwner(data?.role === 'admin')
     setIsAdmin(allowed)
     return allowed
   }, [])
@@ -257,6 +294,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (isAdmin) await loadPrivate()
   }, [loadPublic, loadPrivate, isAdmin])
 
+  /* ────────────────────────────── journalisation ─────────────────────── */
+
+  /**
+   * Écrit une ligne de journal via `log_event()`.
+   *
+   * VOLONTAIREMENT non bloquante : un échec de journalisation ne doit pas
+   * faire échouer une modification déjà réussie. Mais il n'est pas silencieux
+   * non plus — il est tracé sur la console, sinon on perdrait la trace d'une
+   * panne du journal en même temps que l'événement à journaliser.
+   */
+  const audit = useCallback(
+    async (
+      action: string,
+      entity: string,
+      entityId?: string | null,
+      label?: string | null,
+    ) => {
+      if (!supabase) return
+      const { error } = await supabase.rpc('log_event', {
+        p_action: action,
+        p_entity: entity,
+        p_entity_id: entityId ?? null,
+        p_label: label ?? null,
+      })
+      if (error) console.error('[Continental] journalisation impossible :', error.message)
+    },
+    [],
+  )
+
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) return 'Base non configurée : renseignez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -265,6 +331,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ? 'Email ou mot de passe incorrect.'
         : frError(error)
     }
+    await audit('login', 'session', null, email.trim())
     const admin = await checkAdmin(data.session)
     if (!admin) {
       // Déconnexion immédiate : un compte valide mais non autorisé ne doit
@@ -273,7 +340,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return "Compte authentifié, mais absent de la liste des administrateurs."
     }
     return null
-  }, [checkAdmin])
+  }, [checkAdmin, audit])
 
   const signOut = useCallback(async () => {
     if (!supabase) return
@@ -367,6 +434,114 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [],
   )
 
+  /* ─────────────────────────────────── blocs de contenu ──────────────── */
+
+  const saveBlock = useCallback<StoreValue['saveBlock']>(async (block) => {
+    const error = await persist('content_blocks', { ...block }, block.id)
+    if (error) return error
+    await audit(
+      block.id ? 'update' : 'create',
+      'content_blocks',
+      block.id ?? null,
+      block.title ?? block.key ?? null,
+    )
+    return null
+  }, [persist, audit])
+
+  const deleteBlock = useCallback<StoreValue['deleteBlock']>(async (id) => {
+    const error = await mutate('content_blocks', 'delete', {}, id)
+    if (error) return error
+    setBlocks((prev) => prev.filter((x) => x.id !== id))
+    await audit('delete', 'content_blocks', id)
+    return null
+  }, [mutate, audit])
+
+  /* ──────────────────────────────────── utilisateurs ──────────────────── */
+
+  /**
+   * Droits effectifs sur un module.
+   *
+   * Un `permissions` vide ou absent donne TOUT à un rôle `admin` : c'est le
+   * compte de l'agence, il ne doit pas être enfermé par sa propre liste. Un
+   * rôle `editor`, lui, s'en tient strictement à ce qu'on lui a accordé — un
+   * module absent vaut refus, jamais élévation.
+   */
+  const can = useCallback<StoreValue['can']>((module, level = 'read') => {
+    if (!isAdmin) return false
+    if (isOwner) return true
+    const granted = myPermissions[module]
+    if (!granted) return false
+    if (level === 'read') return true
+    return granted.includes('write')
+  }, [isAdmin, isOwner, myPermissions])
+
+  const saveUser = useCallback<StoreValue['saveUser']>(async (u) => {
+    if (!supabase) return 'Base non configurée.'
+    const email = u.email.trim().toLowerCase()
+
+    // L'email est la CLE : un-compte-identique-diffère-t-il vraiment de son
+    // adresse. On refuse donc les majuscules et les espaces, qui créeraient
+    // deux lignes pour la même personne — et deux comptes sans permission.
+    if (email !== u.email.trim() || !email.includes('@')) {
+      return 'Adresse e-mail invalide (minuscules, sans espace).'
+    }
+
+    const row = {
+      email,
+      full_name: u.full_name ?? null,
+      role: u.role === 'admin' ? 'admin' : 'editor',
+      permissions: u.permissions ?? {},
+    }
+
+    const { error } = await supabase
+      .from('site_admins')
+      .upsert(row as never, { onConflict: 'email' })
+      .select()
+
+    if (error) return frError(error)
+
+    // Relecture : un upsert refusé par RLS ne lève rien.
+    const { data: read } = await supabase
+      .from('site_admins').select('*').eq('email', email).maybeSingle()
+    if (!read) return "Le compte n'a pas été enregistré."
+
+    await audit(
+      u.role === 'admin' ? 'create' : 'update',
+      'site_admins',
+      null,
+      email,
+    )
+    const { data: all } = await supabase
+      .from('site_admins').select('*').order('email', { ascending: true })
+    setAdmins((all ?? []) as SiteAdmin[])
+    return null
+  }, [audit])
+
+  const deleteUser = useCallback<StoreValue['deleteUser']>(async (email) => {
+    if (!supabase) return 'Base non configurée.'
+
+    // `site_admins` n'a pas de colonne `id` : sa clé primaire est `email`.
+    // Le filtre `mutate()` (`.eq('id', …)`) ne s'y applique donc pas — il
+    // renverrait « ligne introuvable » alors que la ligne existe, ou pire,
+    // ne supprimerait rien sans le signaler. D'où la requête dédiée.
+    // `.select()` est indispensable : sans lui le type de retour est `never`,
+    // et PostgREST ne renvoie pas les lignes supprimées — on ne pourrait donc
+    // pas distinguer « supprimé » de « refusé ».
+    const { error, data } = await supabase
+      .from('site_admins')
+      .delete()
+      .eq('email', email)
+      .select('email')
+      .setHeader('Prefer', 'return=representation')
+
+    if (error) return frError(error)
+    if (!data?.length) return "Ce compte n'a pas été supprimé (accès refusé)."
+
+    setAdmins((prev) => prev.filter((x) => x.email !== email))
+    await audit('delete', 'site_admins', null, email)
+    return null
+  }, [audit])
+
   /* ─────────────────────────────────────────── produits ──────────────── */
 
 
@@ -381,16 +556,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       images: rest.images ?? [],
       specs: rest.specs ?? {},
     }
-    return persist('products', row, id)
-  }, [persist])
+    const error = await persist('products', row, id)
+    if (error) return error
+    await audit(id ? 'update' : 'create', 'products', id, row.name ?? null)
+    return null
+  }, [persist, audit])
 
   const deleteProduct = useCallback<StoreValue['deleteProduct']>(async (id) => {
     if (!supabase) return 'Base non configurée.'
+    const before = products.find((x) => x.id === id)
     const error = await mutate('products', 'delete', {}, id)
     if (error) return error
     setProducts((prev) => prev.filter((x) => x.id !== id))
+    await audit('delete', 'products', id, before?.name ?? null)
     return null
-  }, [mutate])
+  }, [mutate, audit, products])
 
   const toggleProduct = useCallback<StoreValue['toggleProduct']>(async (id, patch) => {
     if (!supabase) return 'Base non configurée.'
@@ -412,8 +592,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return null
   }, [mutate])
 
-  const saveBanner = useCallback<StoreValue['saveBanner']>(
-    (b) => persist('banners', { ...b }, b.id), [persist])
+  const saveBanner = useCallback<StoreValue['saveBanner']>(async (b) => {
+    const error = await persist('banners', { ...b }, b.id)
+    if (error) return error
+    await audit(b.id ? 'update' : 'create', 'banners', b.id, b.title ?? null)
+    return null
+  }, [persist, audit])
   const deleteBanner = useCallback<StoreValue['deleteBanner']>(async (id) => {
     if (!supabase) return 'Base non configurée.'
     const error = await mutate('banners', 'delete', {}, id)
@@ -422,8 +606,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return null
   }, [mutate])
 
-  const saveShippingZone = useCallback<StoreValue['saveShippingZone']>(
-    (z) => persist('shipping_zones', { ...z, price: Number(z.price ?? 0) }, z.id), [persist])
+  const saveShippingZone = useCallback<StoreValue['saveShippingZone']>(async (z) => {
+    const error = await persist('shipping_zones', { ...z, price: Number(z.price ?? 0) }, z.id)
+    if (error) return error
+    await audit(z.id ? 'update' : 'create', 'shipping_zones', z.id, z.name ?? null)
+    return null
+  }, [persist, audit])
   const deleteShippingZone = useCallback<StoreValue['deleteShippingZone']>(async (id) => {
     if (!supabase) return 'Base non configurée.'
     const error = await mutate('shipping_zones', 'delete', {}, id)
@@ -432,8 +620,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return null
   }, [mutate])
 
-  const saveFaq = useCallback<StoreValue['saveFaq']>(
-    (f) => persist('faqs', { ...f }, f.id), [persist])
+  const saveFaq = useCallback<StoreValue['saveFaq']>(async (f) => {
+    const error = await persist('faqs', { ...f }, f.id)
+    if (error) return error
+    await audit(f.id ? 'update' : 'create', 'faqs', f.id, f.question ?? null)
+    return null
+  }, [persist, audit])
   const deleteFaq = useCallback<StoreValue['deleteFaq']>(async (id) => {
     if (!supabase) return 'Base non configurée.'
     const error = await mutate('faqs', 'delete', {}, id)
@@ -467,8 +659,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     setSettings({ ...EMPTY_SETTINGS, ...data })
+    await audit('update', 'site_settings', null, Object.keys(patch).join(', '))
     return null
-  }, [])
+  }, [audit])
 
   /* ─────────────────────────────────────── commandes / demandes ──────── */
 
@@ -476,9 +669,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return 'Base non configurée.'
     const error = await mutate('orders', 'update', patch as Record<string, unknown>, id)
     if (error) return error
+    const label = orders.find((x) => x.id === id)?.ref_command ?? null
     setOrders((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+    await audit('update', 'orders', id, label)
     return null
-  }, [mutate])
+  }, [mutate, audit, orders])
 
   const updateLeadStatus = useCallback<StoreValue['updateLeadStatus']>(async (id, status) => {
     if (!supabase) return 'Base non configurée.'
@@ -515,6 +710,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const { data: pub } = supabase.storage.from(storageBucket).getPublicUrl(path)
     const url = pub.publicUrl
 
+    setLastUploadedPath(path)
     const { error: rowError } = await supabase.from('media').insert({
       path, url, mime: file.type,
       size: file.size, folder, alt: file.name,
@@ -667,23 +863,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loading, supabaseEnabled: isSupabaseConfigured, session,
     authEmail: session?.user?.email ?? null, isAdmin,
     products, categories, banners, shippingZones, faqs, settings,
-    orders, leads, media, backups,
+    orders, leads, media, backups, blocks, audits, admins,
+    myPermissions, can, isOwner,
     signIn, signOut,
+    saveBlock, deleteBlock, saveUser, deleteUser,
     saveProduct, deleteProduct, toggleProduct,
     saveCategory, deleteCategory, saveBanner, deleteBanner,
     saveShippingZone, deleteShippingZone, saveFaq, deleteFaq, saveSettings,
     updateOrderStatus, updateLeadStatus, deleteLead,
-    uploadImage, deleteMedia,
+    uploadImage, lastUploadedPath, deleteMedia,
     createBackup, restoreBackup, deleteBackup,
     submitLead, placeOrder, refresh,
   }), [
     loading, session, isAdmin, products, categories, banners, shippingZones,
-    faqs, settings, orders, leads, media, backups, signIn, signOut,
+    faqs, settings, orders, leads, media, backups, blocks, audits, admins,
+    myPermissions, can, isOwner, signIn, signOut,
+    saveBlock, deleteBlock, saveUser, deleteUser, audit,
     saveProduct, deleteProduct, toggleProduct, saveCategory, deleteCategory,
     saveBanner, deleteBanner, saveShippingZone, deleteShippingZone, saveFaq,
     deleteFaq, saveSettings, updateOrderStatus, updateLeadStatus, deleteLead,
-    uploadImage, deleteMedia, createBackup, restoreBackup, deleteBackup,
-    submitLead, placeOrder, refresh,
+    uploadImage, lastUploadedPath, deleteMedia, createBackup, restoreBackup,
+    deleteBackup, submitLead, placeOrder, refresh,
   ])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

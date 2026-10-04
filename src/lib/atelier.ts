@@ -137,17 +137,6 @@ function toStringRecord(specs: Record<string, unknown>): Record<string, string> 
  * Produits du site : contenu de l'admin si disponible, données locales sinon.
  * Utilisé par la page d'accueil, le catalogue et les fiches produit.
  */
-export async function getSiteProducts(): Promise<{
-  products: Product[]
-  source: 'admin' | 'local'
-}> {
-  const content = await fetchAdminContent()
-
-  if (content && content.products.length > 0) {
-    return { products: content.products.map(toSiteProduct), source: 'admin' }
-  }
-  return { products: localProducts, source: 'local' }
-}
 
 /** Un produit par son slug, avec repli local. */
 export async function getSiteProduct(slug: string): Promise<Product | undefined> {
@@ -185,4 +174,157 @@ export async function getSiteCategories() {
   const content = await fetchAdminContent()
   if (content && content.categories.length > 0) return content.categories
   return localCategories.map((c) => ({ slug: c.id, label: c.label, position: 0 }))
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SOURCE SUPABASE — le portail d'administration de ce projet
+   ──────────────────────────────────────────────────────────────────────────
+   `fetchAdminContent` interroge le portail multi-clients (`ATELIER_ADMIN_URL`).
+   Continental dispose en plus de SON propre portail, adossé au projet Supabase
+   `tbaizfoircknsznmpcvb`. Ce second canal lit la MÊME base que l'admin, ce qui
+   garantit qu'une modification faite dans l'administration se retrouve ici.
+
+   Lecture en `anon` : c'est public par nature, et ce n'est pas un problème —
+   les politiques RLS de `supabase/002_rls.sql` et `005_content.sql` n'ouvrent
+   que les blocs marqués `active`. Une clé `service_role` ici donnerait au
+   serveur le droit de tout lire, y compris les commandes des clients.
+
+   Même règle de repli que le canal ci-dessus : aucun échec ne doit casser un
+   build. `buildBlocks()` renvoie alors les valeurs du fichier local.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '')
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+
+export const isSupabaseSource = Boolean(SUPABASE_URL && SUPABASE_KEY)
+
+export interface ContentBlock {
+  slot: string
+  key: string
+  eyebrow: string | null
+  title: string | null
+  subtitle: string | null
+  body: string | null
+  meta: string | null
+  ctaLabel: string | null
+  ctaHref: string | null
+  image: string | null
+  imageAlt: string | null
+  icon: string | null
+  num: string | null
+  data: Record<string, unknown>
+}
+
+/** Une lecture REST. Ne lève jamais. */
+async function supabaseGet<T>(path: string): Promise<T | null> {
+  if (!isSupabaseSource) return null
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      // 0 en développement : un changement dans l'admin doit se voir en
+      // rechargeant la page, sans attendre l'expiration du cache.
+      next: { revalidate: process.env.NODE_ENV === 'development' ? 0 : 60 },
+    })
+    if (!res.ok) return null
+    return (await res.json()) as T
+  } catch {
+    return null
+  }
+}
+
+type BlockRow = {
+  slot: string; key: string
+  eyebrow: string | null; title: string | null; subtitle: string | null
+  body: string | null; meta: string | null; cta_label: string | null
+  cta_href: string | null; image: string | null; image_alt: string | null
+  icon: string | null; num: string | null; data: Record<string, unknown> | null
+}
+
+function toBlock(r: BlockRow): ContentBlock {
+  return {
+    slot: r.slot, key: r.key,
+    eyebrow: r.eyebrow, title: r.title, subtitle: r.subtitle, body: r.body,
+    meta: r.meta, ctaLabel: r.cta_label, ctaHref: r.cta_href,
+    image: r.image, imageAlt: r.image_alt, icon: r.icon, num: r.num,
+    data: r.data ?? {},
+  }
+}
+
+/**
+ * Blocs d'une section, triés par rang.
+ * Ne renvoie `[]` que si la source est réellement vide — jamais en cas d'échec
+ * réseau, où l'appelant retombera sur ses valeurs locales.
+ */
+export async function getBlocks(slot: string): Promise<ContentBlock[]> {
+  const rows = await supabaseGet<BlockRow[]>(
+    `content_blocks?select=*&slot=eq.${encodeURIComponent(slot)}&order=position.asc`,
+  )
+  return (rows ?? []).map(toBlock)
+}
+
+/** Un bloc précis, ou `null`. */
+export async function getBlock(slot: string, key: string): Promise<ContentBlock | null> {
+  const rows = await supabaseGet<BlockRow[]>(
+    `content_blocks?select=*&slot=eq.${encodeURIComponent(slot)}` +
+    `&key=eq.${encodeURIComponent(key)}&limit=1`,
+  )
+  return rows?.[0] ? toBlock(rows[0]) : null
+}
+
+/** Produits publiés, convertis vers la forme attendue par les composants. */
+export async function getSupabaseProducts(): Promise<Product[]> {
+  type Row = {
+    slug: string; name: string; ref_: string | null; price: number
+    image: string | null; image_alt: string | null; short_desc: string | null
+    description: string | null; features: string[] | null
+    specs: Record<string, unknown> | null; badge: string | null
+    in_stock: boolean; is_featured: boolean
+    category_id: string | null
+  }
+  const rows = await supabaseGet<Row[]>(
+    'products?select=slug,name,ref_,price,image,image_alt,short_desc,description,' +
+    'features,specs,badge,in_stock,is_featured,category_id&is_active=eq.true' +
+    '&order=position.asc',
+  )
+  if (!rows?.length) return []
+
+  const cats = await supabaseGet<{ id: string; slug: string }[]>('categories?select=id,slug')
+  const catById = new Map((cats ?? []).map((c) => [c.id, c.slug]))
+
+  return rows.map((r) => ({
+    id: r.slug,
+    slug: r.slug,
+    name: r.name,
+    ref: r.ref_ ?? '',
+    category: categoryFromSlug(catById.get(r.category_id ?? '') ?? null),
+    categoryLabel: catById.get(r.category_id ?? '') ?? 'Produit',
+    price: Number(r.price) || 0,
+    image: r.image ?? '',
+    images: r.image ? [r.image] : [],
+    features: r.features?.length ? r.features : [r.short_desc ?? ''].filter(Boolean),
+    specs: toStringRecord(r.specs ?? {}),
+    badge: r.badge ?? undefined,
+    inStock: r.in_stock !== false,
+    isBestseller: r.is_featured === true,
+  }))
+}
+
+/**
+ * Produits du site : Supabase d'abord, portail multi-clients ensuite, fichiers
+ * locaux en dernier. `source` indique le canal utilisé, pour l'afficher dans
+ * l'administration — un site qui affiche du contenu périmé sans le dire est
+ * impossible à diagnostiquer.
+ */
+export async function getSiteProducts(): Promise<{
+  products: Product[]
+  source: 'supabase' | 'admin' | 'local'
+}> {
+  const remote = await getSupabaseProducts()
+  if (remote.length > 0) return { products: remote, source: 'supabase' }
+
+  const content = await fetchAdminContent()
+  if (content && content.products.length > 0) {
+    return { products: content.products.map(toSiteProduct), source: 'admin' }
+  }
+  return { products: localProducts, source: 'local' }
 }

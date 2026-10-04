@@ -16,6 +16,7 @@ import {
   Card, Button, Field, TextInput, TextArea, Select, Toggle, Pill,
   EmptyState, ConfirmDialog,
 } from '@/components/admin/ui'
+import ImagePicker from '@/components/admin/ImagePicker'
 
 type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
 
@@ -102,12 +103,13 @@ export default function BannersTab({ notify }: { notify: Notify }) {
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Image" hint="Chemin ou URL. Ex. : /aesthetic/aesthetic-fan-livingroom.jpg">
-                <TextInput
-                  value={editing.image ?? ''}
-                  onChange={(e) => setEditing({ ...editing, image: e.target.value })}
-                />
-              </Field>
+              <ImagePicker
+                label="Image"
+                value={editing.image ?? null}
+                onChange={(next) => setEditing({ ...editing, image: next })}
+                folder="promo"
+                hint="C'est cette image qui s'affiche sur le site."
+              />
               <Field label="Texte alternatif" hint="Décrit l'image pour les lecteurs d'écran.">
                 <TextInput
                   value={editing.image_alt ?? ''}

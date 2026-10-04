@@ -121,17 +121,24 @@ export default function FaqTab({ notify }: { notify: Notify }) {
         <Card>
           <ul className="divide-y divide-border">
             {faqs.map((f, i) => (
-              <li key={f.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
+              /* Sur mobile, le texte passe EN DESSUS des boutons.
+                 côte à côte, les quatre boutons (↑ ↓ crayon poubelle) @
+                 environ 40 px chacun prenaient 160 px : la question se
+                 retrouvait avec une largeur de 60 px et se coupait en un mot
+                 par ligne. */
+              <li key={f.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="font-heading font-bold">{f.question}</p>
-                  <p className="mt-1 whitespace-pre-line text-sm text-text-muted">{f.answer}</p>
+                  <p className="font-heading text-base font-bold leading-snug text-text-primary">
+                    {f.question}
+                  </p>
                   {f.category && (
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                      {f.category}
-                    </p>
+                    <p className="admin-label mt-1.5">{f.category}</p>
                   )}
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-text-body">
+                    {f.answer}
+                  </p>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
+                <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
                   <Button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Monter">↑</Button>
                   <Button onClick={() => move(i, 1)} disabled={i === faqs.length - 1} aria-label="Descendre">↓</Button>
                   <Button onClick={() => setEditing({ ...f })} aria-label="Modifier">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { buildLocalBusinessJsonLd } from '@/lib/seo'
 import { siteConfig } from '@/config/site'
+import PageView from '@/components/PageView'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-bg-primary text-text-body font-body antialiased">
+        <PageView />
         {children}
       </body>
     </html>
