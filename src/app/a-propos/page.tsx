@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { siteConfig } from '@/config/site'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { getBlocks } from '@/lib/atelier'
 import { Award, Wind, Users, MapPin, ArrowUpRight, MessageCircle } from 'lucide-react'
 
 export const metadata = generatePageMetadata({
@@ -48,10 +49,43 @@ const values = [
   },
 ]
 
-export default function AProposPage() {
+/** Icônes autorisées pour les valeurs. Un nom inconnu retombe sur Award. */
+const ICONS: Record<string, typeof Award> = { Award, Wind, Users, MapPin }
+
+export default async function AProposPage() {
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite être conseillé pour un achat.',
   )
+
+  // Contenu piloté depuis l'administration. Les constantes ci-dessus restent
+  // le repli : sans base, la page s'affiche exactement à l'identique.
+  const blocks = await getBlocks('a-propos')
+  const by = new Map(blocks.map((b) => [b.key, b]))
+  const text = (key: string, field: 'title' | 'body' | 'eyebrow' | 'meta', fallback: string) =>
+    (by.get(key)?.[field] as string | null) ?? fallback
+
+  const hero        = by.get('hero')
+  const mission     = by.get('mission')
+  const engagements = by.get('engagements')
+  const ctaBlock    = by.get('cta')
+
+  const statBlocks = blocks.filter((b) => b.key.startsWith('stat-'))
+  const statData = statBlocks.map((b, i) => ({
+    value: String(stats[i]?.value ?? ''),
+    label: String(stats[i]?.label ?? ''),
+    sub:   b.meta ?? String(stats[i]?.sub ?? ''),
+  }))
+
+  const valueBlocks = blocks.filter((b) => b.key.startsWith('value-'))
+  const valueData = values.map((v, i) => {
+    const b = valueBlocks[i]
+    return {
+      index: b?.num ?? v.index,
+      icon:  b?.icon ?? (v.icon.displayName ?? 'Award'),
+      title: b?.title ?? v.title,
+      desc:  b?.body ?? v.desc,
+    }
+  })
 
   return (
     <>
@@ -60,26 +94,22 @@ export default function AProposPage() {
         {/* ── Ouverture centrée — une seule colonne, comme samsung.com ── */}
         <section className="bg-bg-primary">
           <div className="container-site pt-14 sm:pt-20 lg:pt-24 pb-12 sm:pb-16 text-center">
-            <p className="eyebrow eyebrow-center">La marque</p>
+            <p className="eyebrow eyebrow-center">{hero?.eyebrow ?? 'La marque'}</p>
 
             <h1
               className="display-xl text-text-primary mx-auto mt-5 max-w-5xl"
               style={{ fontSize: 'clamp(2.4rem, 7.5vw, 5.25rem)' }}
             >
-              L&apos;électroménager
-              <br className="hidden sm:block" /> pensé pour Dakar.
+              {hero?.title ?? "L'électroménager pensé pour Dakar."}
             </h1>
 
             <p className="mt-7 mx-auto max-w-2xl text-base sm:text-lg text-text-body leading-relaxed">
-              Continental® est le spécialiste sénégalais de la ventilation haute
-              performance et de la climatisation Inverter tropicalisée. Des produits
-              durables, sélectionnés pour durer sous les fortes chaleurs et les
-              contraintes du réseau électrique local.
+              {hero?.subtitle ?? 'Continental® est le spécialiste sénégalais de la ventilation haute performance et de la climatisation Inverter tropicalisée. Des produits durables, sélectionnés pour durer sous les fortes chaleurs et les contraintes du réseau électrique local.'}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
               <Link href="/catalogue" className="btn-accent px-8">
-                Voir le catalogue
+                {String(hero?.data.cta_label ?? 'Voir le catalogue')}
                 <ArrowUpRight size={16} />
               </Link>
               <a
@@ -88,7 +118,7 @@ export default function AProposPage() {
                 rel="noopener noreferrer"
                 className="link-underline text-text-primary text-sm"
               >
-                <span>Commander sur WhatsApp</span>
+                <span>{String(hero?.data.cta2_label ?? 'Commander sur WhatsApp')}</span>
               </a>
             </div>
           </div>
@@ -96,8 +126,8 @@ export default function AProposPage() {
           {/* ── Bande photographique pleine largeur ── */}
           <div className="relative w-full h-[300px] sm:h-[440px] lg:h-[600px]">
             <Image
-              src="/aesthetic/aesthetic-breeze-bedroom-2.jpg"
-              alt="Ventilateur Continental® dans une chambre"
+              src={hero?.image ?? '/aesthetic/aesthetic-breeze-bedroom-2.jpg'}
+              alt={hero?.imageAlt ?? 'Ventilateur Continental® dans une chambre'}
               fill
               priority
               sizes="100vw"
@@ -110,7 +140,7 @@ export default function AProposPage() {
         <section className="bg-bg-secondary">
           <div className="container-site py-12 sm:py-16">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-10 gap-x-6 lg:grid-cols-4 lg:gap-y-0">
-              {stats.map((s, i) => (
+              {statData.map((s, i) => (
                 <div
                   key={s.value}
                   className={
@@ -141,19 +171,16 @@ export default function AProposPage() {
           <div className="container-site">
             <div className="max-w-3xl mx-auto text-center">
               <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
-                Notre mission
+                {mission?.eyebrow ?? 'Notre mission'}
               </p>
               <h2
                 className="display-md text-text-primary mt-3"
                 style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
               >
-                Rendre la fraîcheur accessible.
+                {mission?.title ?? 'Rendre la fraîcheur accessible.'}
               </h2>
               <p className="mt-6 text-base sm:text-lg text-text-body leading-relaxed">
-                À Dakar, la chaleur n&apos;est pas un confort : c&apos;est une réalité
-                quotidienne que chaque foyer doit affronter. Continental® est née de la
-                conviction qu&apos;un bon appareil de ventilation ou de climatisation ne
-                devrait pas être un luxe inaccessible.
+                {mission?.body}
               </p>
             </div>
 
@@ -161,8 +188,8 @@ export default function AProposPage() {
               <div className="grid lg:grid-cols-12">
                 <div className="relative h-[280px] sm:h-[380px] lg:col-span-5 lg:h-auto lg:min-h-[440px]">
                   <Image
-                    src="/aesthetic/aesthetic-fan-livingroom.jpg"
-                    alt="Ventilateur Continental® dans un salon"
+                    src={mission?.image ?? '/aesthetic/aesthetic-fan-livingroom.jpg'}
+                    alt={mission?.imageAlt ?? 'Ventilateur Continental® dans un salon'}
                     fill
                     sizes="(max-width: 1024px) 100vw, 42vw"
                     className="object-cover object-center"
@@ -171,9 +198,7 @@ export default function AProposPage() {
 
                 <div className="lg:col-span-7 p-8 sm:p-10 lg:p-12 flex flex-col justify-center">
                   <p className="text-text-body leading-relaxed">
-                    Nos appareils sont rigoureusement sélectionnés pour leur
-                    endurance dans les conditions climatiques locales, leur rapport
-                    performance/prix, et leur facilité d&apos;entretien.
+                    {String(mission?.data.body2 ?? "Nos appareils sont rigoureusement sélectionnés pour leur endurance dans les conditions climatiques locales, leur rapport performance/prix, et leur facilité d'entretien.")}
                   </p>
                   <p className="mt-5 text-text-body leading-relaxed">
                     <strong className="text-text-primary font-semibold">
@@ -184,7 +209,7 @@ export default function AProposPage() {
                     de tension fréquentes propres au réseau SENELEC.
                   </p>
                   <Link href="/catalogue" className="btn-outline self-start mt-9">
-                    Découvrir la gamme
+                    {String(mission?.data.cta_label ?? 'Découvrir la gamme')}
                   </Link>
                 </div>
               </div>
@@ -197,23 +222,22 @@ export default function AProposPage() {
           <div className="container-site">
             <div className="max-w-2xl">
               <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
-                Nos engagements
+                {engagements?.eyebrow ?? 'Nos engagements'}
               </p>
               <h2
                 className="display-md text-text-primary mt-3"
                 style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
               >
-                Les valeurs qui guident Continental®.
+                {engagements?.title ?? 'Les valeurs qui guident Continental®.'}
               </h2>
               <p className="mt-5 text-text-body leading-relaxed">
-                Une marque dakarois, une équipe dakaroise, des produits choisis pour
-                durer ici.
+                {engagements?.body}
               </p>
             </div>
 
             <ul className="mt-12 sm:mt-16 border-t border-border">
-              {values.map((v, i) => {
-                const Icon = v.icon
+              {valueData.map((v, i) => {
+                const Icon = ICONS[v.icon as string] ?? Award
                 const isLast = i === values.length - 1
                 return (
                   <li
@@ -252,11 +276,10 @@ export default function AProposPage() {
           <div className="container-site flex flex-col lg:flex-row lg:items-center gap-8">
             <div className="lg:max-w-md">
               <h2 className="display-sm text-xl sm:text-2xl text-text-primary">
-                Besoin d&apos;un conseil avant d&apos;acheter ?
+                {ctaBlock?.title ?? "Besoin d'un conseil avant d'acheter ?"}
               </h2>
               <p className="mt-2 text-sm text-text-body leading-relaxed">
-                Équipe locale à {siteConfig.contact.city}, {siteConfig.contact.country} —
-                disponible 7 jours sur 7.
+                {ctaBlock?.body ?? `Équipe locale à ${siteConfig.contact.city}, ${siteConfig.contact.country} — disponible 7 jours sur 7.`}
               </p>
             </div>
 
@@ -268,10 +291,10 @@ export default function AProposPage() {
                 className="btn-wa"
               >
                 <MessageCircle size={17} />
-                Commander sur WhatsApp
+                {String(ctaBlock?.data.cta1 ?? 'Commander sur WhatsApp')}
               </a>
               <Link href="/garantie" className="btn-outline">
-                Garantie &amp; SAV
+                {String(ctaBlock?.data.cta2 ?? 'Garantie & SAV')}
               </Link>
               <Link
                 href="/contact"

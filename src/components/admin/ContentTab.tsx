@@ -32,6 +32,9 @@ const SECTIONS: { slot: string; label: string; blurb: string }[] = [
   { slot: 'bestseller', label: 'Accueil — plus vendu', blurb: 'La mise en avant du produit le plus demandé.' },
   { slot: 'livraison', label: 'Accueil — livraison & paiement', blurb: 'Titres de la section, zones et facture proforma.' },
   { slot: 'catalogue-apercu', label: 'Accueil — aperçu catalogue', blurb: 'Le bandeau qui mène au catalogue.' },
+  { slot: 'a-propos', label: 'Page — À propos', blurb: 'Toute la page : titre, repères, mission, valeurs, appel final.' },
+  { slot: 'garantie', label: 'Page — Garantie & SAV', blurb: 'Durée de garantie, couverture, exclusions et étapes du dossier SAV.' },
+  { slot: 'contact', label: 'Page — Contact', blurb: 'Coordonnées affichées, formulaire et questions fréquentes.' },
 ]
 
 /** Champs TEXTuels modifiables. Volontairement restreint : `data`,
@@ -44,8 +47,15 @@ type TextField =
 /** Champs proposés selon le bloc : inutile d'afficher une zone « image »
  *  pour une question fréquente. */
 const FIELDS: Record<string, TextField[]> = {
-  hero: ['eyebrow', 'title', 'subtitle', 'image', 'image_alt', 'cta_label', 'cta_href'],
-  default: ['eyebrow', 'title', 'body', 'meta', 'cta_label', 'cta_href', 'image', 'image_alt'],
+  hero:     ['eyebrow', 'title', 'subtitle', 'image', 'image_alt', 'cta_label', 'cta_href'],
+  bestseller: ['eyebrow', 'title', 'image', 'image_alt'],
+  // Sur les pages internes, un bloc est souvent une simple ligne de titre,
+  // de texte ou de valeur isolée : proposer sept champs vides les rend
+  // illisibles.
+  'a-propos':   ['eyebrow', 'title', 'body', 'meta', 'image', 'image_alt'],
+  garantie:     ['eyebrow', 'title', 'body', 'meta'],
+  contact:      ['eyebrow', 'title', 'body', 'meta'],
+  default:      ['eyebrow', 'title', 'body', 'meta', 'image', 'image_alt'],
 }
 
 /** Libellés français — « cta_label » n'est pas une étiquette pour un humain. */

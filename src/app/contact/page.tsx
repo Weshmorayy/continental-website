@@ -4,6 +4,7 @@ import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { siteConfig } from '@/config/site'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { getBlocks } from '@/lib/atelier'
 import {
   Phone,
   MessageCircle,
@@ -11,6 +12,7 @@ import {
   Clock,
   ArrowUpRight,
   Truck,
+  Mail,
   Check,
 } from 'lucide-react'
 
@@ -56,10 +58,42 @@ const faqs = [
   },
 ]
 
-export default function ContactPage() {
+const ICONS: Record<string, typeof MessageCircle> = { MessageCircle, Phone, Mail }
+
+export default async function ContactPage() {
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite être mis en contact avec votre service commercial.',
   )
+
+  // Contenu piloté depuis l'administration ; les valeurs locales restent le
+  // repli si la base est injoignable.
+  const blocks = await getBlocks('contact')
+  const by = new Map(blocks.map((b) => [b.key, b]))
+  const T = (key: string, field: 'eyebrow' | 'title' | 'body' | 'meta', fb: string) =>
+    (by.get(key)?.[field] as string | null) ?? fb
+
+  const channelData = [
+    { key: 'channel-whatsapp', fbTitle: 'WhatsApp — Commandes & Conseil',
+      fbBody: 'Commandes et conseil · horaires du service commercial',
+      fbMeta: 'Canal principal', fbCta: 'Ouvrir WhatsApp', fbIcon: 'MessageCircle' },
+    { key: 'channel-phone', fbTitle: 'Urgence & devis',
+      fbBody: 'Pour toute urgence ou demande de devis immédiate',
+      fbMeta: 'Appel téléphonique direct', fbCta: 'Lancer l\'appel', fbIcon: 'Phone' },
+  ].map((c) => {
+    const b = by.get(c.key)
+    return {
+      title: b?.title ?? c.fbTitle,
+      body:  b?.body ?? c.fbBody,
+      meta:  b?.meta ?? c.fbMeta,
+      cta:   b ? String(b.data.cta ?? c.fbCta) : c.fbCta,
+      icon:  b ? String(b.data.icon ?? c.fbIcon) : c.fbIcon,
+    }
+  })
+
+  const faqData = faqs.map((f, i) => {
+    const b = blocks.filter((x) => x.key.startsWith('faq-'))[i]
+    return { q: b?.title ?? f.q, a: b?.body ?? f.a }
+  })
 
   return (
     <>
@@ -68,19 +102,17 @@ export default function ContactPage() {
         {/* ── Ouverture centrée sur gris clair ── */}
         <section className="bg-bg-secondary">
           <div className="container-site pt-14 sm:pt-20 lg:pt-24 pb-14 sm:pb-20 text-center">
-            <p className="eyebrow eyebrow-center">Nous contacter</p>
+            <p className="eyebrow eyebrow-center">{T('hero', 'eyebrow', 'Nous contacter')}</p>
 
             <h1
               className="display-xl text-text-primary mx-auto mt-5 max-w-4xl"
               style={{ fontSize: 'clamp(2.4rem, 7.5vw, 5.25rem)' }}
             >
-              Parlez directement
-              <br />à notre équipe.
+              {T('hero', 'title', 'Parlez directement à notre équipe.')}
             </h1>
 
             <p className="mt-7 mx-auto max-w-2xl text-base sm:text-lg text-text-body leading-relaxed">
-              Conseil d&apos;achat, devis, livraison ou SAV — notre équipe commerciale
-              basée à Dakar répond rapidement et sans intermédiaire.
+              {T('hero', 'body', "Conseil d'achat, devis, livraison ou SAV — notre équipe commerciale basée à Dakar répond rapidement et sans intermédiaire.")}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
@@ -91,7 +123,7 @@ export default function ContactPage() {
                 className="btn-wa px-8"
               >
                 <MessageCircle size={17} />
-                Commander sur WhatsApp
+                {String(by.get('hero')?.data.cta1 ?? 'Commander sur WhatsApp')}
               </a>
               <a
                 href={`tel:${siteConfig.contact.whatsapp}`}
@@ -193,7 +225,7 @@ export default function ContactPage() {
                 <div className="flex items-center gap-2.5">
                   <Clock size={18} strokeWidth={1.7} className="text-accent" />
                   <h2 className="display-sm text-xl sm:text-2xl text-text-primary">
-                    Horaires d&apos;ouverture
+                    {T('hours-title', 'title', "Horaires d'ouverture")}
                   </h2>
                 </div>
 
@@ -231,7 +263,7 @@ export default function ContactPage() {
                 <div className="flex items-center gap-2.5">
                   <Truck size={18} strokeWidth={1.7} className="text-accent" />
                   <h2 className="display-sm text-xl sm:text-2xl text-text-primary">
-                    Zones de livraison
+                    {T('zones-title', 'title', 'Zones de livraison')}
                   </h2>
                 </div>
 
@@ -277,17 +309,17 @@ export default function ContactPage() {
               {/* FAQ */}
               <div className="lg:col-span-7">
                 <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
-                  Avant de nous écrire
+                  {T('faq-title', 'eyebrow', 'Avant de nous écrire')}
                 </p>
                 <h2
                   className="display-md text-text-primary mt-3"
                   style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
                 >
-                  Questions fréquentes
+                  {T('faq-title', 'title', 'Questions fréquentes')}
                 </h2>
 
                 <div className="mt-10 border-t border-border">
-                  {faqs.map((faq, i) => (
+                  {faqData.map((faq, i) => (
                     <div
                       key={faq.q}
                       className={
@@ -310,7 +342,7 @@ export default function ContactPage() {
               <div className="lg:col-span-5">
                 <div className="stage p-7 sm:p-9 lg:sticky lg:top-28">
                   <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
-                    Besoin d&apos;une réponse
+                    {T('cta', 'title', "Besoin d'une réponse")}
                   </p>
                   <h2 className="display-sm mt-2 text-xl sm:text-2xl text-text-primary">
                     Vous ne trouvez pas votre réponse ?
@@ -327,7 +359,7 @@ export default function ContactPage() {
                     className="btn-wa w-full mt-7"
                   >
                     <MessageCircle size={17} />
-                    Poser ma question WhatsApp
+                    {String(by.get('cta')?.data.cta ?? 'Poser ma question WhatsApp')}
                   </a>
                   <a
                     href={`tel:${siteConfig.contact.whatsapp}`}

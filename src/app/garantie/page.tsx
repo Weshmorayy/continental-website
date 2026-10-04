@@ -3,6 +3,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { getBlocks } from '@/lib/atelier'
 import { siteConfig } from '@/config/site'
 import {
   ShieldCheck,
@@ -79,7 +80,40 @@ const keyFigures = [
   },
 ]
 
-export default function GarantiePage() {
+const ICONS: Record<string, typeof ShieldCheck> = { ShieldCheck, Wrench, Clock }
+
+export default async function GarantiePage() {
+  const blocks = await getBlocks('garantie')
+  const by = new Map(blocks.map((b) => [b.key, b]))
+
+  const hero    = by.get('hero')
+  const summary = by.get('summary')
+
+  const figureBlocks = blocks.filter((b) => b.key.startsWith('figure-'))
+  const figureData = keyFigures.map((k, i) => {
+    const b = figureBlocks[i]
+    return {
+      icon:   (b ? String(b.data.icon ?? '') : (k.icon.displayName ?? 'ShieldCheck')),
+      value:  b?.num ?? k.value,
+      label:  b?.meta ?? k.label,
+      text:   b?.body ?? k.text,
+    }
+  })
+
+  const listItems = (key: string, fallback: string[]): string[] => {
+    const b = by.get(key)
+    const items = b?.data?.items
+    return Array.isArray(items) && items.length ? (items as string[]) : fallback
+  }
+  const coveredItems = listItems('covered', conditions)
+  const notCoveredItems = listItems('not-covered', nonCovered)
+
+  const stepBlocks = blocks.filter((b) => b.key.startsWith('step-'))
+  const stepData = steps.map((s, i) => {
+    const b = stepBlocks[i]
+    return { num: b?.num ?? s.num, title: b?.title ?? s.title, desc: b?.body ?? s.desc }
+  })
+
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite déclarer une panne sous garantie.',
   )
@@ -97,16 +131,11 @@ export default function GarantiePage() {
               className="display-xl text-text-primary mx-auto mt-5 max-w-4xl"
               style={{ fontSize: 'clamp(2.4rem, 7.5vw, 5.25rem)' }}
             >
-              Garantie fabricant
-              <br />24 mois.
+              {hero?.title ?? 'Garantie fabricant 24 mois.'}
             </h1>
 
             <p className="mt-7 mx-auto max-w-2xl text-base sm:text-lg text-text-body leading-relaxed">
-              Chaque appareil Continental® bénéficie d&apos;une garantie officielle de{' '}
-              <strong className="text-text-primary font-semibold">
-                24 mois pièces et main-d&apos;œuvre
-              </strong>{' '}
-              à compter de la date d&apos;achat.
+              {hero?.body}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
@@ -117,7 +146,7 @@ export default function GarantiePage() {
                 className="btn-wa px-8"
               >
                 <MessageCircle size={17} />
-                Déclarer une panne
+                {String(hero?.data.cta1 ?? 'Déclarer une panne')}
               </a>
               <a
                 href={`tel:${siteConfig.contact.whatsapp}`}
@@ -138,8 +167,8 @@ export default function GarantiePage() {
             </p>
 
             <dl className="border-t border-border">
-              {keyFigures.map((k, i) => {
-                const Icon = k.icon
+              {figureData.map((k, i) => {
+                const Icon = ICONS[k.icon] ?? ShieldCheck
                 const isLast = i === keyFigures.length - 1
                 return (
                   <div
@@ -205,12 +234,12 @@ export default function GarantiePage() {
                     <CheckCircle2 size={19} strokeWidth={1.8} />
                   </span>
                   <h3 className="display-sm text-xl sm:text-2xl text-text-primary">
-                    Ce que la garantie couvre
+                    {by.get('covered')?.title ?? 'Ce que la garantie couvre'}
                   </h3>
                 </div>
 
                 <ul>
-                  {conditions.map((c, i) => (
+                  {coveredItems.map((c, i) => (
                     <li
                       key={c}
                       className={
@@ -240,12 +269,12 @@ export default function GarantiePage() {
                     <X size={18} strokeWidth={2.2} />
                   </span>
                   <h3 className="display-sm text-xl sm:text-2xl text-text-primary">
-                    Cas d&apos;exclusion de garantie
+                    {by.get('not-covered')?.title ?? "Cas d'exclusion de garantie"}
                   </h3>
                 </div>
 
                 <ul>
-                  {nonCovered.map((c, i) => (
+                  {notCoveredItems.map((c, i) => (
                     <li
                       key={c}
                       className={
@@ -272,18 +301,18 @@ export default function GarantiePage() {
           <div className="container-site">
             <div className="max-w-2xl">
               <p className="product-ref uppercase tracking-[0.14em] text-text-muted">
-                Procédure SAV
+                {by.get('steps-heading')?.eyebrow ?? 'Procédure SAV'}
               </p>
               <h2
                 className="display-md text-text-primary mt-3"
                 style={{ fontSize: 'clamp(1.9rem, 4.2vw, 3rem)' }}
               >
-                Activer votre garantie en 4 étapes simples.
+                {by.get('steps-heading')?.title ?? 'Activer votre garantie en 4 étapes simples.'}
               </h2>
             </div>
 
             <ol className="mt-12 sm:mt-16 border-t border-border">
-              {steps.map((step, i) => {
+              {stepData.map((step, i) => {
                 const isLast = i === steps.length - 1
                 return (
                   <li
@@ -316,7 +345,7 @@ export default function GarantiePage() {
           <div className="container-site grid gap-8 lg:grid-cols-12 lg:items-center">
             <div className="lg:col-span-7">
               <h2 className="display-sm text-xl sm:text-2xl text-text-primary">
-                Déclarer une panne sous garantie
+                {String(hero?.data.cta1 ?? 'Déclarer une panne')} sous garantie
               </h2>
               <p className="mt-2 text-sm text-text-body">
                 Service technique · {siteConfig.hours.weekdays} · {siteConfig.hours.saturday} ·{' '}
