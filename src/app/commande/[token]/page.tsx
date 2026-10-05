@@ -5,6 +5,8 @@ import { CheckCircle2, MessageCircle, Package, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getSiteSettings } from '@/lib/atelier'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import Header from '@/components/layout/Header'
+import Footer from '@/components/layout/Footer'
 
 /**
  * Page de confirmation.
@@ -100,7 +102,9 @@ export default async function CommandePage({
   )
 
   return (
-    <div className="container-site py-14 sm:py-20">
+    <>
+      <Header />
+      <main className="container-site py-14 sm:py-20">
       <div className="mx-auto max-w-2xl">
         <div className="flex flex-col items-center text-center">
           <CheckCircle2 size={44} strokeWidth={1.2} className="text-text-primary" aria-hidden="true" />
@@ -173,16 +177,30 @@ export default async function CommandePage({
           Conservez ce lien : il vous permet de retrouver votre commande.
         </p>
       </div>
-    </div>
+      </main>
+      <Footer />
+    </>
   )
 }
 
+/**
+ * Enveloppe des cas d'erreur.
+ *
+ * Elle porte l'en-tête et le pied de page, comme la page de confirmation :
+ * une commande introuvable ne doit pas être un cul-de-sac. Sans navigation,
+ * le visiteur ne pouvait que fermer l'onglet — c'est exactement ce que le
+ * client a signalé sur la page de confirmation.
+ */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="container-site py-20 sm:py-28">
-      <div className="mx-auto flex max-w-2xl flex-col items-center">
-        {children}
-      </div>
-    </div>
+    <>
+      <Header />
+      <main className="container-site py-20 sm:py-28">
+        <div className="mx-auto flex max-w-2xl flex-col items-center">
+          {children}
+        </div>
+      </main>
+      <Footer />
+    </>
   )
 }

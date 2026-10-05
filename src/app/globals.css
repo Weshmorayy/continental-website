@@ -66,6 +66,27 @@
 *, *before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Aucun débordement horizontal, quelle qu'en soit la source.
+
+   Un élément large d'un seul pixel — un tiroir hors écran, une image non
+   contrainte, une longue référence sans espace — suffit à faire défiler toute
+   la page de gauche à droite, et le défaut se voit avant qu'on sache d'où il
+   vient. Cette règle est le filet de sécurité : elle rend le symptôme
+   impossible même si une cause nouvelle apparaît plus tard.
+
+   `clip` et NON `hidden`. `overflow-x: hidden` crée un conteneur de
+   défilement, et l'en-tête qui suit la page (`position: sticky`) cesse alors
+   de coller — on remplace un défaut visible par un autre, plus discret.
+   `clip` coupe le débordement sans créer de conteneur : le sticky continue de
+   fonctionner. `overflow-y` reste `visible`, sinon la même contrainte
+   s'appliquerait verticalement et couperait le défilement de la page.
+   ───────────────────────────────────────────────────────────────────────────── */
+html, body {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 body {
   background-color: rgb(var(--color-bg-primary));
   color: rgb(var(--color-text-body));

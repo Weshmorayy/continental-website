@@ -11,11 +11,9 @@
  */
 import Image from 'next/image'
 import Link from 'next/link'
-import { MessageCircle, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import type { Product } from '@/data/products'
-import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 import AddToCart from '@/components/cart/AddToCart'
-import { useStore } from '@/context/StoreContext'
 
 interface ProductCardProps {
   product: Product
@@ -31,14 +29,6 @@ interface ProductCardProps {
  * apparaître un rectangle blanc.
  */
 export default function ProductCard({ product, size = 'default' }: ProductCardProps) {
-  // Numéro de WhatsApp issu des RÉGLAGES : chaque tuile du catalogue doit
-  // ouvrir la conversation vers le numéro actuel, pas vers celui du dépôt.
-  const { siteConfig: cfg } = useStore()
-  const waUrl = buildWhatsAppUrl(
-    buildOrderMessage({ productName: product.name, ref: product.ref }),
-    cfg,
-  )
-
   /*
    * Deux origines pour une pastille, et une seule pastille à l'écran.
    *
@@ -125,12 +115,16 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
           </div>
 
           <div className="flex items-center gap-2 mt-4">
-            {/* Le panier est l'action par DÉFAUT : c'est elle qui enregistre
-                la commande. WhatsApp reste proposée à côté — c'est le canal par
-                lequel la vente se conclut réellement aujourd'hui, et certains
-                clients ne.commandent que là.
-                Inverser les deux, ou remplacer l'un par l'autre, ferait perdre
-                des ventes dans les deux sens. */}
+            {/* Le panier est la SEULE action de commande, et c'est voulu.
+                « Ajouter au panier » et « Commander sur WhatsApp » se
+                disputaient la même ligne : deux boutons de même poids pour une
+                seule décision, et sur un écran de téléphone les deux se
+                comprimaient jusqu'à l'illisible.
+                Surtout, le raccourci WhatsApp court-circuitait le formulaire :
+                la commande n'existait nulle part, ni référence, ni adresse, ni
+                zone de livraison — donc rien dans l'administration. Le panier,
+                lui, demande ces informations puis enregistre la commande, que
+                le client conclue sur WhatsApp ou non. */}
             <AddToCart
               slug={product.slug}
               name={product.name}
@@ -138,16 +132,6 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
               price={product.price}
               image={product.image}
             />
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-wa px-4 py-2.5 text-xs flex-shrink-0"
-              aria-label={`Commander ${product.name} sur WhatsApp`}
-            >
-              <MessageCircle size={15} />
-              <span className="sr-only sm:not-sr-only">WhatsApp</span>
-            </a>
             <Link
               href={`/produit/${product.slug}`}
               className="btn-outline px-5 py-2.5 text-xs flex-shrink-0"

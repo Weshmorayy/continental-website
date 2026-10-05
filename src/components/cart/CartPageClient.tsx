@@ -31,7 +31,7 @@ type Errors = Partial<Record<'name' | 'phone' | 'zone', string>>
 
 export default function CartPageClient() {
   const { lines, subtotal, setQuantity, remove, clear } = useCart()
-  const { shippingZones, placeOrder } = useStore()
+  const { shippingZones, placeOrder, siteConfig: cfg } = useStore()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -73,8 +73,22 @@ export default function CartPageClient() {
     return e
   }
 
-  const submit = async (ev: React.FormEvent) => {
-    ev.preventDefault()
+  /**
+   * Enregistre la commande, puis conduit le client à sa destination.
+   *
+   * Les deux boutons de la page passent par ici. « Valider sur WhatsApp »
+   * était un simple lien : il ouvrait la discussion sans rien écrire en base —
+   * ni référence, ni adresse, ni zone de livraison, donc aucune ligne dans
+   * l'administration. Le vendeur recevait un message à ressaisir, et une
+   * commande passée quand personne ne lisait le téléphone n'existait nulle
+   * part.
+   *
+   * L'ordre est désormais toujours le même : valider le formulaire, écrire la
+   * commande, et ouvrir WhatsApp SEULEMENT si l'écriture a réussi. Le message
+   * porte la référence, ce qui permet de retrouver la commande côté
+   * administration.
+   */
+  const enregistrer = async (ensuite: 'fiche' | 'whatsapp') => {
     setFatal(null)
 
     const e = validate()
@@ -107,27 +121,33 @@ export default function CartPageClient() {
       return
     }
 
-    clear()
-    router.push(`/commande/${result.token}`)
-  }
-
-  /* ── aperçu WhatsApp ───────────────────────────────────────────────────── */
-
-  const waUrl = buildWhatsAppUrl(
-    lines.length
+    // Le récapitulatif est construit AVANT `clear()` : après, `lines` serait
+    // vide et le message partirait sans les articles.
+    const message = ensuite === 'whatsapp'
       ? [
-          'Bonjour Continental, je souhaite commander :',
+          `Bonjour Continental, je viens de passer la commande ${result.ref ?? ''}.`.trim(),
           '',
           ...lines.map((l) => `• ${l.name}${l.ref ? ` (Réf. ${l.ref})` : ''} × ${l.quantity} — ${fcfa(l.price * l.quantity)}`),
           '',
-          `Sous-total : ${fcfa(subtotal)}`,
-          zone ? `Livraison (${zone.name}) : ${shipping > 0 ? fcfa(shipping) : 'offerte'}` : '',
           `Total : ${fcfa(total)}`,
-          name ? `\nAu nom de ${name}` : '',
-          phone ? `Téléphone ${phone}` : '',
-        ].filter(Boolean).join('\n')
-      : "Bonjour Continental, je souhaite commander.",
-  )
+        ].join('\n')
+      : ''
+
+    clear()
+
+    if (ensuite === 'whatsapp') {
+      // La fiche de commande reste la destination : si le navigateur bloque
+      // l'ouverture de WhatsApp, le client garde sa référence à l'écran.
+      window.open(buildWhatsAppUrl(message, cfg), '_blank', 'noopener,noreferrer')
+    }
+
+    router.push(`/commande/${result.token}`)
+  }
+
+  const submit = (ev: React.FormEvent) => {
+    ev.preventDefault()
+    void enregistrer('fiche')
+  }
 
   /* ── panier vide ───────────────────────────────────────────────────────── */
 
@@ -293,18 +313,25 @@ export default function CartPageClient() {
               </button>
             </form>
 
-            {/* Le règlement se termine sur WhatsApp : c'est là que le vendeur
-                confirme le stock et la livraison. Le message est pré-rempli avec
-                le panier, pour que le client n'ait rien à ressaisir. */}
-            <a href={waUrl} target="_blank" rel="noopener noreferrer"
-              className="btn-wa mt-3 w-full justify-center py-3 text-sm">
+            {/*
+              Deuxième voie, même enregistrement.
+
+              Ce bouton ÉCRIT la commande avant d'ouvrir WhatsApp — il ne
+              l'ouvre que si l'écriture a réussi. Un lien direct, comme
+              avant, laissait la commande hors de l'administration : le
+              vendeur devait la ressaisir à la main, et rien ne garantissait
+              qu'elle survive à la conversation.
+            */}
+            <button type="button" onClick={() => void enregistrer('whatsapp')} disabled={busy}
+              className="btn-wa mt-3 w-full justify-center py-3 text-sm disabled:opacity-60">
               <MessageCircle size={17} />
-              Valider sur WhatsApp
-            </a>
+              Enregistrer et valider sur WhatsApp
+            </button>
             <p className="mt-3 text-[0.68rem] leading-relaxed text-text-muted">
-              « Valider ma commande » enregistre la commande et affiche sa
-              référence. « Valider sur WhatsApp » ouvre la discussion avec le
-              panier déjà rédigé.
+              Les deux boutons enregistrent la commande et lui donnent une
+              référence, visible dans l&apos;administration. Le premier reste
+              sur le site, le second ouvre WhatsApp avec le récapitulatif déjà
+              rédigé.
             </p>
           </div>
         </aside>

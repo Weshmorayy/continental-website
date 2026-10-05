@@ -74,16 +74,32 @@ export default function CartDrawer() {
         />
       )}
 
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Votre panier"
-        aria-hidden={!open}
-        className={`fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
+      {/*
+        L'enveloppe CLIPPE le tiroir.
+
+        Le panneau est monté en permanence et se tient hors écran quand il est
+        fermé (`translate-x-full`). Sans cette enveloppe, le navigateur compte
+        cette largeur dans la zone défilable du document : la page entière
+        gagne un défilement horizontal, et le tiroir comme la page partent vers
+        la droite alors que rien n'a été ouvert. Un `fixed` translate hors
+        écran ne sort pas du calcul de débordement sur Chrome Android.
+
+        `overflow-hidden` sur une enveloppe `fixed inset-0` coupe le panneau à
+        la fenêtre : la glissade reste animée, mais rien ne déborde du
+        document. `pointer-events-none` laisse passer les clics tant que le
+        tiroir est fermé, et le panneau les reprend pour lui.
+      */}
+      <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Votre panier"
+          aria-hidden={!open}
+          className={`pointer-events-auto absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ${
+            open ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
         <div className="hairline flex items-center justify-between px-5 py-4">
           <h2 className="display-sm text-base">
             Votre panier
@@ -213,6 +229,7 @@ export default function CartDrawer() {
             </div>
           </>
         )}
+        </div>
       </div>
     </>
   )

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight, MessageCircle, Phone, ShieldCheck } from 'lucide-react'
+import { ChevronRight, Phone, ShieldCheck } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import GalleryViewer from '@/components/ui/GalleryViewer'
@@ -10,7 +10,6 @@ import ProductViewCounter from '@/components/ProductViewCounter'
 import AddToCart from '@/components/cart/AddToCart'
 import { products, getProductBySlug, getRelatedProducts } from '@/data/products'
 import { getSiteProduct, getSiteProducts } from '@/lib/atelier'
-import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 import { generatePageMetadata } from '@/lib/seo'
 import { getSiteSettings } from '@/lib/atelier'
 
@@ -43,9 +42,6 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
 
   const cfg = await getSiteSettings()
   const related = getRelatedProducts(product)
-  const waUrl = buildWhatsAppUrl(
-    buildOrderMessage({ productName: product.name, ref: product.ref })
-  )
 
   return (
     <>
@@ -151,14 +147,17 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                 </p>
 
                 <div className="mt-9 flex flex-col gap-3">
-                  {/* Le panier passe AVANT WhatsApp sur la fiche produit, alors
-                      que sur la tuile de catalogue c'est l'inverse.
-                      Le motif : ici, le visiteur a déjà choisi son produit et lu
-                      ses caractéristiques — il est au moment de la décision, et
-                      le panier enregistre la demande. Sur une tuile, il parcourt
-                      encore la liste, et WhatsApp reste le canal de commande le
-                      plus rapide. Les deux boutons restent visibles : ni l'un ni
-                      l'autre n'est imposé. */}
+                  {/* Le panier est la seule action de commande.
+                      Un bouton « Commander via WhatsApp » se tenait ici : il
+                      ouvrait la discussion sans rien enregistrer — pas de
+                      référence, pas de zone de livraison, pas de ligne dans
+                      l'administration. Le vendeur recevait un message qu'il
+                      devait ressaisir à la main, et une commande passée quand
+                      personne ne regardait le téléphone n'existait tout
+                      simplement pas.
+                      Le panier demande le nom, le téléphone, la zone et
+                      l'adresse, puis écrit la commande ; WhatsApp reste le
+                      canal de conclusion, à l'étape suivante. */}
                   <AddToCart
                     slug={product.slug}
                     name={product.name}
@@ -167,21 +166,13 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                     image={product.image}
                     full
                   />
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-wa flex-1 justify-center py-4"
-                    >
-                      <MessageCircle size={17} />
-                      Commander via WhatsApp
-                    </a>
-                    <a href={`tel:${cfg.contact.phone}`} className="btn-outline px-7 py-4 justify-center">
-                      <Phone size={17} />
-                      Appeler
-                    </a>
-                  </div>
+                  <a
+                    href={`tel:${cfg.contact.phone}`}
+                    className="btn-outline w-full justify-center py-4"
+                  >
+                    <Phone size={17} />
+                    Appeler pour un conseil
+                  </a>
                 </div>
 
                 <p className="mt-5 flex items-center gap-2.5 text-xs text-text-muted">
