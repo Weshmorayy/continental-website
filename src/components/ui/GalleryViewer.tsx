@@ -12,22 +12,33 @@ interface GalleryViewerProps {
 export default function GalleryViewer({ images, productName }: GalleryViewerProps) {
   const [active, setActive] = useState(0)
 
+  // Un produit dénué de photo reste consultable. `next/image` lève sur une
+  // chaîne vide et emporterait avec elle toute la page produit.
+  const current = images[active]
+  const clean = images.filter(Boolean)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="relative w-full aspect-square stage p-10 sm:p-14">
-        <Image
-          src={images[active]}
-          alt={productName}
-          fill
-          className="object-contain"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority
-        />
+        {current ? (
+          <Image
+            src={current}
+            alt={productName}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-sm text-text-muted">
+            Photo à venir
+          </span>
+        )}
       </div>
 
-      {images.length > 1 && (
+      {clean.length > 1 && (
         <div className="flex gap-3" role="tablist" aria-label="Vues du produit">
-          {images.map((img, i) => (
+          {clean.map((img, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}

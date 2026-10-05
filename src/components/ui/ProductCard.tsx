@@ -38,13 +38,22 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
           className={`block relative w-full ${size === 'large' ? 'h-72 sm:h-80' : 'h-64 sm:h-72'} p-8`}
           aria-label={product.name}
         >
-          <Image
-            src={product.image}
-            alt={`${product.name} (${product.ref})`}
-            fill
-            className="object-contain transition-transform duration-300 group-hover:scale-[1.04]"
-            sizes="(max-width: 640px) 80vw, (max-width: 1024px) 45vw, 30vw"
-          />
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt={`${product.name} (${product.ref})`}
+              fill
+              className="object-contain transition-transform duration-300 group-hover:scale-[1.04]"
+              sizes="(max-width: 640px) 80vw, (max-width: 1024px) 45vw, 30vw"
+            />
+          ) : (
+            /* `next/image` lève sur une chaîne vide : un produit sans photo
+               ferait tomber la tuile entière, et avec elle la page catalogue.
+               Un produit réel peut attendre sa photo ; une page cassée, non. */
+            <span className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+              Photo à venir
+            </span>
+          )}
         </Link>
       </div>
 

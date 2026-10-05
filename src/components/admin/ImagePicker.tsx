@@ -34,10 +34,11 @@ export default function ImagePicker({
   hint?: string
   folder?: string
 }) {
-  const { media, uploadImage, lastUploadedPath } = useStore()
+  const { media, uploadImage } = useStore()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [filter, setFilter] = useState('')
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const shown = media.filter((m) =>
@@ -47,12 +48,13 @@ export default function ImagePicker({
     if (!files?.length) return
     setBusy(true)
     const file = files[0]
-    const error = await uploadImage(file, folder)
+    const res = await uploadImage(file, folder)
     setBusy(false)
-    if (error) return
-    // `lastUploadedPath` est posé par le store pendant l'upload : on peut
-    // donc sélectionner la nouvelle image sans relire la médiathèque.
-    if (lastUploadedPath) onChange(lastUploadedPath)
+    if ('error' in res) { setUploadError(res.error); return }
+    // L'adresse publique revient de l'appel : on ne relit pas un état React,
+    // qui serait encore à sa valeur précédente à ce stade.
+    setUploadError(null)
+    onChange(res.url)
     setOpen(false)
   }
 
@@ -113,6 +115,12 @@ export default function ImagePicker({
               Déposer
             </Button>
           </div>
+
+          {uploadError && (
+            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              {uploadError}
+            </p>
+          )}
 
           {shown.length === 0 ? (
             <p className="px-1 py-6 text-center text-xs text-text-muted">

@@ -43,8 +43,8 @@ export default function MediaTab({ notify }: { notify: Notify }) {
         failures++
         continue
       }
-      const error = await uploadImage(file, folder)
-      if (error) { notify({ message: error, tone: 'error' }); failures++ }
+      const res = await uploadImage(file, folder)
+      if ('error' in res) { notify({ message: res.error, tone: 'error' }); failures++ }
     }
     setBusy(false)
     await refresh()

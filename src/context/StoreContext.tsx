@@ -95,7 +95,10 @@ interface StoreValue {
   deleteLead: (id: string) => Promise<string | null>
 
   /* médias */
-  uploadImage: (file: File, folder?: string) => Promise<string | null>
+  uploadImage: (
+    file: File,
+    folder?: string,
+  ) => Promise<{ url: string } | { error: string }>
   /** Chemin du dernier dépôt réussi — permet de le sélectionner aussitôt. */
   lastUploadedPath: string | null
   deleteMedia: (id: string) => Promise<string | null>
@@ -694,7 +697,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /* ──────────────────────────────────────────── médias ───────────────── */
 
   const uploadImage = useCallback<StoreValue['uploadImage']>(async (file, folder = 'racine') => {
-    if (!supabase) return 'Base non configurée.'
+    if (!supabase) return { error: 'Base non configurée.' }
 
     const safeName = file.name
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -705,7 +708,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.storage
       .from(storageBucket)
       .upload(path, file, { cacheControl: '3600', upsert: false })
-    if (error) return `Dépôt refusé : ${error.message}`
+    if (error) return { error: `Dépôt refusé : ${error.message}` }
 
     const { data: pub } = supabase.storage.from(storageBucket).getPublicUrl(path)
     const url = pub.publicUrl
@@ -715,12 +718,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       path, url, mime: file.type,
       size: file.size, folder, alt: file.name,
     })
-    if (rowError) return `Image déposée mais non enregistrée : ${frError(rowError)}`
+    if (rowError) return { error: `Image déposée mais non enregistrée : ${frError(rowError)}` }
 
     const { data: row } = await supabase.from('media').select('*').eq('path', path).maybeSingle()
     if (row) setMedia((prev) => [row as MediaAsset, ...prev])
 
-    return null
+    /*
+     * On RENVOIE l'adresse publique.
+     *
+     * Le dépôt expose aussi `lastUploadedPath`, mais c'est un état React : le
+     * relire juste après un `await` rend l'ANCIENNE valeur — l'appelant voit
+     * `null` et n'attache jamais l'image au produit. Le téléversement
+     * réussissait, le fichier atterrissait dans la médiathèque, et le
+     * formulaire semblait ignorer l'image.
+     *
+     * `url` et non `path` : c'est la seule forme que le site sait afficher.
+     */
+    return { url }
   }, [])
 
   const deleteMedia = useCallback<StoreValue['deleteMedia']>(async (id) => {
