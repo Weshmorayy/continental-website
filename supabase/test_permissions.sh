@@ -147,11 +147,65 @@ after=$($CN -tAc "SELECT count(*) FROM orders;")
 check "commandes toujours inaccessibles" "2" "$after"
 
 echo
+echo "═══ réglages et sauvegardes : les deux modules au nom différent ═══"
+# RÉGRESSION — 2026-10-05. Les politiques de ces deux tables passaient le nom du
+# MODULE a can_module() au lieu du nom de la TABLE. can_module() attendait un
+# nom de table et renvoyait donc false pour TOUT le monde, administrateur
+# compris : les coordonnées ne pouvaient plus etre enregistrees, et les
+# sauvegardes ne pouvaient etre ni lues ni ecrites par personne.
+#
+# Ces deux controles ont longtemps passe sans erreur parce que la suite
+# verifiait les AUTRES modules, dont le nom de table se trouve etre identique a
+# leur module. Ils sont ici pour que la distinction soit Couverture, pas
+# hasard.
+#
+# On ne juge pas sur le code HTTP : PostgREST repond 200 avec un corps vide a
+# un refus comme a un succes. Seul l'etat de la donnee apres coup le dit.
+
+curl -s -o /dev/null -X PATCH \
+  "$BASE/rest/v1/site_settings?id=eq.1" \
+  -H "apikey: $AK" -H "Authorization: Bearer $ADMIN" -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{"contact":{"city":"Dakar","email":"","phone":"+221 77 000 00 00","address":"","country":"Senegal","whatsapp":"221770000000"}}'
+phone=$($CN -tAc "SELECT contact->>'phone' FROM site_settings WHERE id=1;")
+check "l'administrateur ecrit les coordonnees" "+221 77 000 00 00" "$phone"
+
+curl -s -o /dev/null -X PATCH \
+  "$BASE/rest/v1/site_settings?id=eq.1" \
+  -H "apikey: $AK" -H "Authorization: Bearer $EDITOR" -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{"contact":{"phone":"ECRITURE-INTERDITE"}}'
+phone2=$($CN -tAc "SELECT contact->>'phone' FROM site_settings WHERE id=1;")
+check "l'editeur n'ecrit toujours pas les reglages" "+221 77 000 00 00" "$phone2"
+
+curl -s -o /dev/null -X POST \
+  "$BASE/rest/v1/site_backups" \
+  -H "apikey: $AK" -H "Authorization: Bearer $ADMIN" -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" -d '{"backup_name":"sonde-permissions-backup"}'
+saved=$($CN -tAc "SELECT count(*) FROM site_backups WHERE backup_name='sonde-permissions-backup';")
+check "l'administrateur cree une sauvegarde" "1" "$saved"
+
+curl -s -o /dev/null -X POST \
+  "$BASE/rest/v1/site_backups" \
+  -H "apikey: $AK" -H "Authorization: Bearer $EDITOR" -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" -d '{"backup_name":"sonde-permissions-backup-editeur"}'
+saved2=$($CN -tAc "SELECT count(*) FROM site_backups WHERE backup_name='sonde-permissions-backup-editeur';")
+check "l'editeur ne cree pas de sauvegarde" "0" "$saved2"
+
+echo
+echo "═══ cablage des politiques ═══"
+# Vue public_policy_audit : aucune politique ne doit passer a can_module() un
+# nom qui ne soit pas une table connue. C'est le garde-fou du defaut corrige.
+broken=$($CN -tAc "SELECT count(*) FROM public_policy_audit WHERE NOT ok;")
+check "aucune politique mal cablee" "0" "$broken"
+
+echo
 echo "═══ nettoyage ═══"
 $CN -q <<'SQL'
 DELETE FROM public.orders   WHERE ref_command IN ('TEST-AUTH-1','TEST-AUTH-2');
 DELETE FROM public.leads    WHERE name IN ('Alice Test','Bob Test');
-DELETE FROM public.products WHERE slug = 'sonde-permissions';
+DELETE FROM public.products  WHERE slug = 'sonde-permissions';
+DELETE FROM public.site_backups WHERE backup_name LIKE 'sonde-permissions-backup%';
 SQL
 
 echo

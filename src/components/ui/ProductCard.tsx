@@ -22,14 +22,30 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
     buildOrderMessage({ productName: product.name, ref: product.ref })
   )
 
+  /*
+   * Deux origines pour une pastille, et une seule pastille à l'écran.
+   *
+   * `product.badges` vient des RUBRIQUES à places limitées (promotion,
+   * best-seller, nouveau) : c'est une mise en avant éditoriale, elle change
+   * quand l'administration change de place. `product.badge` est l'étiquette
+   * collée à la fiche (« Télécommande », « Smart TV ») : elle décrit
+   * l'appareil et ne bouge jamais.
+   *
+   * Les deux cohabitent, mais pas sur la même vignette : deux pastilles se
+   * disputeraient la ligne. La rubrique l'emporte, parce que c'est elle qui
+   * décide de l'achat — « -15 % » dit plus qu'« Inverter A+ ».
+   */
+  const rubriques = product.badges ?? []
+  const pill = rubriques[0]?.label ?? product.badge
+
   return (
-    <article className="card-product flex flex-col group">
+    <article className="card-product group flex flex-col">
 
       {/* Image — le produit est le héros */}
       <div className="relative">
-        {product.badge && (
-          <span className="absolute top-4 left-4 z-10 rounded-full bg-text-primary text-white px-3 py-1 text-[11px] font-semibold">
-            {product.badge}
+        {pill && (
+          <span className="absolute left-4 top-4 z-10 rounded-full bg-text-primary px-3 py-1 text-[11px] font-semibold text-white">
+            {pill}
           </span>
         )}
 
@@ -67,8 +83,19 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
           </h3>
         </Link>
 
-        <p className="mt-2 text-xs text-text-muted line-clamp-2">
-          {product.features[0]}
+        {/*
+         * La description COURTE vit ici, sur la carte — c'est sa place.
+         *
+         * Elle répond à la question que se pose le visiteur AVANT d'ouvrir la
+         * fiche : « ce que c'est, en une ligne ». La longue n'a pas sa place
+         * dans une vignette : à deux lignes de plus, elle tronque n'importe
+         * comment et donne l'impression d'un texte coupé.
+         *
+         * `features[0]` reste le repli : sur une fiche alimentée avant
+         * l'existence des deux champs, c'est la seule accroche disponible.
+         */}
+        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-text-muted">
+          {product.shortDesc || product.features[0]}
         </p>
 
         <div className="mt-auto pt-6">

@@ -14,8 +14,21 @@
  * Une seule requête par page et par session de navigation : recharger ne doit
  * pas recompter la visite, sinon la statistique ne mesure plus rien.
  *
- * Aucune adresse IP, aucun identifiant de visiteur n'est transmis. La table
- * `site_events` ne contient qu'un nom d'événement, un chemin et un jour.
+ * ── Pourquoi la clé passe dans l'URL ──────────────────────────────────────
+ * `navigator.sendBeacon()` ne permet pas de poser d'en-tête HTTP, et PostgREST
+ * refuse une requête sans `apikey` (« No API key found in request »). La clé
+ * est donc transmise en paramètre de requête, que PostgREST accepte au même
+ * titre que l'en-tête. C'est ce détail qui rendait le compteur totalement
+ * muet : `sendBeacon` renvoie `true` dès la mise en file d'attente, même quand
+ * la requête échouera six secondes plus tard, donc le repli `supabase.rpc()` en
+ * aval n'était jamais atteint. La clé n'est pas un secret — elle est déjà
+ * embarquée dans le bundle public et n'accorde aucun droit d'écriture.
+ *
+ * ── Vie privée ───────────────────────────────────────────────────────────
+ * Seule la SOURCE du trafic est transmise, et seulement son nom d'hôte
+ * (google.com, l.facebook.com…). Ni l'URL de provenance, ni sa chaîne de
+ * requête — qui contient couramment des identifiants de campagne ou de session.
+ * Une navigation interne ou une visite sans référent compte comme « direct ».
  */
 
 import { useEffect } from 'react'
@@ -24,6 +37,25 @@ import { supabase } from '@/lib/supabase'
 
 /** Mémoire de session : empêche de recompter un rechargement. */
 const seen = new Set<string>()
+
+/**
+ * Nom d'hôte du référent, ramené à « direct » pour tout ce qui n'est pas une
+ * arrivée extérieure. `www.` est retiré pour ne pas compter séparément
+ * `google.com` et `www.google.com`.
+ */
+function readSource(): string {
+  const ref = document.referrer
+  if (!ref) return 'direct'
+  try {
+    const url = new URL(ref)
+    // Une navigation venue du site lui-même (clic vers une fiche produit)
+    // n'est pas une source de trafic : c'est l'accueil qui l'a comptée.
+    if (url.host === window.location.host) return 'direct'
+    return url.hostname.replace(/^www\./, '')
+  } catch {
+    return 'direct'
+  }
+}
 
 export default function PageView() {
   const pathname = usePathname() ?? '/'
@@ -34,18 +66,33 @@ export default function PageView() {
     if (seen.has(pathname)) return
     seen.add(pathname)
 
-    const body = JSON.stringify({ p_event: 'page_view', p_path: pathname })
+    const payload = JSON.stringify({
+      p_event: 'page_view',
+      p_path: pathname,
+      p_meta: { src: readSource() },
+    })
+
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     // `sendBeacon` survit à la fermeture de l'onglet, là où un `fetch` est
     // annulé : le compteur ne perd pas la visite quand le visiteur quitte la
     // page immédiatement après l'avoir ouverte.
-    const queued = navigator.sendBeacon?.(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_event`,
-      new Blob([body], { type: 'application/json' }),
-    )
-    if (queued) return
+    if (base && key) {
+      const queued = navigator.sendBeacon?.(
+        `${base}/rest/v1/rpc/record_event?apikey=${encodeURIComponent(key)}`,
+        new Blob([payload], { type: 'application/json' }),
+      )
+      if (queued) return
+    }
 
-    void supabase.rpc('record_event', { p_event: 'page_view', p_path: pathname })
+    // Repli : le client Supabase pose l'en-tête apikey et distingue une vraie
+    // erreur d'un simple échec de mise en file d'attente.
+    void supabase.rpc('record_event', {
+      p_event: 'page_view',
+      p_path: pathname,
+      p_meta: { src: readSource() },
+    })
   }, [pathname])
 
   return null

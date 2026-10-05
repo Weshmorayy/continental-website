@@ -29,6 +29,25 @@ export interface Product {
    */
   shortDesc?: string
   description?: string
+
+  /**
+   * Badges actifs sur ce produit, tels que limités par la table
+   * `product_badges` (une seule place pour « héros » et « Best-seller »).
+   *
+   * Distinct de `badge` ci-dessus : celui-ci est une étiquette libre collée
+   * sur la fiche, tandis que `badges` est une RUBRIQUE. « Télécommande »
+   * décrit le produit ; « Best-seller » dit qu'il occupe la place du
+   * meilleur-vendu sur la page d'accueil. Les deux cohabitent.
+   */
+  badges?: ProductBadge[]
+}
+
+/** Une rubrique de mise en avant, avec la place qu'elle occupe. */
+export interface ProductBadge {
+  /** `hero`, `bestseller`, `promo`, `nouveau` ou `stock_limite`. */
+  slot: string
+  /** Texte affiché sur la pastille : « Best-seller », « Promotion »… */
+  label: string
 }
 
 export const products: Product[] = [

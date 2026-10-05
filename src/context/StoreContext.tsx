@@ -41,6 +41,14 @@ interface StoreValue {
   authEmail: string | null
   /** `false` tant que l'appartenance à `site_admins` n'est pas confirmée. */
   isAdmin: boolean
+  /**
+   * Rôle porté par la ligne `site_admins` de la personne connectée :
+   * `admin` (l'agence, passe partout) ou `editor` (droits accordés module par
+   * module). Distingué de `isOwner`, qui n'est que sa traduction booléenne :
+   * l'écran doit pouvoir écrire « Administrateur » ou « Éditeur », pas
+   * « propriétaire / pas propriétaire ».
+   */
+  myRole: string | null
 
   /* contenu public */
   products: Product[]
@@ -79,6 +87,14 @@ interface StoreValue {
   deleteUser: (email: string) => Promise<string | null>
 
   saveProduct: (p: Partial<Product> & { id?: string }) => Promise<string | null>
+  /** Rubriques de mise en avant en cours, tous produits confondus. */
+  productBadges: { slug: string; slot: string; label: string }[]
+  /** Pose ou retire une rubrique (« héros », « meilleur-vendu », promo…). */
+  setProductSlot: (
+    slug: string,
+    slot: string | null,
+    label?: string | null,
+  ) => Promise<string | null>
   deleteProduct: (id: string) => Promise<string | null>
   toggleProduct: (id: string, patch: Partial<Product>) => Promise<string | null>
   saveCategory: (c: Partial<Category> & { id?: string }) => Promise<string | null>
@@ -166,13 +182,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [admins, setAdmins] = useState<SiteAdmin[]>([])
   const [myPermissions, setMyPermissions] = useState<Permissions>({})
   const [isOwner, setIsOwner] = useState(false)
+  const [myRole, setMyRole] = useState<string | null>(null)
+  /*
+   * Rubriques de mise en avant en cours, lues depuis la vue publique.
+   *
+   * Ce n'est PAS `products.badge` : celui-ci est l'étiquette descriptive d'une
+   * fiche (« Télécommande »), tandis qu'ici il s'agit des places éditoriales
+   * (« héros », « meilleur-vendu », « promotion ») dont le nombre est limité et
+   * dont l'attribution se fait ailleurs que sur la fiche produit.
+   */
+  const [productBadges, setProductBadges] = useState<
+    { slug: string; slot: string; label: string }[]
+  >([])
 
   /* ────────────────────────────────────────── contenu public ─────────── */
 
   const loadPublic = useCallback(async () => {
     if (!supabase) return
 
-    const [p, c, b, s, f, st, cb] = await Promise.all([
+    const [p, c, b, s, f, st, cb, pb] = await Promise.all([
       supabase
         .from('products')
         .select('*, category:categories(id, slug, label, kind, position, image, intro)')
@@ -183,10 +211,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       supabase.from('faqs').select('*').order('position', { ascending: true }),
       supabase.from('site_settings').select('*').limit(1),
       supabase.from('content_blocks').select('*').order('position', { ascending: true }),
+      // Vue publique : elle filtre déjà les rubriques hors période, donc une
+      // promotion échue disparaît de l'administration sans intervention.
+      supabase.from('public_product_badges').select('slug,slot,label'),
     ])
 
     // Une seule alerte : la page doit rester lisible même si une table manque.
-    const failed = [p, c, b, s, f, st, cb].find((r) => r.error)
+    const failed = [p, c, b, s, f, st, cb, pb].find((r) => r.error)
     if (failed) console.error('[Continental] chargement public :', frError(failed.error))
 
     setProducts((p.data ?? []).map((x) => ({
@@ -197,6 +228,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       images: safe<string[]>(x.images, []),
       specs: safe<Record<string, string>>(x.specs, {}),
     })) as Product[])
+
+    setProductBadges((pb.data ?? []) as { slug: string; slot: string; label: string }[])
 
     setCategories((c.data ?? []) as Category[])
     setBanners((b.data ?? []) as Banner[])
@@ -275,6 +308,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     const allowed = Boolean(data)
     setMyPermissions((data?.permissions as Permissions) ?? {})
+    setMyRole(data?.role ?? null)
     setIsOwner(data?.role === 'admin')
     setIsAdmin(allowed)
     return allowed
@@ -578,6 +612,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await audit(id ? 'update' : 'create', 'products', id, row.name ?? null)
     return null
   }, [persist, audit])
+
+  /**
+   * Pose (ou retire) une pastille de rubrique sur un produit.
+   *
+   * `set_slot()` applique deux règles qu'aucun écran ne peut garantir :
+   *   • une place unique (« héros », « meilleur-vendu ») n'est portée que par
+   *     UN produit — poser la pastille sur un autre libère l'ancienne ;
+   *   • un produit ne peut pas porter deux fois la même rubrique.
+   * Ce sont des index uniques en base, pas des vérifications dans le
+   * formulaire : deux onglets ouverts ne peuvent pas produire deux
+   * « meilleur-vendu ».
+   *
+   * `p_slot` à `null` retire la pastille. La fonction dépanne alors le produit
+   * concerné — retirer « héros » d'un produit, c'est simplement le laisser
+   * rendre la place à quelqu'un d'autre.
+   *
+   * Renvoie une erreur lisible ou `null`, comme les autres `save*`.
+   */
+  const setProductSlot = useCallback<StoreValue['setProductSlot']>(
+    async (slug, slot, label) => {
+      if (!supabase) return 'Base non configurée.'
+
+      const { error } = await supabase.rpc('set_slot', {
+        p_slug: slug,
+        p_slot: slot ?? '',
+        p_label: label || null,
+      })
+      if (error) {
+        // 42501 : le compte est connecté mais n'a pas le droit d'écrire.
+        return error.code === '42501'
+          ? "Vous n'avez pas le droit de modifier les mises en avant."
+          : frError(error)
+      }
+
+      // Le RPC ne renvoie que l'identifiant de la ligne créée : on relit la vue
+      // pour connaître l'état réel des places, plutôt que de le supposer.
+      await refresh()
+      await audit('update', 'products', null, slot ? `place ${slot}` : `retrait ${slot}`)
+      return null
+    },
+    [refresh, audit],
+  )
 
   const deleteProduct = useCallback<StoreValue['deleteProduct']>(async (id) => {
     if (!supabase) return 'Base non configurée.'
@@ -892,10 +968,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     authEmail: session?.user?.email ?? null, isAdmin,
     products, categories, banners, shippingZones, faqs, settings,
     orders, leads, media, backups, blocks, audits, admins,
-    myPermissions, can, isOwner,
+    myPermissions, myRole, can, isOwner,
     signIn, signOut,
     saveBlock, deleteBlock, saveUser, deleteUser,
-    saveProduct, deleteProduct, toggleProduct,
+    productBadges, saveProduct, setProductSlot, deleteProduct, toggleProduct,
     saveCategory, deleteCategory, saveBanner, deleteBanner,
     saveShippingZone, deleteShippingZone, saveFaq, deleteFaq, saveSettings,
     updateOrderStatus, updateLeadStatus, deleteLead,
@@ -905,9 +981,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }), [
     loading, session, isAdmin, products, categories, banners, shippingZones,
     faqs, settings, orders, leads, media, backups, blocks, audits, admins,
-    myPermissions, can, isOwner, signIn, signOut,
+    myPermissions, myRole, can, isOwner, signIn, signOut,
     saveBlock, deleteBlock, saveUser, deleteUser, audit,
-    saveProduct, deleteProduct, toggleProduct, saveCategory, deleteCategory,
+    productBadges, saveProduct, setProductSlot, deleteProduct, toggleProduct, saveCategory, deleteCategory,
     saveBanner, deleteBanner, saveShippingZone, deleteShippingZone, saveFaq,
     deleteFaq, saveSettings, updateOrderStatus, updateLeadStatus, deleteLead,
     uploadImage, lastUploadedPath, deleteMedia, createBackup, restoreBackup,

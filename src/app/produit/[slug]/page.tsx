@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer'
 import GalleryViewer from '@/components/ui/GalleryViewer'
 import TechSpecTable from '@/components/ui/TechSpecTable'
 import ProductCard from '@/components/ui/ProductCard'
+import ProductViewCounter from '@/components/ProductViewCounter'
 import { products, getProductBySlug, getRelatedProducts } from '@/data/products'
 import { getSiteProduct, getSiteProducts } from '@/lib/atelier'
 import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
@@ -47,6 +48,10 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <Header />
+      {/* Îlot client invisible : compte la consultation de la fiche.
+          Voir le commentaire de ProductViewCounter pour pourquoi cela ne peut
+          pas se faire depuis ce composant, qui est rendu sur le serveur. */}
+      <ProductViewCounter slug={product.slug} />
       <main>
         <section className="bg-white py-12 sm:py-16">
           <div className="container-site">
@@ -86,13 +91,31 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
 
                 <p className="product-ref text-text-muted mt-3">Réf. {product.ref}</p>
 
-                {/* La description courte s'affiche sous le titre. Elle existait
-                    en base depuis le début mais n'était jamais rendue : le champ
-                    était rempli dans l'administration, et invisible ici. */}
-                {product.shortDesc && (
-                  <p className="text-text-body mt-5 leading-relaxed">
-                    {product.shortDesc}
-                  </p>
+                {/* Le texte LONG s'affiche sous le titre.
+                    *
+                    * C'est l'inverse de ce qui était en place : la description
+                    * courte y figurait, et le texte long plus bas, après la
+                    * liste des caractéristiques. Sur une fiche, c'est
+                    * l'inverse qui se défend — quelqu'un qui ouvre un produit
+                    * veut savoir ce que c'est, pas lire un résumé avant de
+                    * decouvrir l'article à la fin de la page.
+                    *
+                    * La description courte a été déplacée sur la carte du
+                    * catalogue, où elle fait son travail : donner envie
+                    * d'ouvrir la fiche. Elle était de toute façon illisible
+                    * ici, réduite à une ligne sous le titre alors qu'elle
+                    * servait d'accroche.
+                    */}
+                {product.description && (
+                  <div className="mt-5 space-y-4">
+                    {product.description
+                      .split(/\n{2,}/)
+                      .map((p, i) => (
+                        <p key={i} className="leading-relaxed text-text-body">
+                          {p}
+                        </p>
+                      ))}
+                  </div>
                 )}
 
                 <div className="mt-8 py-7 hairline border-t border-border">
@@ -112,20 +135,6 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                     </li>
                   ))}
                 </ul>
-
-                {/* Texte long : le présentait en entier de la fiche, lui non
-                    plus n'était rendu. */}
-                {product.description && (
-                  <div className="mt-9 space-y-4">
-                    {product.description
-                      .split(/\n{2,}/)
-                      .map((p, i) => (
-                        <p key={i} className="text-text-body leading-relaxed">
-                          {p}
-                        </p>
-                      ))}
-                  </div>
-                )}
 
                 <div className="mt-9">
                   <TechSpecTable specs={product.specs} />

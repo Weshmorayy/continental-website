@@ -1,9 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { MessageCircle } from 'lucide-react'
 import { siteConfig } from '@/config/site'
-import { getBlock } from '@/lib/atelier'
+import { getBlock, getSlotProduct } from '@/lib/atelier'
+import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 
-const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
+const defaultWa = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
   "Bonjour Continental, je souhaite obtenir des informations sur vos ventilateurs et climatiseurs."
 )}`
 
@@ -16,41 +18,64 @@ const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComp
  * La version précédente était un split deux colonnes (texte à
  * gauche, image à droite) — c'est précisément ce qui ne
  * ressemblait pas à Samsung.
+ *
+ * ── Le produit du héros ───────────────────────────────────────────────────
+ * Il vient de la place `hero`, c'est-à-dire d'une ligne de
+ * `product_badges`. Auparavant, le visuel était un fichier de `public/products/`
+ * — `ventilateur-pied-fs4011.jpg` — qui ne correspond à aucun produit en base,
+ * et la légende dessous affichait un prix écrit en dur (« 30.000 FCFA »).
+ * Deux endroits à tenir à jour à la main, et un visuel qui ne se vend pas.
+ *
+ * L'image, le nom et le prix viennent maintenant de la fiche désignée par la
+ * place. Le prix affiché est celui de la fiche : s'il change dans
+ * l'administration, le héros change avec, sans réédition de code.
+ *
+ * Le titre et le sous-titre, eux, restent pilotés par le bloc « hero » : ce sont
+ * des textes de marque, pas des données produit.
  */
-export default async function HeroSection() {
-  // Contenu piloté depuis l'administration. Les valeurs ci-dessous sont le
-  // repli : sans base, ou si le bloc a été masqué, le héros reste identique.
-  const hero = await getBlock('hero', 'hero')
 
-  const eyebrow    = hero?.eyebrow    ?? 'Disponible maintenant'
-  const title      = hero?.title      ?? 'La fraîcheur, sans le bruit.'
-  const subtitle   = hero?.subtitle   ?? 'Ventilateurs et climatiseurs Inverter sélectionnés pour le climat de Dakar. Moteur bobiné cuivre, fonctionnement discret et garantie fabricant 2 ans.'
-  const ctaLabel   = hero?.ctaLabel   ?? 'Voir le catalogue'
-  const ctaHref    = hero?.ctaHref    ?? '/catalogue'
-  const cta2Label  = String(hero?.data.cta2_label ?? 'Commander sur WhatsApp')
-  const image      = hero?.image      ?? '/products/ventilateur-pied-fs4011.jpg'
-  const imageAlt   = hero?.imageAlt   ?? 'Ventilateur sur pied Continental FS4011 avec télécommande'
-  const caption    = hero?.data.caption ? String(hero.data.caption) : null
-  const captionPrice = hero?.data.caption_price ? String(hero.data.caption_price) : null
+export default async function HeroSection() {
+  const hero = await getBlock('hero', 'hero')
+  const slot = await getSlotProduct('hero')
+
+  const eyebrow  = hero?.eyebrow    ?? 'Disponible maintenant'
+  const title    = hero?.title      ?? 'La fraîcheur, sans le bruit.'
+  const subtitle = hero?.subtitle   ?? 'Ventilateurs et climatiseurs Inverter sélectionnés pour le climat de Dakar. Moteur bobiné cuivre, fonctionnement discret et garantie fabricant 2 ans.'
+  const ctaLabel = hero?.ctaLabel   ?? 'Voir le catalogue'
+  const ctaHref  = hero?.ctaHref    ?? '/catalogue'
+  const cta2Label = String(hero?.data.cta2_label ?? 'Commander sur WhatsApp')
+
+  const featured = slot?.product ?? null
+
+  const image = featured?.image ?? hero?.image ?? ''
+  const imageAlt = featured
+    ? `${featured.name}${featured.ref ? ` (réf. ${featured.ref})` : ''}`
+    : (hero?.imageAlt ?? '')
+  const priceLabel = featured
+    ? `${new Intl.NumberFormat('fr-FR').format(featured.price).replace(/ /g, ' ')} FCFA`
+    : null
+  const waUrl = featured
+    ? buildWhatsAppUrl(buildOrderMessage({ productName: featured.name, ref: featured.ref }))
+    : defaultWa
 
   return (
     <section className="bg-bg-primary">
-      <div className="container-site pt-14 sm:pt-20 lg:pt-24 pb-12 sm:pb-16 text-center">
+      <div className="container-site pt-14 pb-12 text-center sm:pt-20 sm:pb-16 lg:pt-24">
 
         <p className="eyebrow eyebrow-center">{eyebrow}</p>
 
         <h1
-          className="display-xl text-text-primary mx-auto mt-4 max-w-5xl"
+          className="display-xl mx-auto mt-4 max-w-5xl text-text-primary"
           style={{ fontSize: 'clamp(2.5rem, 8.5vw, 5.75rem)' }}
         >
           {title}
         </h1>
 
-        <p className="mt-6 mx-auto max-w-xl text-base sm:text-lg text-text-body leading-relaxed">
+        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-body sm:text-lg">
           {subtitle}
         </p>
 
-        <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-5">
+        <div className="mt-9 flex flex-col items-center justify-center gap-5 sm:flex-row">
           <Link href={ctaHref} className="btn-outline px-8 py-3.5">
             {ctaLabel}
           </Link>
@@ -65,27 +90,42 @@ export default async function HeroSection() {
         </div>
 
         {/* Produit en grand format — le héros visuel */}
-        <div className="mt-12 sm:mt-16">
-          <div className="relative mx-auto w-full max-w-[520px] aspect-square">
-            <Image
-              src={image}
-              alt={imageAlt}
-              fill
-              priority
-              className="object-contain"
-              sizes="(max-width: 640px) 90vw, 520px"
-            />
-          </div>
-
-          {(caption || captionPrice) && (
-            <p className="mt-6 text-sm text-text-muted">
-              {caption}{caption && captionPrice ? ' — ' : ''}
-              {captionPrice && (
-                <span className="font-semibold text-text-primary">{captionPrice}</span>
+        {image && (
+          <div className="mt-12 sm:mt-16">
+            <Link
+              href={featured ? `/produit/${featured.slug}` : '/catalogue'}
+              className="group relative mx-auto block aspect-square w-full max-w-[520px]"
+              aria-label={featured ? `Voir ${featured.name}` : 'Voir le catalogue'}
+            >
+              <Image
+                src={image}
+                alt={imageAlt}
+                fill
+                priority
+                className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                sizes="(max-width: 640px) 90vw, 520px"
+              />
+              {slot && (
+                <span className="absolute left-0 top-6 rounded-full bg-text-primary px-4 py-1.5 text-xs font-semibold text-white">
+                  {slot.label}
+                </span>
               )}
-            </p>
-          )}
-        </div>
+            </Link>
+
+            {featured && (
+              <p className="mt-6 text-sm text-text-muted">
+                <span className="font-medium text-text-primary">{featured.name}</span>
+                {featured.ref && <span> — Réf. {featured.ref}</span>}
+                {priceLabel && (
+                  <>
+                    {' — '}
+                    <span className="font-semibold text-text-primary">{priceLabel}</span>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        )}
 
       </div>
     </section>

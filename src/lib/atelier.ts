@@ -314,6 +314,24 @@ export async function getSupabaseProducts(): Promise<Product[]> {
   const cats = await supabaseGet<{ id: string; slug: string }[]>('categories?select=id,slug')
   const catById = new Map((cats ?? []).map((c) => [c.id, c.slug]))
 
+  /*
+   * Les rubriques sont relues à part puis rapprochées par slug. La vue
+   * `public_product_badges` filtre déjà les badges hors période : une
+   * promotion échue disparaît du site sans qu'aucune ligne ne soit supprimée.
+   * `supabaseGet` rend déjà `null` au moindre échec réseau ou HTTP : le
+   * catalogue s'affiche alors normalement, simplement sans rubrique, ce qui est
+   * préférable à une page blanche pour un problème de pastille.
+   */
+  const badgeRows = await supabaseGet<{ slug: string; slot: string; label: string }[]>(
+    'public_product_badges?select=slug,slot,label',
+  )
+  const badgesBySlug = new Map<string, { slot: string; label: string }[]>()
+  for (const b of badgeRows ?? []) {
+    const list = badgesBySlug.get(b.slug) ?? []
+    list.push({ slot: b.slot, label: b.label })
+    badgesBySlug.set(b.slug, list)
+  }
+
   return rows.map((r) => ({
     id: r.slug,
     slug: r.slug,
@@ -334,9 +352,44 @@ export async function getSupabaseProducts(): Promise<Product[]> {
     description: r.description ?? '',
     specs: toStringRecord(r.specs ?? {}),
     badge: r.badge ?? undefined,
+    badges: sortBadges(badgesBySlug.get(r.slug) ?? []),
     inStock: r.in_stock !== false,
     isBestseller: r.is_featured === true,
   }))
+}
+
+/**
+ * Ordre d'affichage des pastilles quand un produit en porte plusieurs.
+ *
+ * Une promotion se dit avant un label de qualité : « -15 % » et « Télécommande »
+ * sur la même vignette, c'est deux pastilles se disputant la même ligne. La
+ * promotion passe donc devant, parce que c'est elle qui décide de l'achat.
+ */
+const BADGE_ORDER = ['promo', 'stock_limite', 'nouveau', 'bestseller', 'hero']
+
+function sortBadges(list: { slot: string; label: string }[]) {
+  return [...list].sort(
+    (a, b) => BADGE_ORDER.indexOf(a.slot) - BADGE_ORDER.indexOf(b.slot),
+  )
+}
+
+/**
+ * Produit occupant une place précise — « héros » ou « meilleur-vendu ».
+ *
+ * C'est ce qui remplace les slugs écrits en dur dans les blocs de contenu.
+ * Une place est une place : la base garantit qu'une seule ligne la porte, donc
+ * il n'y a plus de produit de remplacement oublié quelque part, avec son prix
+ * de maquette et ses arguments de vente inventés.
+ */
+export async function getSlotProduct(
+  slot: string,
+): Promise<{ product: Product; label: string } | null> {
+  const { products } = await getSiteProducts()
+  for (const p of products) {
+    const badge = p.badges?.find((b) => b.slot === slot)
+    if (badge) return { product: p, label: badge.label }
+  }
+  return null
 }
 
 /**

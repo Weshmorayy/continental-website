@@ -23,7 +23,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  ShieldCheck, ExternalLink, Menu, X, LogOut, Package, ShoppingBag,
+  ShieldCheck, ExternalLink, Menu, X, Package, ShoppingBag,
   MessageSquare, Image as ImageIcon, Truck, HelpCircle, Settings,
   Database, FolderSync, ChevronRight, AlertTriangle, Loader2, Eye, Home,
   FileText, BarChart3, Users, ScrollText,
@@ -31,7 +31,7 @@ import {
 import { useStore } from '@/context/StoreContext'
 import { missingEnvVars } from '@/lib/supabase'
 import type { ModuleKey } from '@/lib/admin-types'
-import { Button, Toast, ConfirmDialog } from '@/components/admin/ui'
+import { Toast, ConfirmDialog } from '@/components/admin/ui'
 import OrdersTab from '@/components/admin/OrdersTab'
 import ProductsTab from '@/components/admin/ProductsTab'
 import LeadsTab from '@/components/admin/LeadsTab'
@@ -45,6 +45,7 @@ import ContentTab from '@/components/admin/ContentTab'
 import LogsTab from '@/components/admin/LogsTab'
 import StatsTab from '@/components/admin/StatsTab'
 import UsersTab from '@/components/admin/UsersTab'
+import IdentityCard from '@/components/admin/IdentityCard'
 
 type TabKey =
   | 'orders' | 'products' | 'leads' | 'banners'
@@ -396,8 +397,13 @@ NEXT_PUBLIC_SUPABASE_BUCKET=<nom-du-bucket>`}
             <div className="flex-1 overflow-y-auto p-2">
               <NavList />
             </div>
+            {/* Qui est connecté, et avec quels droits. Ces deux informations
+                répondent aux deux questions les plus fréquentes sur un portail :
+                « pourquoi ce module est-il grisé ? » et « est-ce bien mon
+                compte ? ». Avant, l'adresse seule était affichée, en 0,68 rem,
+                sur une seule ligne tronquée. */}
             <div className="border-t border-border p-3">
-              <p className="truncate text-[0.68rem] text-text-muted">{authEmail}</p>
+              <IdentityCard />
             </div>
           </div>
         </aside>
@@ -448,17 +454,17 @@ NEXT_PUBLIC_SUPABASE_BUCKET=<nom-du-bucket>`}
               <NavList onPick={() => setDrawer(false)} />
             </div>
 
+            {/* Même carte d'identité que dans la barre latérale, pour que le
+                tiroir mobile ne soit pas la seule vue où l'on ignore quel
+                compte est connecté. */}
+            <div className="border-t border-border p-3">
+              <IdentityCard />
+            </div>
+
             <div className="space-y-2 border-t border-border p-3">
               <Link href="/" target="_blank" className="admin-btn w-full">
                 <ExternalLink className="h-3.5 w-3.5" /> Voir le site
               </Link>
-              <Button
-                variant="danger"
-                className="w-full"
-                onClick={() => { setDrawer(false); setLogoutAsk(true) }}
-              >
-                <LogOut className="h-3.5 w-3.5" /> Se déconnecter
-              </Button>
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
   LineList, SpecEditor, EmptyState, ConfirmDialog, Th, Td, formatFcfa,
 } from '@/components/admin/ui'
 import ImagePicker from '@/components/admin/ImagePicker'
+import SlotPicker from '@/components/admin/SlotPicker'
 
 type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
 
@@ -79,7 +80,10 @@ function makeRef(name: string, categoryId: string): string {
 }
 
 export default function ProductsTab({ notify }: { notify: Notify }) {
-  const { products, categories, saveProduct, deleteProduct, toggleProduct, refresh } = useStore()
+  const {
+    products, categories, productBadges, saveProduct, setProductSlot,
+    deleteProduct, toggleProduct, refresh,
+  } = useStore()
 
   const [search, setSearch] = useState('')
   const [cat, setCat] = useState('all')
@@ -88,6 +92,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
   const [editing, setEditing] = useState<Partial<Product> | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
+  const [slotBusy, setSlotBusy] = useState<string | null>(null)
   /** Vrai dès que l'utilisateur saisit l'identifiant lui-même. */
   const [slugTouched, setSlugTouched] = useState(false)
 
@@ -133,6 +138,26 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
     notify({ message: editing.id ? 'Produit enregistré.' : 'Produit créé.' , tone: 'ok' })
     setEditing(null)
     await refresh()
+  }
+
+
+  /**
+   * Pose ou retire une rubrique.
+   *
+   * L'écriture passe par `set_slot()`, qui applique les règles de places : une
+   * rubrique unique n'est portée que par un produit, et poser celle-ci sur un
+   * autre libère l'ancienne. On ne tente donc PAS de vérifier la place libre
+   * avant d'appeler — la base est seule juge, et le message d'erreur qu'elle
+   * renvoie est plus juste que celui qu'un formulaire aurait inventé.
+   */
+  const toggleSlot = async (slot: string, label: string, held: boolean) => {
+    if (!editing?.slug) return
+    setSlotBusy(slot)
+    const error = await setProductSlot(editing.slug, held ? null : slot, label)
+    setSlotBusy(null)
+    notify(error
+      ? { message: error, tone: 'error' }
+      : { message: held ? `Rubrique « ${label} » retirée.` : `Rubrique « ${label} » attribuée.`, tone: 'ok' })
   }
 
   const remove = async () => {
@@ -356,6 +381,14 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                 label="Mis en avant"
               />
             </div>
+
+            <SlotPicker
+              slug={editing.slug ?? ''}
+              badges={productBadges}
+              productName={(s) => products.find((p) => p.slug === s)?.name ?? s}
+              onToggle={toggleSlot}
+              busy={slotBusy as never}
+            />
 
             <div className="sticky bottom-0 -mx-5 flex justify-end gap-2 border-t border-border bg-white px-5 py-4">
               <Button onClick={() => setEditing(null)}>Annuler</Button>
