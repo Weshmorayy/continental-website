@@ -138,15 +138,22 @@ function toStringRecord(specs: Record<string, unknown>): Record<string, string> 
  * Utilisé par la page d'accueil, le catalogue et les fiches produit.
  */
 
-/** Un produit par son slug, avec repli local. */
+/**
+ * Un produit par son slug.
+ *
+ * ⚠ Elle passe volontairement par `getSiteProducts()`, donc par les MÊMES
+ *   canaux que la liste du catalogue — Supabase compris.
+ *
+ *   Elle ne consultait jusqu'ici que le portail multi-clients et les fichiers
+ *   du dépôt. Ces deux canaux ne répondent que si le site est branché sur
+ *   l'administration Atelier, ce qui n'est pas le cas ici : un produit créé
+ *   dans le portail Continental apparaissait alors dans le catalogue et sa
+ *   fiche renvoyait un 404. Les six premiers produits fonctionnaient
+ *   uniquement parce qu'ils sont aussi écrits dans `src/data/`.
+ */
 export async function getSiteProduct(slug: string): Promise<Product | undefined> {
-  const content = await fetchAdminContent()
-
-  if (content) {
-    const found = content.products.find((p) => p.slug === slug)
-    if (found) return toSiteProduct(found, 0)
-  }
-  return localProducts.find((p) => p.slug === slug)
+  const { products } = await getSiteProducts()
+  return products.find((p) => p.slug === slug)
 }
 
 /** Bannières d'un emplacement. */

@@ -28,6 +28,23 @@ const BLANK: Partial<Product> = {
   images: [], in_stock: true, is_active: true, is_featured: false, badge: '',
 }
 
+/**
+ * « Ventilateur sur Pied 16" » → « ventilateur-sur-pied-16 ».
+ *
+ * L'identifiant d'URL est rempli à partir du nom tant que l'utilisateur ne
+ * l'a pas modifié lui-même : c'est le champ qu'on oublie le plus souvent,
+ * et son oubli ne se voit qu'en cliquant sur le produit.
+ */
+function slugify(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')            // retire les accents (diacritiques)
+    .toLowerCase()
+    .replace(/['’]/g, '')                 // l-cool -> lcool
+    .replace(/[^a-z0-9]+/g, '-')          // tout le reste devient un tiret
+    .replace(/^-+|-+$/g, '')
+}
+
 export default function ProductsTab({ notify }: { notify: Notify }) {
   const { products, categories, saveProduct, deleteProduct, toggleProduct, refresh } = useStore()
 
@@ -38,6 +55,8 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
   const [editing, setEditing] = useState<Partial<Product> | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
+  /** Vrai dès que l'utilisateur saisit l'identifiant lui-même. */
+  const [slugTouched, setSlugTouched] = useState(false)
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -55,8 +74,17 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
 
   const save = async () => {
     if (!editing) return
+    // Un produit sans identifiant s'enregistre sans erreur, mais sa fiche
+    // devient /produit/ — une adresse morte, invisible pour le visiteur qui
+    // clique sur la tuile. On refuse donc d'enregistrer plutôt que de créer
+    // une page que personne n'atteindra.
+    const slug = (editing.slug ?? '').trim()
+    if (!slug) {
+      notify({ message: "Renseignez l'identifiant d'URL (le nom suffit : il se remplit tout seul).", tone: 'error' })
+      return
+    }
     setSaving(true)
-    const error = await saveProduct(editing)
+    const error = await saveProduct({ ...editing, slug: slugify(slug) })
     setSaving(false)
     if (error) { notify({ message: error, tone: 'error' }); return }
     notify({ message: editing.id ? 'Produit enregistré.' : 'Produit créé.' , tone: 'ok' })
@@ -120,7 +148,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               </button>
             </div>
 
-            <Button variant="primary" onClick={() => setEditing({ ...BLANK })}>
+            <Button variant="primary" onClick={() => { setSlugTouched(false); setEditing({ ...BLANK }) }}>
               <Plus className="h-4 w-4" /> Nouveau
             </Button>
           </div>
@@ -152,7 +180,15 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               <Field label="Nom">
                 <TextInput
                   value={editing.name ?? ''}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    // Tant que l'identifiant n'a pas été saisi à la main, il
+                    // suit le nom. Dès qu'il est touché, on n'y touche plus.
+                    const slug = slugTouched
+                      ? editing.slug
+                      : slugify(name)
+                    setEditing({ ...editing, name, slug })
+                  }}
                 />
               </Field>
               <Field label="Référence" hint="Référence fabricant affichée sur la fiche.">
@@ -200,10 +236,13 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                 />
               </Field>
               <Field label="Identifiant d'URL (slug)" className="sm:col-span-2"
-                hint="Utilisé dans l'adresse de la fiche. Lettres minuscules, tirets.">
+                hint="Utilisé dans l'adresse de la fiche. Rempli depuis le nom ; modifiable.">
                 <TextInput
                   value={editing.slug ?? ''}
-                  onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
+                  onChange={(e) => {
+                    setSlugTouched(true)
+                    setEditing({ ...editing, slug: slugify(e.target.value) })
+                  }}
                 />
               </Field>
             </div>
@@ -298,7 +337,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                 : 'Créez un premier produit pour remplir le catalogue.'
             }
             action={
-              <Button variant="primary" onClick={() => setEditing({ ...BLANK })}>
+              <Button variant="primary" onClick={() => { setSlugTouched(false); setEditing({ ...BLANK }) }}>
                 <Plus className="h-4 w-4" /> Nouveau produit
               </Button>
             }
@@ -343,7 +382,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                     </Td>
                     <Td label="" className="justify-end">
                       <div className="flex gap-1.5">
-                        <Button onClick={() => setEditing({ ...p })} aria-label="Modifier">
+                        <Button onClick={() => { setSlugTouched(true); setEditing({ ...p }) }} aria-label="Modifier">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
@@ -392,7 +431,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                 <p className="mt-1 font-heading text-lg font-bold">{formatFcfa(p.price)}</p>
 
                 <div className="mt-auto flex gap-2 border-t border-border pt-3">
-                  <Button onClick={() => setEditing({ ...p })} className="flex-1">
+                  <Button onClick={() => { setSlugTouched(true); setEditing({ ...p }) }} className="flex-1">
                     <Pencil className="h-3.5 w-3.5" /> Modifier
                   </Button>
                   <Button

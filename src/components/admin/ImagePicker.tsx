@@ -11,6 +11,13 @@
  * Il accepte aussi une valeur qui n'est PAS dans la médiathèque (un visuel
  * déjà dans `public/`, par exemple) : la taper reste possible, faute de quoi
  * on ne pourrait plus utiliser les images livrées avec le dépôt.
+ *
+ * ⚠ Le champ reçoit `m.url`, l'adresse PUBLIQUE complète, jamais `m.path`.
+ *   `path` n'est que le nom du fichier dans le seau (« produits/photo.png »)
+ *   : le site le résout alors contre sa propre racine et renvoie un 404 —
+ *   l'image téléversée devient invisible alors que tout semble avoir marché.
+ *   C'est ce que font les visuels déposés dans `public/` (« /products/x.jpg »),
+ *   d'où les deux formes de valeur acceptées en entrée.
  */
 
 import React, { useState, useRef } from 'react'
@@ -120,7 +127,7 @@ export default function ImagePicker({
                 return (
                   <li key={m.id}>
                     <button
-                      onClick={() => { onChange(m.path); setOpen(false) }}
+                      onClick={() => { onChange(m.url || m.path); setOpen(false) }}
                       title={m.path}
                       className={`relative block aspect-square w-full overflow-hidden rounded-xl border transition-colors ${
                         selected ? 'border-black' : 'border-border hover:border-text-muted'
