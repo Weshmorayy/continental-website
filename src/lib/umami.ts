@@ -419,7 +419,11 @@ export async function getAudience(
   const [summary, series, pages, referrers, devices, browsers, countries, events] = await Promise.all([
     get<Summary>(`/api/websites/${WEBSITE_ID}/stats`, range),
     get<Series>(`/api/websites/${WEBSITE_ID}/pageviews`, { ...range, unit }),
-    get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'url', limit: 12 }),
+    // 50 et non 12 : cette liste ne sert pas qu'à afficher les pages les plus
+    // consultées, elle sert aussi à COMPTER les consultations de fiche produit
+    // pour le taux de contact. Une limite trop basse tronquerait le total, et
+    // le taux serait faux — pas approximatif, faux.
+    get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'url', limit: 50 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'referrer', limit: 8 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'device', limit: 5 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'browser', limit: 6 }),

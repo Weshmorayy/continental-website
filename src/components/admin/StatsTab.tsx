@@ -541,10 +541,28 @@ export default function StatsTab() {
       .slice(0, 8)
   }, [traffic])
 
-  /** Taux de contact : le seul rapport entre les deux familles, jamais une somme. */
-  const allProductViews = products.reduce((s, p) => s + p.views, 0)
-  const contactRate = ordersInPeriod.length > 0 && allProductViews > 0
-    ? share(ordersInPeriod.length, allProductViews)
+  /**
+   * Taux de contact : le seul rapport entre les deux familles, jamais une
+   * somme.
+   *
+   * Le numérateur est le nombre de commandes, le dénominateur le nombre de
+   * consultations de fiche produit SUR LA MÊME PÉRIODE. Avec Umami, ce
+   * dénominateur est enfin une mesure : le compteur `products.views` de la
+   * base n'a jamais été incrémenté par personne et affichait zéro depuis
+   * toujours, ce qui rendait ce taux mécaniquement nul.
+   *
+   * Tant qu'il n'y a aucune commande, le taux serait 0 % alors qu'aucune
+   * commande n'a encore pu être passée. L'écran affiche donc « — » plutôt
+   * qu'un zéro qui signifie « personne ne commande ».
+   */
+  const productViewsInPeriod = report
+    ? report.pages
+        .filter((p) => p.value.startsWith('/produit/'))
+        .reduce((sum, p) => sum + p.count, 0)
+    : products.reduce((s, p) => s + p.views, 0)
+
+  const contactRate = ordersInPeriod.length > 0 && productViewsInPeriod > 0
+    ? share(ordersInPeriod.length, productViewsInPeriod)
     : null
 
   /* ── rendu ──────────────────────────────────────────────────────────────── */
@@ -859,8 +877,8 @@ export default function StatsTab() {
                   </div>
                   <p className="mt-1.5 text-[0.68rem] leading-relaxed text-text-muted">
                     {contactRate === null
-                      ? `Aucune commande sur la période : le rapport n’a pas encore de sens. ${allProductViews} consultation(s) de fiche produit cumulées.`
-                      : `${ordersInPeriod.length} commande(s) pour ${allProductViews} consultation(s) de fiche produit cumulées.`}
+                      ? `Aucune commande sur la période : le rapport n’a pas encore de sens. ${productViewsInPeriod} consultation(s) de fiche produit sur la période.`
+                      : `${ordersInPeriod.length} commande(s) pour ${productViewsInPeriod} consultation(s) de fiche produit sur la période.`}
                   </p>
                 </div>
               </>
