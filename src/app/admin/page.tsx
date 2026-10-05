@@ -19,7 +19,7 @@
  * n'est empilée en colonnes dans l'en-tête : sur 375 px, cela ne tient pas.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -67,6 +67,13 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'settings', label: 'Réglages',    icon: Settings },
 ]
 
+/** Onglet demandé dans le fragment de l'URL, s'il est connu. */
+function readTabFromHash(): TabKey {
+  if (typeof window === 'undefined') return 'orders'
+  const key = window.location.hash.replace('#', '') as TabKey
+  return TABS.some((t) => t.key === key) ? key : 'orders'
+}
+
 const TAB_TITLE: Record<TabKey, string> = {
   orders: 'Commandes clients',
   products: 'Catalogue produits',
@@ -91,7 +98,31 @@ export default function AdminPage() {
     signIn, signOut,
   } = useStore()
 
-  const [tab, setTab] = useState<TabKey>('orders')
+  /*
+   * L'onglet vit dans le fragment de l'URL (`/admin#stats`).
+   *
+   * Il était dans un simple `useState` : à chaque rechargement le portail
+   * repartait sur « Commandes », quelle que soit la page ouverte. F5 en
+   * pleine saisie de statistiques renvoyait à l'accueil du portail — d'où
+   * l'impression d'être « envoyé ailleurs ».
+   *
+   * Le fragment, et non la requête : il n'est jamais envoyé au serveur, donc
+   * recharger ne relance aucune requête.
+   */
+  const [tab, setTabState] = useState<TabKey>(readTabFromHash)
+
+  const setTab = useCallback((next: TabKey) => {
+    setTabState(next)
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `#${next}`)
+    }
+  }, [])
+
+  useEffect(() => {
+    const sync = () => setTabState(readTabFromHash())
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [])
   const [drawer, setDrawer] = useState(false)
   const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null)
   const [logoutAsk, setLogoutAsk] = useState(false)

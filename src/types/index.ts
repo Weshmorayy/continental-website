@@ -16,6 +16,15 @@ export interface Product {
   features: string[]   // Liste des caractéristiques
   inStock: boolean
   badge?: string       // Ex: 'Nouveau', 'Best-seller' — optionnel
+  /**
+   * Accroche affichée sous le titre, une ou deux phrases.
+   *
+   * Elle était saisie dans l'administration et stockée en base, mais absente
+   * de ce type comme du mapping : le champ ne s'affichait nulle part.
+   */
+  shortDesc?: string
+  /** Texte long de la fiche, placé sous les caractéristiques. */
+  description?: string
 }
 
 // ─── Catégorie ───────────────────────────────────────────────────────────────

@@ -177,9 +177,25 @@ export async function getAdminSettings(): Promise<AdminSettings | null> {
 }
 
 /** Catégories, avec repli local. */
+/**
+ * Catégories du site : Supabase d'abord, portail multi-clients ensuite,
+ * fichiers du dépôt en dernier.
+ *
+ * Elle ne lisait que les deux derniers canaux. Comme le portail Atelier n'est
+ * pas configuré ici, la page catalogue retombait toujours sur les catégories
+ * écrites dans les fichiers — celles d'avant la création du catalogue. Une
+ * catégorie ajoutée dans l'administration n'apparaissait jamais : pas de
+ * bouton « Téléviseurs » alors que le produit existe et s'affiche.
+ */
 export async function getSiteCategories() {
+  const rows = await supabaseGet<{ slug: string; label: string; position: number }[]>(
+    'categories?select=slug,label,position&order=position.asc',
+  )
+  if (rows?.length) return rows
+
   const content = await fetchAdminContent()
   if (content && content.categories.length > 0) return content.categories
+
   return localCategories.map((c) => ({ slug: c.id, label: c.label, position: 0 }))
 }
 
@@ -309,6 +325,13 @@ export async function getSupabaseProducts(): Promise<Product[]> {
     image: r.image ?? '',
     images: r.image ? [r.image] : [],
     features: r.features?.length ? r.features : [r.short_desc ?? ''].filter(Boolean),
+    /*
+     * Les deux textes étaient récupérés par la requête mais jamais reportés
+     * dans l'objet produit : la fiche n'affichait ni l'accroche ni la
+     * description. Ils sont transmis par le mapping, pas relus à la demande.
+     */
+    shortDesc: r.short_desc ?? '',
+    description: r.description ?? '',
     specs: toStringRecord(r.specs ?? {}),
     badge: r.badge ?? undefined,
     inStock: r.in_stock !== false,

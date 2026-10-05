@@ -45,6 +45,39 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/**
+ * Référence fabricant Continental, dérivée du nom et de la catégorie.
+ *
+ * Format observé sur la gamme réelle : deux lettres pour la famille, le
+ * diamètre converti en millimètres sur deux chiffres, puis un suffixe.
+ *   « Ventilateur sur Pied 16" »  → FS40-…
+ *   « Ventilateur Mural 18" »     → FW45-…
+ *
+ * Le numéro final est tiré de l'horodatage : les références authentiques sont
+ * posées par le grossiste, on ne peut pas les deviner. La valeur reste
+ * modifiable — une référence provisoire se remplace, elle ne se fige pas.
+ */
+function makeRef(name: string, categoryId: string): string {
+  const fam = categoryId.includes('mural') ? 'FW'
+    : categoryId.includes('orbite') ? 'FO'
+    : categoryId.includes('tv') ? 'CT'
+    : categoryId.includes('climatiseur') ? 'CS'
+    : 'FS'
+
+  const pouces = /(\d{2})\s*(?:"|''|pouces)/i.exec(name)
+  const mm = pouces ? String(Math.round(Number(pouces[1]) * 2.54)) : ''
+
+  const suffixe = name
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .split('-')
+    .filter((w) => w.length > 2 && !/^\d+$/.test(w))
+    .map((w) => w.slice(0, 2).toUpperCase())
+    .join('')
+
+  return `${fam}${mm}${suffixe ? `-${suffixe}` : ''}-${Date.now().toString().slice(-4)}`
+}
+
 export default function ProductsTab({ notify }: { notify: Notify }) {
   const { products, categories, saveProduct, deleteProduct, toggleProduct, refresh } = useStore()
 
@@ -83,8 +116,18 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
       notify({ message: "Renseignez l'identifiant d'URL (le nom suffit : il se remplit tout seul).", tone: 'error' })
       return
     }
+    /*
+     * Référence fabricant : deux lettres pour la famille, le diamètre en
+     * pouces, puis un suffixe — d'où FS40-1688, FW45-810R. Une fiche Continental
+     * sans référence est inexploitable en magasin comme en service après-vente.
+     *
+     * Générée seulement pour une création : une référence existe une fois
+     * pour toutes, la changer ferait perdre les liens déjà diffusés.
+     */
+    const ref = (editing.ref_ ?? '').trim() || makeRef(editing.name ?? '', editing.category_id ?? '')
+
     setSaving(true)
-    const error = await saveProduct({ ...editing, slug: slugify(slug) })
+    const error = await saveProduct({ ...editing, ref_: ref, slug: slugify(slug) })
     setSaving(false)
     if (error) { notify({ message: error, tone: 'error' }); return }
     notify({ message: editing.id ? 'Produit enregistré.' : 'Produit créé.' , tone: 'ok' })

@@ -86,6 +86,15 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
 
                 <p className="product-ref text-text-muted mt-3">Réf. {product.ref}</p>
 
+                {/* La description courte s'affiche sous le titre. Elle existait
+                    en base depuis le début mais n'était jamais rendue : le champ
+                    était rempli dans l'administration, et invisible ici. */}
+                {product.shortDesc && (
+                  <p className="text-text-body mt-5 leading-relaxed">
+                    {product.shortDesc}
+                  </p>
+                )}
+
                 <div className="mt-8 py-7 hairline border-t border-border">
                   <span className="product-ref text-text-muted">Prix indicatif</span>
                   <p className="display-md text-text-primary text-3xl sm:text-4xl mt-1">
@@ -103,6 +112,20 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                     </li>
                   ))}
                 </ul>
+
+                {/* Texte long : le présentait en entier de la fiche, lui non
+                    plus n'était rendu. */}
+                {product.description && (
+                  <div className="mt-9 space-y-4">
+                    {product.description
+                      .split(/\n{2,}/)
+                      .map((p, i) => (
+                        <p key={i} className="text-text-body leading-relaxed">
+                          {p}
+                        </p>
+                      ))}
+                  </div>
+                )}
 
                 <div className="mt-9">
                   <TechSpecTable specs={product.specs} />

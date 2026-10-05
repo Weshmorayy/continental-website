@@ -210,7 +210,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const loadPrivate = useCallback(async () => {
     if (!supabase) return
-    const [o, l, m, b, a] = await Promise.all([
+    /*
+     * ⚠ L'ordre de décomposition suit EXACTEMENT l'ordre de `Promise.all`.
+     *
+     * Il était décomposé en `[o, l, m, b, a]` alors que la première requête
+     * porte sur `audit_events` : chaque état recevait la table précédente.
+     *   orders ← audit_events   → montants `undefined` → NaN partout
+     *   leads   ← orders
+     *   media   ← leads
+     *   backups ← media
+     *   audits  ← site_backups   → toujours vide → « Le journal est vide »
+     *
+     * Trois symptômes pour une seule cause : commandes en NaN, journal vide,
+     * médiathèque et sauvegardes décalées d'une table.
+     */
+    const [a, o, l, m, b] = await Promise.all([
       supabase
         .from('audit_events')
         .select('*')
@@ -225,7 +239,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       supabase.from('media').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('site_backups').select('*').order('created_at', { ascending: false }).limit(30),
     ])
-    const failed = [o, l, m, b, a].find((r) => r.error)
+    const failed = [a, o, l, m, b].find((r) => r.error)
     if (failed) console.error('[Continental] chargement privé :', frError(failed.error))
 
     setOrders((o.data ?? []).map((x) => ({

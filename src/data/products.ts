@@ -20,6 +20,15 @@ export interface Product {
   badge?: string
   inStock: boolean
   isBestseller?: boolean
+  /**
+   * Accroche sous le titre, et texte long sous les caractéristiques.
+   *
+   * Les deux champs étaient bien réels en base et remplis dans
+   * l'administration, mais absents de ce type comme du mapping Supabase : la
+   * fiche produit n'affichait ni l'un ni l'autre.
+   */
+  shortDesc?: string
+  description?: string
 }
 
 export const products: Product[] = [
