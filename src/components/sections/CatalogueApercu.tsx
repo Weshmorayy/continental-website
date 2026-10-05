@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Product } from '@/data/products'
 import { MessageCircle } from 'lucide-react'
 import { siteConfig } from '@/config/site'
+import { getBlocks } from '@/lib/atelier'
 import ProductCard from '@/components/ui/ProductCard'
 
 interface CatalogueApercuProps {
@@ -9,8 +10,25 @@ interface CatalogueApercuProps {
   totalCount: number
 }
 
-/** Reçoit les produits du serveur : même rendu, source pilotée par le contenu. */
-export default function CatalogueApercu({ products: allProducts, totalCount }: CatalogueApercuProps) {
+/**
+ * Reçoit les produits du serveur : même rendu, source pilotée par le contenu.
+ *
+ * Les deux blocs existaient en base, modifiables depuis le portail, mais rien
+ * ne les lisait. Comme la section est alimentée par props, elle ne peut pas
+ * lire la base elle-même : l'appel se fait ici et le rendu reste identique.
+ */
+export default async function CatalogueApercu({ products: allProducts, totalCount }: CatalogueApercuProps) {
+  const blocks = await getBlocks('catalogue-apercu')
+  const by = new Map(blocks.map((b) => [b.key, b]))
+
+  const heading = by.get('heading')
+  const ctaBlock = by.get('cta')
+
+  // Le repli reprend le texte d'origine, à l'identique.
+  const eyebrow = heading?.eyebrow ?? 'Collection 2026'
+  const title   = heading?.title   ?? 'Quelques modèles en stock.'
+  const ctaHref = ctaBlock?.ctaHref ?? '/catalogue'
+
   const previewProducts = allProducts.slice(0, 4)
 
   const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
@@ -22,9 +40,9 @@ export default function CatalogueApercu({ products: allProducts, totalCount }: C
       <div className="container-site">
 
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <p className="eyebrow eyebrow-center">Collection 2026</p>
+          <p className="eyebrow eyebrow-center">{eyebrow}</p>
           <h2 className="display-lg text-text-primary mt-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.25rem)' }}>
-            Quelques modèles en stock.
+            {title}
           </h2>
         </div>
 
@@ -39,7 +57,7 @@ export default function CatalogueApercu({ products: allProducts, totalCount }: C
         </div>
 
         <div className="mt-10 text-center">
-          <Link href="/catalogue" className="btn-outline">
+          <Link href={ctaHref} className="btn-outline">
             Tous les modèles ({totalCount})
           </Link>
         </div>

@@ -1,5 +1,6 @@
 import { Clock, CreditCard, ShieldCheck } from 'lucide-react'
 import { siteConfig } from '@/config/site'
+import { getBlocks } from '@/lib/atelier'
 
 const payments = [
   { name: 'Wave Sénégal', note: 'Sans frais' },
@@ -8,7 +9,28 @@ const payments = [
   { name: 'Espèces', note: 'Au livreur' },
 ]
 
-export default function LivraisonSection() {
+export default async function LivraisonSection() {
+  /*
+   * Trois blocs alimentent cette section. Ils existaient en base et étaient
+   * modifiables depuis le portail, mais aucun composant ne les lisait :
+   * les modifier depuis l'administration ne changeait rien à l'affichage.
+   *
+   * Le repli reprend le texte d'origine, à l'identique : sans base, la page
+   * reste exactement ce qu'elle était.
+   */
+  const blocks = await getBlocks('livraison')
+  const by = new Map(blocks.map((b) => [b.key, b]))
+
+  const heading = by.get('heading')
+  const zonesTitle = by.get('zones-title')
+  const proforma = by.get('proforma')
+
+  const eyebrow    = heading?.eyebrow   ?? 'Livraison & paiement'
+  const title      = heading?.title     ?? 'Livré chez vous, payé à la réception.'
+  const zonesLabel = zonesTitle?.title  ?? 'Délais par secteur'
+  const proformaBody = proforma?.body   ??
+    'Besoin d’une facture proforma ou d’un règlement par virement entreprise ?'
+  const proformaCta = proforma?.ctaLabel ?? 'Demande proforma B2B'
   const waProforma = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
     'Bonjour Continental, je souhaite une facture proforma pour mon entreprise.'
   )}`
@@ -18,9 +40,9 @@ export default function LivraisonSection() {
       <div className="container-site">
 
         <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20">
-          <p className="eyebrow eyebrow-center">Livraison & paiement</p>
+          <p className="eyebrow eyebrow-center">{eyebrow}</p>
           <h2 className="display-lg text-text-primary mt-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.25rem)' }}>
-            Livré chez vous, payé à la réception.
+            {title}
           </h2>
           <p className="mt-5 text-text-body">
             Livraison gratuite à partir de{' '}
@@ -32,7 +54,7 @@ export default function LivraisonSection() {
 
           {/* Zones — liste avec filets, style samsung.com */}
           <div className="lg:col-span-7">
-            <h3 className="display-sm text-xl text-text-primary mb-6">Délais par secteur</h3>
+            <h3 className="display-sm text-xl text-text-primary mb-6">{zonesLabel}</h3>
 
             <ul>
               {siteConfig.delivery.zones.map((zone) => (
@@ -83,7 +105,7 @@ export default function LivraisonSection() {
             <div className="mt-8 pt-8 hairline">
               <p className="flex items-start gap-2.5 text-sm text-text-body mb-5">
                 <CreditCard size={18} className="text-accent mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-                Besoin d&apos;une facture proforma ou d&apos;un règlement par virement entreprise ?
+                {proformaBody}
               </p>
               <a
                 href={waProforma}
@@ -91,7 +113,7 @@ export default function LivraisonSection() {
                 rel="noopener noreferrer"
                 className="btn-outline w-full"
               >
-                Demande proforma B2B
+                {proformaCta}
               </a>
             </div>
           </div>
