@@ -1,0 +1,102 @@
+# ══════════════════════════════════════════════════════════════════════════
+# Umami — mesure d'audience auto-hébergée pour Continental®
+# ══════════════════════════════════════════════════════════════════════════
+#
+# Deux conteneurs, et rien d'autre :
+#
+#   umami      le logiciel de mesure (image officielle, MIT)
+#   umami-db   son propre PostgreSQL, isolé du reste
+#
+# ── Pourquoi une base séparée ─────────────────────────────────────────────
+# Umami crée une quinzaine de tables et joue ses propres migrations à chaque
+# démarrage. Les poser dans le Supabase du site mélangerait deux schémas dont
+# l'un est géré par un outil tiers : une migration Umami qui tourne mal
+# emporterait des tables métier. La base séparée coûte ~30 Mo sur disque et
+# supprime ce risque.
+#
+# ── Pourquoi pas Supabase ─────────────────────────────────────────────────
+# Umami s'installe en PostgreSQL 12.14 minimum ; Supabase en fournit un. C'est
+# donc possible — mais Umami veut les droits de créer des tables et de lancer
+# des migrations, ce qui suppose la clé `postgres` en clair dans un conteneur
+# tiers. Le gain (un service de moins) ne vaut pas le risque.
+#
+# ── Ce que ce fichier suppose ─────────────────────────────────────────────
+# Deux variables, fournies par Coolify :
+#
+#   UMAMI_DB_PASSWORD   mot de passe du PostgreSQL interne
+#   UMAMI_APP_SECRET    clé de signature des sessions
+#
+# Les deux se génèrent avec `openssl rand -base64 32`. Voir README.md.
+#
+# ── Le domaine ────────────────────────────────────────────────────────────
+# `SERVICE_FQDN_UMAMI_3000` est la convention Coolify : la plateforme voit
+# cette clé, fabrique un domaine, et le réinjecte dans `SERVICE_URL_UMAMI`.
+# Avec un domaine générique Coolify, il ressemblera à
+# `umami-xxxxxxxx.coolify.example` — c'est suffisant pour démarrer, et se
+# remplace plus tard par `stats.continentalsn.com` dans l'interface.
+# ══════════════════════════════════════════════════════════════════════════
+
+services:
+  umami:
+    # `postgresql-latest` et non `latest` : l'image `latest` est celle de
+    # MySQL. C'est l'erreur d'installation la plus courante.
+    image: ghcr.io/umami-software/umami:postgresql-latest
+
+    environment:
+      DATABASE_TYPE: postgresql
+      # Le nom d'hôte `umami-db` est celui du service ci-dessous, résolu par
+      # le réseau interne de Docker Compose.
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+
+      # Umami nomme son script de mesure d'après cette valeur. `measure.js`
+      # au lieu du `script.js` par défaut : les listes de blocage publicitaire
+      # filtrent le nom standard sur des milliers de sites, et un visiteur sur
+      # trois utilise un bloqueur. Le nom ne change rien d'autre.
+      TRACKER_SCRIPT_NAME: measure
+
+      # Aucune donnée n'est envoyée à Umami Inc. Le site est autonome.
+      DISABLE_TELEMETRY: '1'
+
+      # Domaine public, fabriqué par Coolify.
+      SERVICE_FQDN_UMAMI_3000: /
+
+    depends_on:
+      umami-db:
+        condition: service_healthy
+
+    healthcheck:
+      # Umami met une vingtaine de secondes à jouer ses migrations au premier
+      # démarrage. Sans `start_period`, le conteneur serait déclaré mort avant
+      # d'avoir fini.
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/heartbeat || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+    restart: unless-stopped
+
+  umami-db:
+    image: postgres:15-alpine
+
+    environment:
+      POSTGRES_USER: umami
+      POSTGRES_DB: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+
+    # Le volume est ce qui rend la mesure utile : sans lui, chaque
+    # redéploiement repart d'une base vide et l'historique disparaît.
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U umami -d umami']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+    restart: unless-stopped
+
+volumes:
+  umami-db-data:

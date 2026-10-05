@@ -2,6 +2,13 @@ import type { Metadata } from 'next'
 import { buildLocalBusinessJsonLd } from '@/lib/seo'
 import { getSiteSettings } from '@/lib/atelier'
 import { siteConfig } from '@/config/site'
+import {
+  BEFORE_SEND_HANDLER,
+  BEFORE_SEND_SOURCE,
+  UMAMI_SCRIPT_SRC,
+  UMAMI_WEBSITE_ID,
+  isAnalyticsEnabled,
+} from '@/config/analytics'
 import PageView from '@/components/PageView'
 import CartDrawer from '@/components/cart/CartDrawer'
 import { CartProvider } from '@/context/CartContext'
@@ -36,6 +43,34 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/*
+          * Mesure d'audience — Umami, auto-hébergé (voir `deploy/umami/`).
+          *
+          * Les deux balises sont écrites ici, dans la partie serveur du
+          * document, et non chargées par un composant client :
+          *
+          *   • la première définit le filtre que le script appellera avant
+          *     chaque envoi. Elle doit être exécutée AVANT le script, sinon
+          *     Umami ne trouverait pas la fonction et enverrait tout — y
+          *     compris les visites d'administration et les jetons de
+          *     commande ;
+          *   • la seconde charge le script lui-même.
+          *
+          * Aucune des deux n'est émise tant que les variables publiques
+          * d'Umami sont absentes : sans elles, le site n'appelle rien à
+          * l'extérieur, et le compteur de repli de `PageView` prend le relais.
+          */}
+        {isAnalyticsEnabled && (
+          <>
+            <script dangerouslySetInnerHTML={{ __html: BEFORE_SEND_SOURCE }} />
+            <script
+              defer
+              src={UMAMI_SCRIPT_SRC}
+              data-website-id={UMAMI_WEBSITE_ID}
+              data-before-send={BEFORE_SEND_HANDLER}
+            />
+          </>
+        )}
       </head>
       <body className="bg-bg-primary text-text-body font-body antialiased">
         {/*

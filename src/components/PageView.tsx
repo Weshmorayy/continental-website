@@ -29,10 +29,21 @@
  * (google.com, l.facebook.com…). Ni l'URL de provenance, ni sa chaîne de
  * requête — qui contient couramment des identifiants de campagne ou de session.
  * Une navigation interne ou une visite sans référent compte comme « direct ».
+ *
+ * ── Ce compteur s'efface devant Umami ────────────────────────────────────
+ * Dès que `NEXT_PUBLIC_UMAMI_URL` et `NEXT_PUBLIC_UMAMI_WEBSITE_ID` sont
+ * renseignées, ce composant ne fait plus rien : Umami mesure la même visite,
+ * en mieux, et l'écrire ici aussi reviendrait à compter deux fois la même
+ * chose dans deux systèmes.
+ *
+ * Il reste en place, et actif, tant qu'Umami n'est pas configuré. Un
+ * déploiement peut ainsi partir avant qu'Umami soit en ligne : le site n'est
+ * jamais sans mesure, et l'onglet Statistiques retombe sur ce compteur.
  */
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { isAnalyticsEnabled } from '@/config/analytics'
 import { supabase } from '@/lib/supabase'
 
 /** Mémoire de session : empêche de recompter un rechargement. */
@@ -61,6 +72,9 @@ export default function PageView() {
   const pathname = usePathname() ?? '/'
 
   useEffect(() => {
+    // Umami est branché : la mesure est déjà faite, et mieux. Écrire une
+    // seconde ligne dans Supabase ne ferait que gonfler la table.
+    if (isAnalyticsEnabled) return
     if (!supabase) return
     if (pathname.startsWith('/admin')) return
     if (seen.has(pathname)) return
