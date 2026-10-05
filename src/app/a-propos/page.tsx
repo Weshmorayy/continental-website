@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import { getBlocks } from '@/lib/atelier'
 import { Award, Wind, Users, MapPin, ArrowUpRight, MessageCircle } from 'lucide-react'
@@ -53,8 +53,11 @@ const values = [
 const ICONS: Record<string, typeof Award> = { Award, Wind, Users, MapPin }
 
 export default async function AProposPage() {
+  const cfg = await getSiteSettings()
+
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite être conseillé pour un achat.',
+    cfg,
   )
 
   // Contenu piloté depuis l'administration. Les constantes ci-dessus restent
@@ -279,7 +282,7 @@ export default async function AProposPage() {
                 {ctaBlock?.title ?? "Besoin d'un conseil avant d'acheter ?"}
               </h2>
               <p className="mt-2 text-sm text-text-body leading-relaxed">
-                {ctaBlock?.body ?? `Équipe locale à ${siteConfig.contact.city}, ${siteConfig.contact.country} — disponible 7 jours sur 7.`}
+                {ctaBlock?.body ?? `Équipe locale à ${cfg.contact.city}, ${cfg.contact.country} — disponible 7 jours sur 7.`}
               </p>
             </div>
 

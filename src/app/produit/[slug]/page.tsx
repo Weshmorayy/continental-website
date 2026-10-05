@@ -7,11 +7,12 @@ import GalleryViewer from '@/components/ui/GalleryViewer'
 import TechSpecTable from '@/components/ui/TechSpecTable'
 import ProductCard from '@/components/ui/ProductCard'
 import ProductViewCounter from '@/components/ProductViewCounter'
+import AddToCart from '@/components/cart/AddToCart'
 import { products, getProductBySlug, getRelatedProducts } from '@/data/products'
 import { getSiteProduct, getSiteProducts } from '@/lib/atelier'
 import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 import { generatePageMetadata } from '@/lib/seo'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 
 /**
  * Les routes sont générées depuis le contenu RÉEL (admin s'il répond, données
@@ -40,6 +41,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
   const product = (await getSiteProduct(slug)) ?? getProductBySlug(slug)
   if (!product) notFound()
 
+  const cfg = await getSiteSettings()
   const related = getRelatedProducts(product)
   const waUrl = buildWhatsAppUrl(
     buildOrderMessage({ productName: product.name, ref: product.ref })
@@ -148,20 +150,38 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                   </span>
                 </p>
 
-                <div className="mt-9 flex flex-col sm:flex-row gap-3">
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-accent flex-1 py-4"
-                  >
-                    <MessageCircle size={17} />
-                    Commander via WhatsApp
-                  </a>
-                  <a href={`tel:${siteConfig.contact.whatsapp}`} className="btn-outline px-7 py-4">
-                    <Phone size={17} />
-                    Appeler
-                  </a>
+                <div className="mt-9 flex flex-col gap-3">
+                  {/* Le panier passe AVANT WhatsApp sur la fiche produit, alors
+                      que sur la tuile de catalogue c'est l'inverse.
+                      Le motif : ici, le visiteur a déjà choisi son produit et lu
+                      ses caractéristiques — il est au moment de la décision, et
+                      le panier enregistre la demande. Sur une tuile, il parcourt
+                      encore la liste, et WhatsApp reste le canal de commande le
+                      plus rapide. Les deux boutons restent visibles : ni l'un ni
+                      l'autre n'est imposé. */}
+                  <AddToCart
+                    slug={product.slug}
+                    name={product.name}
+                    modelRef={product.ref}
+                    price={product.price}
+                    image={product.image}
+                    full
+                  />
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-wa flex-1 justify-center py-4"
+                    >
+                      <MessageCircle size={17} />
+                      Commander via WhatsApp
+                    </a>
+                    <a href={`tel:${cfg.contact.phone}`} className="btn-outline px-7 py-4 justify-center">
+                      <Phone size={17} />
+                      Appeler
+                    </a>
+                  </div>
                 </div>
 
                 <p className="mt-5 flex items-center gap-2.5 text-xs text-text-muted">

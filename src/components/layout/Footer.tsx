@@ -1,11 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronDown, Phone, MessageCircle, MapPin } from 'lucide-react'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
+import { whatsappLink } from '@/lib/settings'
 
-const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
-  'Bonjour Continental, je souhaite commander un appareil.'
-)}`
+
 
 const groups = [
   {
@@ -27,7 +26,20 @@ const groups = [
   },
 ]
 
-export default function Footer() {
+/**
+ * Footer — passe basse.
+ *
+ * C'est ici que le numéro de téléphone et le lien WhatsApp apparaissent le plus
+ * souvent : ils sont répétés sur chaque page. C'est donc aussi l'endroit où un
+ * numéro périmé se voit le plus vite — d'où la lecture des RÉGLAGES, et non
+ * du fichier de configuration du dépôt.
+ */
+export default async function Footer() {
+  // Un seul aller-retour par page : toutes les valeurs affichées ici viennent
+  // de cette lecture, footer compris.
+  const cfg = await getSiteSettings()
+  const waUrl = whatsappLink(cfg, 'Bonjour Continental, je souhaite commander un appareil.')
+
   return (
     <footer id="contact" className="bg-bg-primary">
       <div className="container-site">
@@ -52,7 +64,7 @@ export default function Footer() {
                 <MessageCircle size={16} />
                 Écrire sur WhatsApp
               </a>
-              <a href={`tel:${siteConfig.contact.whatsapp}`} className="btn-outline text-sm">
+              <a href={`tel:${cfg.contact.phone}`} className="btn-outline text-sm">
                 <Phone size={16} />
                 Appeler
               </a>
@@ -74,14 +86,14 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={17} strokeWidth={1.5} className="text-text-primary flex-shrink-0" />
-                <a href={`tel:${siteConfig.contact.whatsapp}`} className="text-text-primary font-semibold">
-                  {siteConfig.contact.phone}
+                <a href={`tel:${cfg.contact.phone}`} className="text-text-primary font-semibold">
+                  {cfg.contact.phone}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <MessageCircle size={17} strokeWidth={1.5} className="text-text-primary flex-shrink-0" />
                 <span className="text-text-body">
-                  Commandes WhatsApp · {siteConfig.hours.weekdays}
+                  Commandes WhatsApp · {cfg.hours.weekdays}
                 </span>
               </li>
             </ul>

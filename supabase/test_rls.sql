@@ -50,6 +50,24 @@ ON CONFLICT DO NOTHING;
 
 SET ROLE anon;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- FILET DE SÉCURITÉ — les tentatives d'écriture de ce bloc sont annulées.
+--
+-- Le bloc ci-dessous ne lit pas seulement : il ESSAIE d'écrire. C'est la seule
+-- façon de distinguer « interdit » de « autorisé mais sans effet ». Dans le cas
+-- normal la RLS bloque tout et aucune ligne ne bouge.
+--
+-- Mais si une politique cédait, le test ne se contenterait pas d'échouer : il
+-- appliquerait réellement l'écriture. Un `UPDATE site_settings SET contact =
+-- '{"phone":"000"}'` réussi viderait le numéro du client, et le rapport
+-- afficherait « FAIL » sur une base déjà abîmée.
+--
+-- La transaction est donc ouverte ici et annulée par le ROLLBACK plus bas :
+-- le test peut tenter d'écrire autant qu'il veut, rien ne survit. Un test de
+-- sécurité ne doit jamais pouvoir modifier ce qu'il surveille.
+-- ─────────────────────────────────────────────────────────────────────────────
+BEGIN;
+
 DO $$
 DECLARE
   n      BIGINT;
@@ -188,6 +206,9 @@ BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '════ fin — aucun FAIL ne doit figurer ci-dessus ════';
 END $$;
+
+-- Annulation de tout ce que le bloc a pu écrire. Voir le BEGIN plus haut.
+ROLLBACK;
 
 RESET ROLE;
 -- Nettoyage des données de test (nécessite les droits du propriétaire).

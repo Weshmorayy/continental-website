@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import { getBlocks } from '@/lib/atelier'
 import {
@@ -16,24 +16,21 @@ import {
   Check,
 } from 'lucide-react'
 
-export const metadata = generatePageMetadata({
-  title: 'Contact & Commandes — Continental®',
-  description: `Contactez Continental® Dakar : commandes WhatsApp, conseil produit, SAV et livraison. Service commercial ${siteConfig.hours.weekdays}, ${siteConfig.hours.saturday}.`,
-  path: '/contact',
-})
-
-const schedule = [
-  { label: 'Lundi – Vendredi', value: siteConfig.hours.weekdays },
-  { label: 'Samedi – Dimanche', value: siteConfig.hours.saturday },
-  { label: 'Jours fériés', value: 'WhatsApp uniquement', accent: true },
-]
-
-const payments = [
-  { label: 'Wave', enabled: siteConfig.payments.wave },
-  { label: 'Orange Money', enabled: siteConfig.payments.orangeMoney },
-  { label: 'Free Money', enabled: siteConfig.payments.freeMoney },
-  { label: 'Espèces à la livraison', enabled: siteConfig.payments.cash },
-]
+/*
+ * Les métadonnées sont produites au BUILD, pas à la visite. Elles lisent donc
+ * elles aussi les réglages — sinon la page continue d'annoncer d'anciens
+ * horaires dans Google alors qu'ils ont été changés dans l'administration.
+ * Elles restent figées jusqu'au prochain déploiement : c'est le comportement
+ * attendu de toute donnée SEO.
+ */
+export async function generateMetadata() {
+  const cfg = await getSiteSettings()
+  return generatePageMetadata({
+    title: 'Contact & Commandes — Continental®',
+    description: `Contactez Continental® Dakar : commandes WhatsApp, conseil produit, SAV et livraison. Service commercial ${cfg.hours.weekdays}, ${cfg.hours.saturday}.`,
+    path: '/contact',
+  })
+}
 
 const faqs = [
   {
@@ -61,8 +58,27 @@ const faqs = [
 const ICONS: Record<string, typeof MessageCircle> = { MessageCircle, Phone, Mail }
 
 export default async function ContactPage() {
+  // Les horaires, moyens de paiement, téléphone et WhatsApp viennent des
+  // RÉGLAGES. Ils étaient lus dans le fichier de configuration du dépôt : les
+  // modifier dans l'administration ne changeait rien à cette page.
+  const cfg = await getSiteSettings()
+
+  const schedule = [
+    { label: 'Lundi – Vendredi', value: cfg.hours.weekdays },
+    { label: 'Samedi – Dimanche', value: cfg.hours.saturday },
+    { label: 'Jours fériés', value: 'WhatsApp uniquement', accent: true },
+  ]
+
+  const payments = [
+    { label: 'Wave', enabled: cfg.payments.wave },
+    { label: 'Orange Money', enabled: cfg.payments.orangeMoney },
+    { label: 'Free Money', enabled: cfg.payments.freeMoney },
+    { label: 'Espèces à la livraison', enabled: cfg.payments.cash },
+  ]
+
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite être mis en contact avec votre service commercial.',
+    cfg,
   )
 
   // Contenu piloté depuis l'administration ; les valeurs locales restent le
@@ -126,11 +142,11 @@ export default async function ContactPage() {
                 {String(by.get('hero')?.data.cta1 ?? 'Commander sur WhatsApp')}
               </a>
               <a
-                href={`tel:${siteConfig.contact.whatsapp}`}
+                href={`tel:${cfg.contact.phone}`}
                 className="btn-outline px-8"
               >
                 <Phone size={16} />
-                {siteConfig.contact.phone}
+                {cfg.contact.phone}
               </a>
             </div>
           </div>
@@ -163,15 +179,15 @@ export default async function ContactPage() {
                       WhatsApp — Commandes &amp; Conseil
                     </h2>
                     <p className="mt-2 text-sm text-text-body">
-                      Commandes et conseil · {siteConfig.hours.weekdays} ·{' '}
-                      {siteConfig.hours.saturday}
+                      Commandes et conseil · {cfg.hours.weekdays} ·{' '}
+                      {cfg.hours.saturday}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
                   <span className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
-                    {siteConfig.contact.phone}
+                    {cfg.contact.phone}
                   </span>
                   <span className="btn-wa pointer-events-none">
                     Ouvrir WhatsApp
@@ -182,7 +198,7 @@ export default async function ContactPage() {
 
               {/* Téléphone — tuile secondaire, ton plus soutenu et hauteur moindre */}
               <a
-                href={`tel:${siteConfig.contact.whatsapp}`}
+                href={`tel:${cfg.contact.phone}`}
                 className="rounded-2xl bg-bg-tertiary p-8 sm:p-10 flex flex-col gap-8 lg:col-span-5"
               >
                 <div className="flex items-start gap-5">
@@ -204,7 +220,7 @@ export default async function ContactPage() {
 
                 <div className="mt-auto hairline pt-6">
                   <span className="block font-heading text-xl font-bold text-text-primary">
-                    {siteConfig.contact.phone}
+                    {cfg.contact.phone}
                   </span>
                   <span className="link-underline text-text-primary text-sm mt-4 pointer-events-none">
                     <span>Lancer l&apos;appel</span>
@@ -254,7 +270,7 @@ export default async function ContactPage() {
 
                 <p className="mt-6 text-sm text-text-muted leading-relaxed">
                   Service commercial et service technique&nbsp;:{' '}
-                  {siteConfig.contact.city}, {siteConfig.contact.country}.
+                  {cfg.contact.city}, {cfg.contact.country}.
                 </p>
               </div>
 
@@ -271,18 +287,18 @@ export default async function ContactPage() {
                   Nos livreurs interviennent dans toute la région de Dakar et sa
                   banlieue immédiate. Livraison gratuite à partir de{' '}
                   <strong className="text-text-primary font-semibold">
-                    {siteConfig.delivery.freeFrom.toLocaleString('fr-FR')} FCFA
+                    {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA
                   </strong>
                   .
                 </p>
 
                 <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-12 border-t border-border">
-                  {siteConfig.delivery.zones.map((zone, i) => (
+                  {cfg.delivery.zones.map((zone, i) => (
                     <li
                       key={zone.name}
                       className={
                         'flex items-baseline justify-between gap-4 py-4' +
-                        (i === siteConfig.delivery.zones.length - 1
+                        (i === cfg.delivery.zones.length - 1
                           ? ''
                           : ' hairline')
                       }
@@ -362,11 +378,11 @@ export default async function ContactPage() {
                     {String(by.get('cta')?.data.cta ?? 'Poser ma question WhatsApp')}
                   </a>
                   <a
-                    href={`tel:${siteConfig.contact.whatsapp}`}
+                    href={`tel:${cfg.contact.phone}`}
                     className="btn-outline w-full mt-3"
                   >
                     <Phone size={16} />
-                    {siteConfig.contact.phone}
+                    {cfg.contact.phone}
                   </a>
 
                   <div className="mt-8 border-t border-border">
@@ -374,7 +390,7 @@ export default async function ContactPage() {
                       <MapPin size={17} className="text-accent mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-text-body">
                         <strong className="text-text-primary font-semibold block">
-                          {siteConfig.contact.city}, {siteConfig.contact.country}
+                          {cfg.contact.city}, {cfg.contact.country}
                         </strong>
                         Commandes préparées et livrées localement.
                       </p>
@@ -384,7 +400,7 @@ export default async function ContactPage() {
                       <Clock size={17} className="text-accent mt-0.5 flex-shrink-0" />
                       <p className="text-sm text-text-body">
                         <strong className="text-text-primary font-semibold block">
-                          {siteConfig.hours.weekdays} — {siteConfig.hours.saturday}
+                          {cfg.hours.weekdays} — {cfg.hours.saturday}
                         </strong>
                         Jours fériés : WhatsApp uniquement.
                       </p>

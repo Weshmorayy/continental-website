@@ -162,6 +162,20 @@ echo "═══ réglages et sauvegardes : les deux modules au nom différent �
 # On ne juge pas sur le code HTTP : PostgREST repond 200 avec un corps vide a
 # un refus comme a un succes. Seul l'etat de la donnee apres coup le dit.
 
+# ─────────────────────────────────────────────────────────────────────────────
+# AVANT D'ECRIRE : on retient la valeur reelle de la ligne.
+#
+# Cette suite verifie que l'administrateur PEUT ecrire les reglages. Pour le
+# prouver, elle ecrit — avec une valeur fixe. Elle ecrasait donc les vraies
+# coordonnees par le placeholder du depot, et rien ne le signalait : le test
+# continuait de passer pendant que le numero disparaissait du site.
+#
+# Un test qui detruit la donnee qu'il surveille est une panne differee. La
+# colonne est sauvegardee ici et remise en place au nettoyage, que les
+# controles passent ou non.
+# ─────────────────────────────────────────────────────────────────────────────
+CONTACT_AVANT=$($CN -tAc "SELECT contact::text FROM site_settings WHERE id=1;")
+
 curl -s -o /dev/null -X PATCH \
   "$BASE/rest/v1/site_settings?id=eq.1" \
   -H "apikey: $AK" -H "Authorization: Bearer $ADMIN" -H "Content-Type: application/json" \
@@ -207,6 +221,24 @@ DELETE FROM public.leads    WHERE name IN ('Alice Test','Bob Test');
 DELETE FROM public.products  WHERE slug = 'sonde-permissions';
 DELETE FROM public.site_backups WHERE backup_name LIKE 'sonde-permissions-backup%';
 SQL
+
+# Remise en place de la colonne ecrasee plus haut.
+#
+# Hors du heredoc ci-dessus : celui-ci n'accepte que du SQL, le shell y
+# executerait litteralement les lignes de commande.
+#
+# Le JSON transite par une variable psql, jamais par interpolation dans la
+# chaine SQL : une adresse contenant une apostrophe casserait la commande.
+# La requete passe par l'ENTREE STANDARD, pas par `-c` : psql n'y interpole
+# pas les variables, la ligne partait telle quelle au serveur et la
+# restauration echouait en silence.
+if [ -n "$CONTACT_AVANT" ]; then
+  $CN -q -v saved="$CONTACT_AVANT" <<'RESTAURE' >/dev/null
+UPDATE public.site_settings SET contact = :'saved'::jsonb WHERE id = 1;
+RESTAURE
+  check "les coordonnees reelles sont restaurees" "$CONTACT_AVANT" \
+        "$($CN -tAc "SELECT contact::text FROM site_settings WHERE id=1;")"
+fi
 
 echo
 echo "════════════════════════════════════════════"

@@ -4,7 +4,7 @@ import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import { getBlocks } from '@/lib/atelier'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import {
   ShieldCheck,
   Wrench,
@@ -83,6 +83,8 @@ const keyFigures = [
 const ICONS: Record<string, typeof ShieldCheck> = { ShieldCheck, Wrench, Clock }
 
 export default async function GarantiePage() {
+  const cfg = await getSiteSettings()
+
   const blocks = await getBlocks('garantie')
   const by = new Map(blocks.map((b) => [b.key, b]))
 
@@ -116,6 +118,7 @@ export default async function GarantiePage() {
 
   const waUrl = buildWhatsAppUrl(
     'Bonjour Continental, je souhaite déclarer une panne sous garantie.',
+    cfg,
   )
 
   return (
@@ -149,11 +152,11 @@ export default async function GarantiePage() {
                 {String(hero?.data.cta1 ?? 'Déclarer une panne')}
               </a>
               <a
-                href={`tel:${siteConfig.contact.whatsapp}`}
+                href={`tel:${cfg.contact.phone}`}
                 className="btn-outline px-8"
               >
                 <Phone size={16} />
-                {siteConfig.contact.phone}
+                {cfg.contact.phone}
               </a>
             </div>
           </div>
@@ -348,15 +351,15 @@ export default async function GarantiePage() {
                 {String(hero?.data.cta1 ?? 'Déclarer une panne')} sous garantie
               </h2>
               <p className="mt-2 text-sm text-text-body">
-                Service technique · {siteConfig.hours.weekdays} · {siteConfig.hours.saturday} ·{' '}
-                dimanche {siteConfig.hours.sunday.toLowerCase()} · {siteConfig.contact.city}
+                Service technique · {cfg.hours.weekdays} · {cfg.hours.saturday} ·{' '}
+                dimanche {cfg.hours.sunday.toLowerCase()} · {cfg.contact.city}
               </p>
               <a
-                href={`tel:${siteConfig.contact.whatsapp}`}
+                href={`tel:${cfg.contact.phone}`}
                 className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-text-primary hover:underline"
               >
                 <Phone size={15} className="text-accent flex-shrink-0" />
-                {siteConfig.contact.phone}
+                {cfg.contact.phone}
               </a>
             </div>
 

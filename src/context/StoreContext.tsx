@@ -18,6 +18,7 @@ import React, {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured, storageBucket } from '@/lib/supabase'
+import { resolveSettings, type ResolvedSettings, type DbSettings } from '@/lib/settings'
 import type {
   Product, Category, Banner, ShippingZone, Faq, Order, Lead,
   SiteSettings, MediaAsset, SiteBackup, OrderStatus, PaymentStatus,
@@ -87,6 +88,8 @@ interface StoreValue {
   deleteUser: (email: string) => Promise<string | null>
 
   saveProduct: (p: Partial<Product> & { id?: string }) => Promise<string | null>
+  /** Réglages résolus (contact, horaires, paiements, livraison) pour l'affichage. */
+  siteConfig: ResolvedSettings
   /** Rubriques de mise en avant en cours, tous produits confondus. */
   productBadges: { slug: string; slot: string; label: string }[]
   /** Pose ou retire une rubrique (« héros », « meilleur-vendu », promo…). */
@@ -191,6 +194,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
    * (« héros », « meilleur-vendu », « promotion ») dont le nombre est limité et
    * dont l'attribution se fait ailleurs que sur la fiche produit.
    */
+  /**
+   * Réglages RÉSOLUS, prêts à afficher.
+   *
+   * `settings` est la ligne brute de `site_settings`. Ce champ applique les
+   * valeurs par défaut du dépôt à ce qui manque, champ par champ : un
+   * réglage laissé vide ne doit pas effacer une valeur utilisable.
+   *
+   * C'est lui que consomment le pied de page, l'en-tête et les liens WhatsApp
+   * — le tout premier étant un composant client, qui ne peut pas lire la base
+   * lui-même.
+   */
+  const [siteConfigResolved, setSiteConfigResolved] = useState<ResolvedSettings>(
+    () => resolveSettings(null),
+  )
+
   const [productBadges, setProductBadges] = useState<
     { slug: string; slot: string; label: string }[]
   >([])
@@ -235,7 +253,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBanners((b.data ?? []) as Banner[])
     setShippingZones((s.data ?? []).map((z) => ({ ...z, price: Number(z.price) })) as ShippingZone[])
     setFaqs((f.data ?? []) as Faq[])
-    setSettings(st.data?.[0] ? ({ ...EMPTY_SETTINGS, ...st.data[0] }) : EMPTY_SETTINGS)
+    const settingsRow = (st.data?.[0] as unknown as DbSettings | undefined) ?? null
+    setSettings((settingsRow ?? EMPTY_SETTINGS) as unknown as SiteSettings)
+    // Les composants clients affichent la version résolue, pas la ligne brute :
+    // c'est elle qui applique les valeurs par défaut champ par champ.
+    setSiteConfigResolved(resolveSettings(settingsRow))
     setBlocks((cb.data ?? []) as ContentBlock[])
   }, [])
 
@@ -752,6 +774,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     setSettings({ ...EMPTY_SETTINGS, ...data })
+    setSiteConfigResolved(resolveSettings(data as unknown as DbSettings))
     await audit('update', 'site_settings', null, Object.keys(patch).join(', '))
     return null
   }, [audit])
@@ -971,6 +994,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     myPermissions, myRole, can, isOwner,
     signIn, signOut,
     saveBlock, deleteBlock, saveUser, deleteUser,
+    siteConfig: siteConfigResolved,
     productBadges, saveProduct, setProductSlot, deleteProduct, toggleProduct,
     saveCategory, deleteCategory, saveBanner, deleteBanner,
     saveShippingZone, deleteShippingZone, saveFaq, deleteFaq, saveSettings,
@@ -983,7 +1007,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     faqs, settings, orders, leads, media, backups, blocks, audits, admins,
     myPermissions, myRole, can, isOwner, signIn, signOut,
     saveBlock, deleteBlock, saveUser, deleteUser, audit,
-    productBadges, saveProduct, setProductSlot, deleteProduct, toggleProduct, saveCategory, deleteCategory,
+    siteConfigResolved, productBadges,
+    saveProduct, setProductSlot, deleteProduct, toggleProduct, saveCategory, deleteCategory,
     saveBanner, deleteBanner, saveShippingZone, deleteShippingZone, saveFaq,
     deleteFaq, saveSettings, updateOrderStatus, updateLeadStatus, deleteLead,
     uploadImage, lastUploadedPath, deleteMedia, createBackup, restoreBackup,

@@ -27,7 +27,7 @@ type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
 /** Sections du site, dans l'ordre où le visiteur les rencontre. */
 const SECTIONS: { slot: string; label: string; blurb: string }[] = [
   { slot: 'hero', label: 'Accueil — héros', blurb: 'Le grand titre et l’image de très haut de page.' },
-  { slot: 'gammes', label: 'Accueil — nos deux gammes', blurb: 'Les deux cartes ventilation / climatisation et leurs visuels.' },
+  { slot: 'gammes', label: 'Accueil — nos gammes', blurb: 'Les cartes de gammes (ventilation, climatisation, télévision) et leurs visuels.' },
   { slot: 'engagements', label: 'Accueil — engagements', blurb: 'Les quatre arguments numérotés.' },
   { slot: 'bestseller', label: 'Accueil — plus vendu', blurb: 'La mise en avant du produit le plus demandé.' },
   { slot: 'livraison', label: 'Accueil — livraison & paiement', blurb: 'Titres de la section, zones et facture proforma.' },
@@ -52,6 +52,18 @@ const FIELDS: Record<string, TextField[]> = {
   // Sur les pages internes, un bloc est souvent une simple ligne de titre,
   // de texte ou de valeur isolée : proposer sept champs vides les rend
   // illisibles.
+  /*
+   * Les blocs `gamme-N` de l'accueil.
+   *
+   * `meta` est VOLONTAIREMENT absent de cette liste. Sur cette section, la
+   * colonne ne contient pas une « précision » éditoriale : elle porte les
+   * catégories que la carte regroupe, et c'est elle qui décide de quels
+   * produits la carte mène. L'afficher comme un champ de texte libre
+   * inviterait le vendeur à la vider en cherchant à corriger une phrase —
+   * et la carte disparaîtrait de l'accueil sans qu'il comprenne pourquoi.
+   * Elle est affichée en lecture seule plus bas.
+   */
+  gammes:    ['eyebrow', 'title', 'subtitle', 'body', 'image', 'image_alt', 'cta_label', 'cta_href'],
   'a-propos':   ['eyebrow', 'title', 'body', 'meta', 'image', 'image_alt'],
   garantie:     ['eyebrow', 'title', 'body', 'meta'],
   contact:      ['eyebrow', 'title', 'body', 'meta'],
@@ -71,11 +83,17 @@ const LABELS: Record<TextField, string> = {
   image_alt: 'Texte alternatif de l’image',
 }
 
+/** Libellé humain d'une catégorie. Repli sur le slug : afficher
+ *  « ventilateur-sur-pied » est laid mais lisible, afficher « undefined »
+ *  ne l'est pas. */
+type LabelOf = (slug: string) => string
+
 function BlockEditor({
-  block, fields, onSave, onToggle, onDelete, saving,
+  block, fields, onSave, onToggle, onDelete, saving, labelOf,
 }: {
   block: ContentBlock
   fields: TextField[]
+  labelOf: LabelOf
   onSave: (patch: Partial<ContentBlock>) => void
   onToggle: (active: boolean) => void
   onDelete: () => void
@@ -90,6 +108,17 @@ function BlockEditor({
   React.useEffect(() => { setDraft(block) }, [block])
 
   const isLong = (f: TextField) => f === 'body' || f === 'subtitle'
+
+  /*
+   * Sur la section « gammes », `meta` ne se lit pas comme du texte : c'est la
+   * liste des catégories rattachées au bloc. On l'affiche donc comme des
+   * étiquettes plutôt que dans un champ de saisie.
+   */
+  const isGamme = /^gamme-\d+$/.test(block.key)
+  const gammeSlugs = (block.meta ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
 
   return (
     <Card
@@ -107,6 +136,31 @@ function BlockEditor({
       }
     >
       <div className="space-y-4 p-4 sm:p-5">
+        {/* Le bloc doit dire ce qu'il regroupe AVANT les champs : c'est ce
+            qui permet au vendeur de savoir qu'il est bien en train de
+            modifier la carte « Téléviseurs » et pas une ventilation. */}
+        {isGamme && (
+          <Field
+            label="Catégories regroupées"
+            hint="Lie cette carte à des produits du catalogue. Déterministe : elle ne dépend pas de l'ordre des catégories."
+          >
+            <div className="flex flex-wrap gap-2">
+              {gammeSlugs.length === 0 ? (
+                <Pill>Aucune — cette carte n’apparaît pas sur l’accueil</Pill>
+              ) : (
+                gammeSlugs.map((s) => (
+                  <Pill key={s}>{labelOf(s)}</Pill>
+                ))
+              )}
+            </div>
+            {gammeSlugs.length > 0 && (
+              <p className="mt-2 text-xs text-text-muted">
+                {block.meta}
+              </p>
+            )}
+          </Field>
+        )}
+
         {fields.map((f) => {
           if (f === 'image') {
             return (
@@ -191,7 +245,14 @@ function BlockEditor({
 }
 
 export default function ContentTab({ notify }: { notify: Notify }) {
-  const { blocks, saveBlock, deleteBlock, refresh } = useStore()
+  const { blocks, saveBlock, deleteBlock, refresh, categories } = useStore()
+
+  /* Les libellés viennent de la base, pas d'une table écrite en dur : une
+   * catégorie renommée dans l'admin s'affiche ici sous son nouveau nom. */
+  const labelOf: LabelOf = useMemo(() => {
+    const map = new Map(categories.map((c) => [c.slug, c.label]))
+    return (slug) => map.get(slug) ?? slug
+  }, [categories])
   const [openSlot, setOpenSlot] = useState<string>(SECTIONS[0].slot)
   const [saving, setSaving] = useState(false)
 
@@ -259,6 +320,7 @@ export default function ContentTab({ notify }: { notify: Notify }) {
               key={b.id}
               block={b}
               fields={FIELDS[section.slot] ?? FIELDS.default}
+              labelOf={labelOf}
               saving={saving}
               onSave={save}
               onToggle={(active) => save({ ...b, active })}

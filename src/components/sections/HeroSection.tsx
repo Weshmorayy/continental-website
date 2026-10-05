@@ -1,13 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { MessageCircle } from 'lucide-react'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import { getBlock, getSlotProduct } from '@/lib/atelier'
 import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
-
-const defaultWa = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
-  "Bonjour Continental, je souhaite obtenir des informations sur vos ventilateurs et climatiseurs."
-)}`
 
 /**
  * Héros — structure calquée sur samsung.com : colonne unique
@@ -35,6 +31,8 @@ const defaultWa = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURI
  */
 
 export default async function HeroSection() {
+  const cfg = await getSiteSettings()
+
   const hero = await getBlock('hero', 'hero')
   const slot = await getSlotProduct('hero')
 
@@ -55,8 +53,14 @@ export default async function HeroSection() {
     ? `${new Intl.NumberFormat('fr-FR').format(featured.price).replace(/ /g, ' ')} FCFA`
     : null
   const waUrl = featured
-    ? buildWhatsAppUrl(buildOrderMessage({ productName: featured.name, ref: featured.ref }))
-    : defaultWa
+    ? buildWhatsAppUrl(
+        buildOrderMessage({ productName: featured.name, ref: featured.ref }),
+        cfg,
+      )
+    : buildWhatsAppUrl(
+        "Bonjour Continental, je souhaite obtenir des informations sur nos ventilateurs et climatiseurs.",
+        cfg,
+      )
 
   return (
     <section className="bg-bg-primary">

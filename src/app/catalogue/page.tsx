@@ -1,14 +1,14 @@
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import CatalogueGrid from '@/components/sections/CatalogueGrid'
+import { CatalogueGridLazy } from '@/components/sections/CatalogueGrid'
 import { generatePageMetadata } from '@/lib/seo'
 import { getSiteProducts, getSiteCategories } from '@/lib/atelier'
 import { categories as fallbackCategories } from '@/data/products'
 
 export const metadata = generatePageMetadata({
-  title: 'Catalogue — Ventilateurs & Climatiseurs',
+  title: 'Catalogue — Ventilateurs, Climatiseurs & Téléviseurs',
   description:
-    "Parcourez l'ensemble de la gamme Continental® : ventilateurs sur pied, muraux, orbitaux. Commande rapide via WhatsApp. Livraison à Dakar.",
+    "Parcourez l'ensemble de la gamme Continental® : ventilateurs sur pied, muraux et orbitaux, climatiseurs Inverter et téléviseurs connectés. Commande rapide via WhatsApp. Livraison à Dakar.",
   path: '/catalogue',
 })
 
@@ -40,13 +40,13 @@ export default async function CataloguePage() {
               Tous nos modèles.
             </h1>
             <p className="mt-5 mx-auto max-w-xl text-text-body text-base sm:text-lg">
-              Ventilateurs sur pied, muraux et orbitaux — chaque modèle livré avec
+              Ventilateurs, climatiseurs et téléviseurs — chaque modèle livré avec
               garantie 2 ans et paiement à la réception.
             </p>
           </div>
         </section>
 
-        <CatalogueGrid products={products} categories={categories} />
+        <CatalogueGridLazy products={products} categories={categories} />
       </main>
       <Footer />
     </>

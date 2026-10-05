@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Search, ShoppingBag, ChevronRight, PhoneCall } from 'lucide-react'
-import { siteConfig } from '@/config/site'
+import {
+  Menu, X, Search, ShoppingBag, ChevronRight, PhoneCall,
+} from 'lucide-react'
+import { useCart } from '@/context/CartContext'
+import { useStore } from '@/context/StoreContext'
+import { whatsappLink } from '@/lib/settings'
 
 const navLinks = [
   { label: 'Ventilateurs',   href: '/catalogue?cat=ventilateur-pied' },
@@ -16,14 +20,25 @@ const navLinks = [
   { label: 'Contact',         href: '/contact' },
 ]
 
-const waHref = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
-  "Bonjour Continental, je souhaite être conseillé pour un achat."
-)}`
-
 export default function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { count, setOpen } = useCart()
+  // L'en-tête est un composant CLIENT : il ne peut pas lire la base lui-même.
+  // Il prend donc les réglages résolus au contexte, qui les a déjà chargés.
+  const { siteConfig: cfg } = useStore()
+
+  /*
+   * Construit à chaque rendu, et non au chargement du module : le numéro vient
+   * des réglages, donc le lien doit être reconstruit quand ils changent. Un
+   * `const` de niveau module l'aurait figé avant même que la base soit lue — il
+   * aurait conservé le numéro d'origine, exactement comme avant la correction.
+   */
+  const waHref = whatsappLink(
+    cfg,
+    "Bonjour Continental, je souhaite être conseillé pour un achat.",
+  )
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -84,15 +99,25 @@ export default function Header() {
                 <Search size={22} strokeWidth={1.6} />
               </Link>
 
-              <a
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:block p-2.5 text-text-primary hover:opacity-60 transition-opacity"
-                aria-label="Commander sur WhatsApp"
+              {/* Le panier remplace l'icône WhatsApp sur les écrans étroits :
+                  c'est désormais le geste principal, et un compteur visible vaut
+                  mieux qu'une icône qui n'exprime aucune action. */}
+              <button
+                onClick={() => setOpen(true)}
+                className="relative p-2.5 text-text-primary hover:opacity-60 transition-opacity"
+                aria-label={count > 0 ? `Ouvrir le panier, ${count} article(s)` : 'Ouvrir le panier'}
               >
-                <ShoppingBag size={22} strokeWidth={1.6} />
-              </a>
+                <ShoppingBag size={22} strokeWidth={1.6} className="hidden sm:block" />
+                <ShoppingBag size={20} strokeWidth={1.6} className="sm:hidden" />
+                {count > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-text-primary px-1 text-[0.6rem] font-bold text-white"
+                    aria-hidden="true"
+                  >
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
+              </button>
 
               <a
                 href={waHref}
@@ -190,7 +215,7 @@ export default function Header() {
               </div>
 
               <p className="mt-8 text-sm text-text-muted">
-                {siteConfig.hours.weekdays} · {siteConfig.hours.saturday}
+                {cfg.hours.weekdays} · {cfg.hours.saturday}
               </p>
             </nav>
           </div>

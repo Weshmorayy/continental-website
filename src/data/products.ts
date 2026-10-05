@@ -3,7 +3,24 @@
  * Tous les produits utilisent désormais les photos de produits isolées sur fond blanc (Stock-Images/Products).
  */
 
-export type Category = 'ventilateur-pied' | 'ventilateur-sol' | 'climatiseur'
+/**
+ * Catégorie d'un produit.
+ *
+ * Ce type était une union fermée de trois valeurs : `ventilateur-pied`,
+ * `ventilateur-sol`, `climatiseur`. C'était faux depuis le passage des produits
+ * en base. Les catégories vivent dans la table `categories` et le vendeur peut
+ * en créer une — c'est ainsi qu'une gamme « Téléviseurs » est apparue. Une
+ * union fermée ne peut pas accueillir une catégorie qu'elle ne connaissait pas
+ * à la compilation : elle poussait à écrire une fonction de conversion, et
+ * cette fonction est précisément ce qui faisait perdre l'information.
+ *
+ * On garde les trois valeurs historiques pour les données locales du dépôt,
+ * mais le type n'impose plus une liste : `string` autorise n'importe quel slug
+ *issu de la base, et `Category` reste un alias lisible pour le reste du code.
+ */
+export type Category =
+  | 'ventilateur-pied' | 'ventilateur-sol' | 'climatiseur'
+  | (string & {})
 
 export interface Product {
   id: string

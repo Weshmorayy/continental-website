@@ -1,8 +1,21 @@
+'use client'
+
+/**
+ * ProductCard — tuile du catalogue.
+ *
+ * C'est un composant CLIENT depuis que la tuille affiche un bouton « Ajouter au
+ * panier » : l'action se produit dans le navigateur, elle ne peut pas se
+ * demander au serveur. Il lit aussi les réglages résolus dans le contexte pour
+ * ouvrir la conversation WhatsApp au bon numéro — un composant serveur ne peut
+ * pas appeler `useStore()`.
+ */
 import Image from 'next/image'
 import Link from 'next/link'
 import { MessageCircle, ShieldCheck } from 'lucide-react'
 import type { Product } from '@/data/products'
 import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
+import AddToCart from '@/components/cart/AddToCart'
+import { useStore } from '@/context/StoreContext'
 
 interface ProductCardProps {
   product: Product
@@ -18,8 +31,12 @@ interface ProductCardProps {
  * apparaître un rectangle blanc.
  */
 export default function ProductCard({ product, size = 'default' }: ProductCardProps) {
+  // Numéro de WhatsApp issu des RÉGLAGES : chaque tuile du catalogue doit
+  // ouvrir la conversation vers le numéro actuel, pas vers celui du dépôt.
+  const { siteConfig: cfg } = useStore()
   const waUrl = buildWhatsAppUrl(
-    buildOrderMessage({ productName: product.name, ref: product.ref })
+    buildOrderMessage({ productName: product.name, ref: product.ref }),
+    cfg,
   )
 
   /*
@@ -108,15 +125,28 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
           </div>
 
           <div className="flex items-center gap-2 mt-4">
+            {/* Le panier est l'action par DÉFAUT : c'est elle qui enregistre
+                la commande. WhatsApp reste proposée à côté — c'est le canal par
+                lequel la vente se conclut réellement aujourd'hui, et certains
+                clients ne.commandent que là.
+                Inverser les deux, ou remplacer l'un par l'autre, ferait perdre
+                des ventes dans les deux sens. */}
+            <AddToCart
+              slug={product.slug}
+              name={product.name}
+              modelRef={product.ref}
+              price={product.price}
+              image={product.image}
+            />
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-wa flex-1 px-4 py-2.5 text-xs"
+              className="btn-wa px-4 py-2.5 text-xs flex-shrink-0"
               aria-label={`Commander ${product.name} sur WhatsApp`}
             >
               <MessageCircle size={15} />
-              Commander
+              <span className="sr-only sm:not-sr-only">WhatsApp</span>
             </a>
             <Link
               href={`/produit/${product.slug}`}

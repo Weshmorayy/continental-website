@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Product } from '@/data/products'
 import { MessageCircle } from 'lucide-react'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import { getBlocks } from '@/lib/atelier'
 import ProductCard from '@/components/ui/ProductCard'
 
@@ -18,6 +18,8 @@ interface CatalogueApercuProps {
  * lire la base elle-même : l'appel se fait ici et le rendu reste identique.
  */
 export default async function CatalogueApercu({ products: allProducts, totalCount }: CatalogueApercuProps) {
+  const cfg = await getSiteSettings()
+
   const blocks = await getBlocks('catalogue-apercu')
   const by = new Map(blocks.map((b) => [b.key, b]))
 
@@ -31,7 +33,7 @@ export default async function CatalogueApercu({ products: allProducts, totalCoun
 
   const previewProducts = allProducts.slice(0, 4)
 
-  const waUrl = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
+  const waUrl = `https://wa.me/${cfg.contact.whatsapp}?text=${encodeURIComponent(
     "Bonjour Continental, j'ai besoin d'aide pour choisir mon appareil."
   )}`
 

@@ -1,6 +1,8 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import type { Product } from '@/data/products'
 import ProductCard from '@/components/ui/ProductCard'
 import { ShieldCheck, Wind, MessageCircle } from 'lucide-react'
@@ -34,7 +36,31 @@ interface CatalogueGridProps {
  * exactement de la même façon.
  */
 export default function CatalogueGrid({ products, categories }: CatalogueGridProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('all')
+  /*
+   * Le filtre suit l'URL : `?cat=tv`.
+   *
+   * Les cartes « nos gammes » de l'accueil renvoient toutes vers
+   * `/catalogue?cat=…`. Avant, ce paramètre était ignoré : le visiteur
+   * arrivait sur le catalogue entier, et un lien qui promet « les modèles de
+   * cette gamme » mensait. L'état est donc initialisé depuis l'URL, puis
+   * l'URL est mise à jour à chaque changement de filtre — le bouton
+   * « précédent » du navigateur ramène alors au filtre précédent au lieu de
+   * sortir du catalogue.
+   *
+   * `useSearchParams` force le rendu côté client pour ce sous-arbre : la page
+   * doit l'entourer d'un `<Suspense>`, sans quoi Next refuse de la
+   * pré-rendre (erreur « useSearchParams() should be wrapped in a suspense
+   * boundary »). C'est le rôle du `CatalogueGridLazy` en bas de fichier.
+   */
+  const searchParams = useSearchParams()
+  const catFromUrl = searchParams.get('cat')
+
+  /*
+   * Une catégorie supprimée du catalogue ne doit pas laisser la page vide :
+   * si le slug de l'URL ne correspond plus à rien, on retombe sur « tout ».
+   */
+  const initial = catFromUrl && categories.some((c) => c.id === catFromUrl) ? catFromUrl : 'all'
+  const [activeCategory, setActiveCategory] = useState<string>(initial)
 
   const filtered = useMemo(
     () => activeCategory === 'all'
@@ -42,6 +68,16 @@ export default function CatalogueGrid({ products, categories }: CatalogueGridPro
       : products.filter((p) => p.category === activeCategory),
     [products, activeCategory],
   )
+
+  /** Changer de filtre écrit aussi dans l'URL. `replace: false` : l'historique
+      doit contenir les étapes du parcours, sinon « retour » perd le filtre. */
+  const select = (id: string) => {
+    setActiveCategory(id)
+    const url = new URL(window.location.href)
+    if (id === 'all') url.searchParams.delete('cat')
+    else url.searchParams.set('cat', id)
+    window.history.pushState(null, '', url.toString())
+  }
 
   return (
     <>
@@ -54,7 +90,7 @@ export default function CatalogueGrid({ products, categories }: CatalogueGridPro
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
+                  onClick={() => select(cat.id)}
                   aria-pressed={isSelected}
                   className={`flex-shrink-0 rounded-full px-5 py-2.5 text-sm transition-all duration-200 ${
                     isSelected
@@ -108,5 +144,21 @@ export default function CatalogueGrid({ products, categories }: CatalogueGridPro
         </div>
       </section>
     </>
+  )
+}
+
+/**
+ * Enveloppe de rendu différé.
+ *
+ * `useSearchParams` suspend le composant au premier rendu : sans cette
+ * frontière, la pré-rendu de `/catalogue` échoue à la compilation. Elle est
+ * définie ici plutôt que dans la page pour que le contrat reste au même
+ * endroit que la contrainte qu'il apaise.
+ */
+export function CatalogueGridLazy(props: CatalogueGridProps) {
+  return (
+    <Suspense fallback={<div className="container-site py-20" aria-busy="true" />}>
+      <CatalogueGrid {...props} />
+    </Suspense>
   )
 }

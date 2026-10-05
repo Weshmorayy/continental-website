@@ -14,6 +14,7 @@
  */
 
 import type { Product } from '@/data/products'
+import { resolveSettings, type ResolvedSettings, type DbSettings } from '@/lib/settings'
 import { products as localProducts, categories as localCategories } from '@/data/products'
 
 /** Slug du tenant Continental chez l'administration. */
@@ -114,11 +115,27 @@ function toSiteProduct(p: AdminProduct, index: number): Product {
   }
 }
 
+/**
+ * Catégorie d'un produit, telle que la base la définit.
+ *
+ * Cette fonction reduisait le slug a trois valeurs figees :
+ *
+ *   `climatiseur` si le slug contient « climat », `ventilateur-sol` s'il
+ *   contient « sol » ou « industri », `ventilateur-pied` DANS LES AUTRES CAS.
+ *
+ * Ce dernier cas est le defaut qui a casse le catalogue. Le slug `tv` ne
+ * contient aucun de ces mots : un televiseur etait donc classe
+ * « ventilateur-pied », et le filtre du catalogue le_RANGEait avec les
+ * ventilateurs. Le meme sort revenait aux ventilateurs muraux et orbite,
+ * qui ne contiennent ni « sol » ni « clim ». Un produit sans categorie
+ * aurait, lui, ete range en « ventilateur-pied » sans un seul signal.
+ *
+ * Il n'y a rien a normaliser : la base porte deja le slug, et les filtres de
+ * l'interface comparent des slugs. On le renvoie tel quel. Seule exception
+ * maintenue, l'absence de categorie, qui doit rester affichable.
+ */
 function categoryFromSlug(slug: string | null): Product['category'] {
-  if (!slug) return 'ventilateur-pied'
-  if (slug.includes('climat')) return 'climatiseur'
-  if (slug.includes('sol') || slug.includes('industri')) return 'ventilateur-sol'
-  return 'ventilateur-pied'
+  return slug && slug.trim() !== '' ? slug.trim() : 'ventilateur-pied'
 }
 
 /** Les specs de l'admin peuvent être typées ; le site affiche des chaînes. */
@@ -157,6 +174,32 @@ export async function getSiteProduct(slug: string): Promise<Product | undefined>
 }
 
 /** Bannières d'un emplacement. */
+/**
+ * Réglages du site, RÉSOLUS depuis la base.
+ *
+ * Complète la série de getters qui lisaient le portail ou les fichiers mais
+ * jamais Supabase — le même défaut que `getSiteProduct()` et
+ * `getSiteCategories()`. Sans cette fonction, aucun réglage écrit dans
+ * l'administration n'atteignait la vitrine : le numéro de WhatsApp modifié y
+ * restait invisible, et tous les liens continuaient de pointer vers
+ * l'ancien numéro.
+ *
+ * La lecture est faite avec la clé ANONYME : `site_settings` est lisible par
+ * tous par conception (c'est la même donnée que celle publiée dans les balises
+ * `LocalBusiness`), et la page doit pouvoir se rendre sans compte.
+ *
+ * Le repli est immédiat : base injoignable, ligne absente ou JSON invalide →
+ * les valeurs par défaut du dépôt. Une page qui ne s'affiche pas parce qu'une
+ * table est lente serait pire qu'une page qui affiche un numéro par défaut,
+ * que l'administration remplacera dès le prochain enregistrement.
+ */
+export async function getSiteSettings(): Promise<ResolvedSettings> {
+  const rows = await supabaseGet<DbSettings[]>('site_settings?select=*&id=eq.1&limit=1')
+  const row = Array.isArray(rows) ? rows[0] : null
+  if (!row) return resolveSettings(null)
+  return resolveSettings(row)
+}
+
 export async function getBanners(slot: string) {
   const content = await fetchAdminContent()
   if (!content) return []
@@ -235,6 +278,10 @@ export interface ContentBlock {
   imageAlt: string | null
   icon: string | null
   num: string | null
+  /** Rang d'affichage. Deux blocs de rang égal sortent dans un ordre imprévisible
+   *  côté Postgres : sans cette colonne, l'ordre des cartes de l'accueil peut
+   *  changer d'un rendu à l'autre. */
+  position: number
   data: Record<string, unknown>
 }
 
@@ -260,7 +307,8 @@ type BlockRow = {
   eyebrow: string | null; title: string | null; subtitle: string | null
   body: string | null; meta: string | null; cta_label: string | null
   cta_href: string | null; image: string | null; image_alt: string | null
-  icon: string | null; num: string | null; data: Record<string, unknown> | null
+  icon: string | null; num: string | null; position: number
+  data: Record<string, unknown> | null
 }
 
 function toBlock(r: BlockRow): ContentBlock {
@@ -269,6 +317,7 @@ function toBlock(r: BlockRow): ContentBlock {
     eyebrow: r.eyebrow, title: r.title, subtitle: r.subtitle, body: r.body,
     meta: r.meta, ctaLabel: r.cta_label, ctaHref: r.cta_href,
     image: r.image, imageAlt: r.image_alt, icon: r.icon, num: r.num,
+    position: r.position,
     data: r.data ?? {},
   }
 }

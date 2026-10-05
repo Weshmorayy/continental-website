@@ -1,5 +1,5 @@
 import { Clock, CreditCard, ShieldCheck } from 'lucide-react'
-import { siteConfig } from '@/config/site'
+import { getSiteSettings } from '@/lib/atelier'
 import { getBlocks } from '@/lib/atelier'
 
 const payments = [
@@ -10,6 +10,8 @@ const payments = [
 ]
 
 export default async function LivraisonSection() {
+  const cfg = await getSiteSettings()
+
   /*
    * Trois blocs alimentent cette section. Ils existaient en base et étaient
    * modifiables depuis le portail, mais aucun composant ne les lisait :
@@ -31,7 +33,7 @@ export default async function LivraisonSection() {
   const proformaBody = proforma?.body   ??
     'Besoin d’une facture proforma ou d’un règlement par virement entreprise ?'
   const proformaCta = proforma?.ctaLabel ?? 'Demande proforma B2B'
-  const waProforma = `https://wa.me/${siteConfig.contact.whatsapp}?text=${encodeURIComponent(
+  const waProforma = `https://wa.me/${cfg.contact.whatsapp}?text=${encodeURIComponent(
     'Bonjour Continental, je souhaite une facture proforma pour mon entreprise.'
   )}`
 
@@ -46,7 +48,7 @@ export default async function LivraisonSection() {
           </h2>
           <p className="mt-5 text-text-body">
             Livraison gratuite à partir de{' '}
-            {siteConfig.delivery.freeFrom.toLocaleString('fr-FR')} FCFA.
+            {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA.
           </p>
         </div>
 
@@ -57,7 +59,7 @@ export default async function LivraisonSection() {
             <h3 className="display-sm text-xl text-text-primary mb-6">{zonesLabel}</h3>
 
             <ul>
-              {siteConfig.delivery.zones.map((zone) => (
+              {cfg.delivery.zones.map((zone) => (
                 <li
                   key={zone.name}
                   className="flex flex-wrap items-center justify-between gap-3 py-4 hairline"
