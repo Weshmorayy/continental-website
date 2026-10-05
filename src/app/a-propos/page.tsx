@@ -11,7 +11,7 @@ import { Award, Wind, Users, MapPin, ArrowUpRight, MessageCircle } from 'lucide-
 export const metadata = generatePageMetadata({
   title: 'À Propos — Continental®',
   description:
-    'Découvrez la marque Continental® : spécialiste dakarois de la ventilation haute performance et de la climatisation Inverter tropicalisée. Notre mission, notre engagement qualité.',
+    'Découvrez la marque Continental® : spécialiste dakarois de la ventilation haute performance, de la climatisation Inverter tropicalisée et du téléviseur connecté. Notre mission, notre engagement qualité.',
   path: '/a-propos',
 })
 
@@ -107,7 +107,7 @@ export default async function AProposPage() {
             </h1>
 
             <p className="mt-7 mx-auto max-w-2xl text-base sm:text-lg text-text-body leading-relaxed">
-              {hero?.subtitle ?? 'Continental® est le spécialiste sénégalais de la ventilation haute performance et de la climatisation Inverter tropicalisée. Des produits durables, sélectionnés pour durer sous les fortes chaleurs et les contraintes du réseau électrique local.'}
+              {hero?.subtitle ?? 'Continental® est le spécialiste sénégalais de la ventilation haute performance, de la climatisation Inverter tropicalisée et du téléviseur connecté. Des produits durables, sélectionnés pour durer sous les fortes chaleurs et les contraintes du réseau électrique local.'}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">

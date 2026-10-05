@@ -10,9 +10,9 @@ import { generatePageMetadata } from '@/lib/seo'
 import { getSiteProducts } from '@/lib/atelier'
 
 export const metadata = generatePageMetadata({
-  title: 'Ventilateurs & Climatiseurs à Dakar',
+  title: 'Ventilateurs, Climatiseurs & Téléviseurs à Dakar',
   description:
-    'Continental® — Ventilateurs sur pied, muraux et climatiseurs haute performance. Livraison à Dakar et banlieue. Garantie 2 ans.',
+    'Continental® — Ventilateurs sur pied, muraux, climatiseurs haute performance et téléviseurs connectés. Livraison à Dakar et banlieue. Garantie 2 ans.',
   path: '/',
 })
 

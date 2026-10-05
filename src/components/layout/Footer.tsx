@@ -55,8 +55,9 @@ export default async function Footer() {
               className="h-7 w-auto object-contain mb-5"
             />
             <p className="text-text-body text-sm leading-relaxed max-w-sm">
-              Continental® — ventilation robuste et climatisation Inverter adaptés au
-              climat de Dakar. Chaque modèle est livré avec garantie fabricant 2 ans.
+              Continental® — ventilation, climatisation Inverter et téléviseurs
+              adaptés au climat de Dakar. Chaque modèle est livré avec garantie
+              fabricant 2 ans.
             </p>
 
             <div className="flex flex-wrap gap-3 mt-7">
