@@ -222,7 +222,7 @@ export const PAYMENT_METHOD_LABEL: Record<string, string> = {
   whatsapp: 'WhatsApp',
   wave: 'Wave',
   orange_money: 'Orange Money',
-  free_money: 'Free Money',
+  card: 'Carte bancaire',
   cash: 'Espèces',
 }
 

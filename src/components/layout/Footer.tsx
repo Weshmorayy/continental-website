@@ -10,9 +10,11 @@ const groups = [
   {
     label: 'Acheter',
     links: [
-      { label: 'Ventilateurs sur pied', href: '/catalogue?cat=ventilateur-pied' },
-      { label: 'Ventilateurs sol', href: '/catalogue?cat=ventilateur-sol' },
+      { label: 'Ventilateurs sur pied', href: '/catalogue?cat=ventilateur-sur-pied' },
+      { label: 'Ventilateurs muraux', href: '/catalogue?cat=ventilateur-mural' },
+      { label: 'Ventilateurs orbite', href: '/catalogue?cat=ventilateur-orbite' },
       { label: 'Climatiseurs Inverter', href: '/catalogue?cat=climatiseur' },
+      { label: 'Téléviseurs', href: '/catalogue?cat=tv' },
       { label: 'Tout le catalogue', href: '/catalogue' },
     ],
   },
@@ -105,7 +107,7 @@ export default async function Footer() {
               Paiements acceptés
             </h2>
             <ul className="space-y-2 text-sm text-text-body">
-              {['Wave', 'Orange Money', 'Free Money', 'Espèces à la livraison'].map((p) => (
+              {['Wave', 'Orange Money', 'Carte bancaire', 'Espèces à la livraison'].map((p) => (
                 <li key={p}>{p}</li>
               ))}
             </ul>

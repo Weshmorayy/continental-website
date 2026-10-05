@@ -5,7 +5,7 @@ import { getBlocks } from '@/lib/atelier'
 const payments = [
   { name: 'Wave Sénégal', note: 'Sans frais' },
   { name: 'Orange Money', note: 'Disponible' },
-  { name: 'Free Money', note: 'Disponible' },
+  { name: 'Carte bancaire', note: 'Disponible' },
   { name: 'Espèces', note: 'Au livreur' },
 ]
 

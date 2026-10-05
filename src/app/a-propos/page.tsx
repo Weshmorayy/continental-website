@@ -4,9 +4,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { getSiteSettings } from '@/lib/atelier'
-import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import { getBlocks } from '@/lib/atelier'
-import { Award, Wind, Users, MapPin, ArrowUpRight, MessageCircle } from 'lucide-react'
+import { Award, Wind, Users, MapPin, ArrowUpRight, ShoppingBag } from 'lucide-react'
 
 export const metadata = generatePageMetadata({
   title: 'À Propos — Continental®',
@@ -55,10 +54,6 @@ const ICONS: Record<string, typeof Award> = { Award, Wind, Users, MapPin }
 export default async function AProposPage() {
   const cfg = await getSiteSettings()
 
-  const waUrl = buildWhatsAppUrl(
-    'Bonjour Continental, je souhaite être conseillé pour un achat.',
-    cfg,
-  )
 
   // Contenu piloté depuis l'administration. Les constantes ci-dessus restent
   // le repli : sans base, la page s'affiche exactement à l'identique.
@@ -115,14 +110,9 @@ export default async function AProposPage() {
                 {String(hero?.data.cta_label ?? 'Voir le catalogue')}
                 <ArrowUpRight size={16} />
               </Link>
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-underline text-text-primary text-sm"
-              >
-                <span>{String(hero?.data.cta2_label ?? 'Commander sur WhatsApp')}</span>
-              </a>
+              <Link href="/contact" className="link-underline text-text-primary text-sm">
+                <span>{String(hero?.data.cta2_label ?? 'Nous contacter')}</span>
+              </Link>
             </div>
           </div>
 
@@ -287,15 +277,10 @@ export default async function AProposPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start lg:items-center gap-4 lg:ml-auto">
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-wa"
-              >
-                <MessageCircle size={17} />
-                {String(ctaBlock?.data.cta1 ?? 'Commander sur WhatsApp')}
-              </a>
+              <Link href="/catalogue" className="btn-accent">
+                <ShoppingBag size={17} />
+                {String(ctaBlock?.data.cta1 ?? 'Voir le catalogue')}
+              </Link>
               <Link href="/garantie" className="btn-outline">
                 {String(ctaBlock?.data.cta2 ?? 'Garantie & SAV')}
               </Link>

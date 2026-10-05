@@ -328,10 +328,8 @@ export default function CartPageClient() {
               Enregistrer et valider sur WhatsApp
             </button>
             <p className="mt-3 text-[0.68rem] leading-relaxed text-text-muted">
-              Les deux boutons enregistrent la commande et lui donnent une
-              référence, visible dans l&apos;administration. Le premier reste
-              sur le site, le second ouvre WhatsApp avec le récapitulatif déjà
-              rédigé.
+              Votre commande reçoit une référence dès l&apos;enregistrement, et
+              nous vous rappelons pour confirmer la livraison.
             </p>
           </div>
         </aside>

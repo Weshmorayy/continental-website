@@ -210,7 +210,7 @@ export default function SettingsTab({ notify }: { notify: Notify }) {
               [
                 ['wave', 'Wave'],
                 ['orangeMoney', 'Orange Money'],
-                ['freeMoney', 'Free Money'],
+                ['card', 'Carte bancaire'],
                 ['cash', 'Espèces à la livraison'],
               ] as const
             ).map(([key, label]) => (

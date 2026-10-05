@@ -619,15 +619,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
 
   const saveProduct = useCallback<StoreValue['saveProduct']>(async (p) => {
-    const { id, ...rest } = p
+    const { id } = p
+
+    /*
+     * On recopie les colonnes UNE PAR UNE, au lieu d'étaler l'objet reçu.
+     *
+     * `saveProduct({ ...editing })` envoyait à PostgREST tout ce que la ligne
+     * portait — y compris `category`, l'objet joint par
+     * `select('*, category:categories(...)')` pour afficher le libellé. Or
+     * `products` n'a pas de colonne `category`, seulement `category_id`.
+     * PostgREST refusait donc l'écriture entière :
+     *
+     *   « Could not find the 'category' column of 'products' in the schema
+     *     cache »
+     *
+     * Le défaut n'était pas dans le formulaire mais dans le transport :
+     * toutes les colonnes jointes pour l'affichage repartaient vers la base.
+     * La liste ci-dessous est celle des colonnes réelles de `products` ; ce
+     * qui n'y figure pas — liaisons, horodatages, champs d'affichage — est
+     * ignoré. Un champ d'affichage ajouté plus tard ne pourra plus casser un
+     * enregistrement.
+     */
     const row = {
-      ...rest,
-      price: Number(rest.price ?? 0),
-      compare_at: rest.compare_at == null || rest.compare_at === ('' as never)
-        ? null : Number(rest.compare_at),
-      features: rest.features ?? [],
-      images: rest.images ?? [],
-      specs: rest.specs ?? {},
+      slug: p.slug,
+      name: p.name,
+      ref_: p.ref_ ?? null,
+      sku: p.sku ?? null,
+      category_id: p.category_id ?? null,
+      price: Number(p.price ?? 0),
+      compare_at: p.compare_at == null || p.compare_at === ('' as never)
+        ? null : Number(p.compare_at),
+      image: p.image ?? null,
+      image_alt: p.image_alt ?? null,
+      images: p.images ?? [],
+      short_desc: p.short_desc ?? null,
+      description: p.description ?? null,
+      features: p.features ?? [],
+      specs: p.specs ?? {},
+      badge: p.badge ?? null,
+      in_stock: p.in_stock ?? true,
+      is_active: p.is_active ?? true,
+      is_featured: p.is_featured ?? false,
+      position: p.position ?? 0,
     }
     const error = await persist('products', row, id)
     if (error) return error

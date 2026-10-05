@@ -1,9 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { MessageCircle } from 'lucide-react'
-import { getSiteSettings } from '@/lib/atelier'
 import { getBlock, getSlotProduct } from '@/lib/atelier'
-import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
 
 /**
  * Héros — structure calquée sur samsung.com : colonne unique
@@ -31,17 +29,17 @@ import { buildWhatsAppUrl, buildOrderMessage } from '@/lib/whatsapp'
  */
 
 export default async function HeroSection() {
-  const cfg = await getSiteSettings()
 
   const hero = await getBlock('hero', 'hero')
   const slot = await getSlotProduct('hero')
 
   const eyebrow  = hero?.eyebrow    ?? 'Disponible maintenant'
   const title    = hero?.title      ?? 'La fraîcheur, sans le bruit.'
-  const subtitle = hero?.subtitle   ?? 'Ventilateurs et climatiseurs Inverter sélectionnés pour le climat de Dakar. Moteur bobiné cuivre, fonctionnement discret et garantie fabricant 2 ans.'
+  const subtitle = hero?.subtitle   ?? 'Ventilateurs, climatiseurs Inverter et téléviseurs connectés sélectionnés pour le climat de Dakar. Moteur bobiné cuivre, fonctionnement discret et garantie fabricant 2 ans.'
   const ctaLabel = hero?.ctaLabel   ?? 'Voir le catalogue'
   const ctaHref  = hero?.ctaHref    ?? '/catalogue'
-  const cta2Label = String(hero?.data.cta2_label ?? 'Commander sur WhatsApp')
+  const cta2Label = String(hero?.data.cta2_label ?? 'Nous contacter')
+  const cta2Href  = String(hero?.data.cta2_href  ?? '/contact')
 
   const featured = slot?.product ?? null
 
@@ -52,15 +50,6 @@ export default async function HeroSection() {
   const priceLabel = featured
     ? `${new Intl.NumberFormat('fr-FR').format(featured.price).replace(/ /g, ' ')} FCFA`
     : null
-  const waUrl = featured
-    ? buildWhatsAppUrl(
-        buildOrderMessage({ productName: featured.name, ref: featured.ref }),
-        cfg,
-      )
-    : buildWhatsAppUrl(
-        "Bonjour Continental, je souhaite obtenir des informations sur nos ventilateurs et climatiseurs.",
-        cfg,
-      )
 
   return (
     <section className="bg-bg-primary">
@@ -83,14 +72,12 @@ export default async function HeroSection() {
           <Link href={ctaHref} className="btn-outline px-8 py-3.5">
             {ctaLabel}
           </Link>
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-text-primary"
-          >
+          {/* Le second bouton menait à WhatsApp et ouvrait une commande hors
+              panier. Il mène au contact : la question trouve sa réponse, et la
+              commande garde une seule porte. */}
+          <Link href={cta2Href} className="link-underline text-text-primary">
             <span>{cta2Label}</span>
-          </a>
+          </Link>
         </div>
 
         {/* Produit en grand format — le héros visuel */}

@@ -114,7 +114,7 @@ export function resolveSettings(db: DbSettings | null | undefined): ResolvedSett
     payments: {
       wave: bool(payments.wave, siteConfig.payments.wave),
       orangeMoney: bool(payments.orangeMoney, siteConfig.payments.orangeMoney),
-      freeMoney: bool(payments.freeMoney, siteConfig.payments.freeMoney),
+      card: bool(payments.card, siteConfig.payments.card),
       cash: bool(payments.cash, siteConfig.payments.cash),
     },
     delivery: {

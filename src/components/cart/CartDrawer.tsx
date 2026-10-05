@@ -31,10 +31,20 @@ export default function CartDrawer() {
   /* Le tiroir est un `dialog`modal : il doit rendre le focus, répondre à
      Échap, et être refermé au clic extérieur. Sans cela, la touche Tab
      continue de parcourir les liens DU SITE DERRIÈRE le tiroir — un lecteur
-     d'écran n' announcing plus du tout où l'on se trouve. */
+     d'écran n'annonce plus du tout où l'on se trouve. */
   useEffect(() => {
     if (!open) return
 
+    /*
+     * Le verrou porte sur `documentElement` ET sur `body`.
+     *
+     * `body { overflow: hidden }` ne suffit plus depuis que `html` déclare
+     * `overflow-x: clip` : le débordement du body ne se propage à la fenêtre
+     * que si `html` est entièrement `visible`. Le verrouillage était donc
+     * devenu sans effet, et la page continuait de défiler derrière le tiroir
+     * ouvert.
+     */
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
 
     const onKey = (e: KeyboardEvent) => {
@@ -58,6 +68,7 @@ export default function CartDrawer() {
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
+      document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
   }, [open, setOpen])

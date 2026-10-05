@@ -11,13 +11,24 @@ import { useCart } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
 import { whatsappLink } from '@/lib/settings'
 
+/*
+ * Les adresses portent le slug RÉEL de la catégorie.
+ *
+ * Elles pointaient vers `ventilateur-pied` et `ventilateur-sol`, deux noms
+ * absents de la table `categories` (la base dit `ventilateur-sur-pied`,
+ * `ventilateur-mural`, `ventilateur-orbite`). Le catalogue ne trouvait donc
+ * aucune catégorie correspondante et retombait sur la liste complète : le lien
+ * « Ventilateurs » n'affichait pas les ventilateurs. La télévision n'avait
+ * aucune entrée.
+ */
 const navLinks = [
-  { label: 'Ventilateurs',   href: '/catalogue?cat=ventilateur-pied' },
-  { label: 'Climatiseurs',    href: '/catalogue?cat=climatiseur' },
+  { label: 'Ventilateurs',      href: '/catalogue?cat=ventilateur-sur-pied' },
+  { label: 'Climatiseurs',      href: '/catalogue?cat=climatiseur' },
+  { label: 'Téléviseurs',       href: '/catalogue?cat=tv' },
   { label: 'Tout le catalogue', href: '/catalogue' },
-  { label: 'Garantie & SAV',  href: '/garantie' },
-  { label: 'À propos',        href: '/a-propos' },
-  { label: 'Contact',         href: '/contact' },
+  { label: 'Garantie & SAV',    href: '/garantie' },
+  { label: 'À propos',          href: '/a-propos' },
+  { label: 'Contact',           href: '/contact' },
 ]
 
 export default function Header() {
@@ -200,15 +211,14 @@ export default function Header() {
               ))}
 
               <div className="mt-8 flex flex-col gap-3">
-                <a
-                  href={waHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-wa w-full"
-                >
-                  <PhoneCall size={17} />
-                  Commander sur WhatsApp
-                </a>
+                {/* La commande passe par le panier : c'est lui qui demande le
+                    nom, le téléphone et la zone, et qui enregistre la
+                    commande. Un raccourci WhatsApp depuis le menu ouvrait une
+                    discussion sans rien enregistrer. */}
+                <Link href="/panier" className="btn-accent w-full">
+                  <ShoppingBag size={17} />
+                  Voir mon panier
+                </Link>
                 <Link href="/catalogue" className="btn-outline w-full">
                   Voir tout le catalogue
                 </Link>

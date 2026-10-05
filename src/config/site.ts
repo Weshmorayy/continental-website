@@ -35,7 +35,7 @@ export const siteConfig = {
   payments: {
     wave: true,
     orangeMoney: true,
-    freeMoney: true,
+    card: true,
     cash: true,
   },
 

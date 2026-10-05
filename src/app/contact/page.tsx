@@ -14,6 +14,7 @@ import {
   Truck,
   Mail,
   Check,
+  ShoppingBag,
 } from 'lucide-react'
 
 /*
@@ -43,7 +44,7 @@ const faqs = [
   },
   {
     q: 'Quels sont les modes de paiement ?',
-    a: 'Wave, Orange Money, Free Money et espèces à la livraison. Devis proforma disponible pour les entreprises sur demande.',
+    a: 'Wave, Orange Money, carte bancaire et espèces à la livraison. Devis proforma disponible pour les entreprises sur demande.',
   },
   {
     q: 'Livrez-vous en dehors de Dakar ?',
@@ -72,7 +73,7 @@ export default async function ContactPage() {
   const payments = [
     { label: 'Wave', enabled: cfg.payments.wave },
     { label: 'Orange Money', enabled: cfg.payments.orangeMoney },
-    { label: 'Free Money', enabled: cfg.payments.freeMoney },
+    { label: 'Carte bancaire', enabled: cfg.payments.card },
     { label: 'Espèces à la livraison', enabled: cfg.payments.cash },
   ]
 
@@ -132,15 +133,10 @@ export default async function ContactPage() {
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-wa px-8"
-              >
-                <MessageCircle size={17} />
-                {String(by.get('hero')?.data.cta1 ?? 'Commander sur WhatsApp')}
-              </a>
+              <Link href="/catalogue" className="btn-accent px-8">
+                <ShoppingBag size={17} />
+                {String(by.get('hero')?.data.cta1 ?? 'Voir le catalogue')}
+              </Link>
               <a
                 href={`tel:${cfg.contact.phone}`}
                 className="btn-outline px-8"
@@ -176,10 +172,10 @@ export default async function ContactPage() {
                       Canal principal
                     </p>
                     <h2 className="display-sm mt-2 text-2xl sm:text-3xl text-text-primary">
-                      WhatsApp — Commandes &amp; Conseil
+                      WhatsApp — Question &amp; Conseil
                     </h2>
                     <p className="mt-2 text-sm text-text-body">
-                      Commandes et conseil · {cfg.hours.weekdays} ·{' '}
+                      Conseil et suivi de commande · {cfg.hours.weekdays} ·{' '}
                       {cfg.hours.saturday}
                     </p>
                   </div>
