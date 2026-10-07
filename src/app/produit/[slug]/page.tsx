@@ -8,10 +8,9 @@ import TechSpecTable from '@/components/ui/TechSpecTable'
 import ProductCard from '@/components/ui/ProductCard'
 import ProductViewCounter from '@/components/ProductViewCounter'
 import AddToCart from '@/components/cart/AddToCart'
-import { products, getProductBySlug, getRelatedProducts } from '@/data/products'
-import { getSiteProduct, getSiteProducts } from '@/lib/atelier'
+import { getProductBySlug, getRelatedProducts, type Product } from '@/data/products'
+import { getSiteProducts, getSiteSettings } from '@/lib/atelier'
 import { generatePageMetadata } from '@/lib/seo'
-import { getSiteSettings } from '@/lib/atelier'
 
 /**
  * Les routes sont générées depuis le contenu RÉEL (admin s'il répond, données
@@ -23,9 +22,77 @@ export async function generateStaticParams() {
   return list.map((p) => ({ slug: p.slug }))
 }
 
+/**
+ * Le produit demandé, et trois voisins de sa gamme.
+ *
+ * ── Pourquoi une seule lecture ────────────────────────────────────────────
+ * Le produit ET ses suggestions sortent désormais de la MÊME liste.
+ *
+ * C'est ce qui manquait. Les suggestions étaient tirées du tableau local du
+ * dépôt (`getRelatedProducts`), qui ne contient que six maquettes antérieures
+ * au passage en base, rangées sous `ventilateur-pied`, `ventilateur-sol` et
+ * `climatiseur`. Le catalogue réel, lui, range ses produits sous
+ * `ventilateur-sur-pied`, `ventilateur-mural`, `ventilateur-orbite`,
+ * `climatiseur` et `tv`.
+ *
+ * Une seule de ces catégories se retrouvait des deux côtés : « climatiseur ».
+ * Conséquence exacte et vérifiable — la fiche du climatiseur proposait trois
+ * maquettes, et aucune autre fiche n'avait de suggestions du tout.
+ *
+ * ── Le repli local, et sa limite ──────────────────────────────────────────
+ * Les données du dépôt restent utiles : sans base configurée, elles évitent
+ * une vitrine vide. Elles ne servent donc QUE lorsque le catalogue distant n'a
+ * rien rendu — jamais pour compléter une liste distante. C'est précisément
+ * cette nuance qui laissait passer les maquettes : l'ancien code mélangeait
+ * les deux sources sans jamais regarder laquelle avait répondu.
+ *
+ * Effet de bord voulu : un slug absent du catalogue réel mène à `notFound()`.
+ * Les six maquettes n'ont plus d'adresse publique.
+ *
+ * ── Quand la gamme ne contient qu'un produit ──────────────────────────────
+ * Cinq gammes existent, et trois ne comptent qu'un seul produit : orbite,
+ * climatiseur, téléviseurs. Chercher des voisins DANS la gamme y donnait une
+ * liste vide, donc aucune suggestion — la section disparaissait purement et
+ * simplement. Compléter avec des maquettes était le défaut d'origine ;
+ * la remplir avec des produits réels d'ailleurs est une réponse honnête,
+ * à condition de ne pas prétendre qu'ils sont de la même gamme.
+ *
+ * D'où `sameGamme`, que l'écran utilise pour choisir son intertitre. Le
+ * libellé suit ce qui est réellement montré : « Dans la même gamme » quand
+ * c'est vrai, « Aussi au catalogue » sinon.
+ */
+async function loadCatalogue(slug: string): Promise<{
+  product: Product | undefined
+  related: Product[]
+  sameGamme: boolean
+}> {
+  const { products: list, source } = await getSiteProducts()
+
+  if (source === 'local') {
+    const product = getProductBySlug(slug)
+    return {
+      product,
+      related: product ? getRelatedProducts(product) : [],
+      sameGamme: true,
+    }
+  }
+
+  const product = list.find((p) => p.slug === slug)
+  if (!product) return { product: undefined, related: [], sameGamme: true }
+
+  const siblings = list.filter((p) => p.category === product.category && p.id !== product.id)
+  const sameGamme = siblings.length > 0
+
+  const related = (
+    sameGamme ? siblings : list.filter((p) => p.id !== product.id)
+  ).slice(0, 3)
+
+  return { product, related, sameGamme }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = (await getSiteProduct(slug)) ?? getProductBySlug(slug)
+  const { product } = await loadCatalogue(slug)
   if (!product) return {}
   return generatePageMetadata({
     title: `${product.name} — Réf. ${product.ref}`,
@@ -37,11 +104,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProduitPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const product = (await getSiteProduct(slug)) ?? getProductBySlug(slug)
+  const { product, related, sameGamme } = await loadCatalogue(slug)
   if (!product) notFound()
 
   const cfg = await getSiteSettings()
-  const related = getRelatedProducts(product)
 
   return (
     <>
@@ -187,7 +253,12 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
         {related.length > 0 && (
           <section className="bg-bg-secondary py-16 sm:py-24">
             <div className="container-site">
-              <p className="eyebrow eyebrow-center">Dans la même gamme</p>
+              {/* L'intertitre décrit ce qui est réellement montré : trois
+                  voisins de la même gamme, ou trois autres produits du
+                  catalogue quand la gamme n'en compte qu'un. */}
+              <p className="eyebrow eyebrow-center">
+                {sameGamme ? 'Dans la même gamme' : 'Aussi au catalogue'}
+              </p>
               <h2 className="display-lg text-text-primary text-center mt-4" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
                 Vous pourriez aussi aimer.
               </h2>
