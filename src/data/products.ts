@@ -86,6 +86,26 @@ export interface ProductVariant {
   power?: string
   /** 12000 — en chiffre, pour un tri ou un filtre éventuel. */
   btu?: number
+
+  /**
+   * Fiche technique PROPRE au modèle : { "Modèle": "CT-INV-09 A+++", … }.
+   *
+   * Affichée sous le sélecteur, fusionnée avec les caractéristiques communes
+   * de la fiche. C'est ce qui manquait pour vendre : les trois puissances
+   * partagent la technologique inverter et le montage mural, mais chacune a
+   * ses poids, ses dimensions, son code produit et son code-barres. Ce sont
+   * ces valeurs-là que le vendeur lit sur le carton.
+   */
+  specs?: Record<string, string>
+
+  /**
+   * Avertissement de manutention propre au colis de ce modèle.
+   *
+   * Renseigné pour le 1,5 cv, dont le carton demande deux personnes. C'est une
+   * consigne de sécurité : elle s'affiche en clair sous la fiche, jamais
+   * noyée dans le tableau technique où personne ne la lirait.
+   */
+  warning?: string
 }
 
 /** Une rubrique de mise en avant, avec la place qu'elle occupe. */

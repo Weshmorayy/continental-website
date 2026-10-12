@@ -136,48 +136,69 @@ function VariantsEditor({
           </div>
 
           {value.map((v, i) => (
-            <div key={v.id} className="grid gap-2 sm:grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr_2rem] sm:items-center">
-              <TextInput
-                value={v.label}
-                onChange={(e) => update(i, { label: e.target.value })}
-                placeholder="1,5 cv — 12000 BTU"
-                aria-label={`Libellé du modèle ${i + 1}`}
+            <div key={v.id} className="rounded-lg border border-border p-3">
+              <div className="grid gap-2 sm:grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr_2rem] sm:items-center">
+                <TextInput
+                  value={v.label}
+                  onChange={(e) => update(i, { label: e.target.value })}
+                  placeholder="1,5 cv — 12000 BTU"
+                  aria-label={`Libellé du modèle ${i + 1}`}
+                />
+                <TextInput
+                  value={v.power ?? ''}
+                  onChange={(e) => update(i, { power: e.target.value })}
+                  placeholder="1,5 cv"
+                  aria-label={`Puissance du modèle ${i + 1}`}
+                />
+                <TextInput
+                  inputMode="numeric"
+                  value={v.btu === undefined ? '' : String(v.btu)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value.replace(/\D/g, ''))
+                    update(i, { btu: e.target.value === '' || !Number.isFinite(n) ? undefined : n })
+                  }}
+                  placeholder="12000"
+                  aria-label={`BTU du modèle ${i + 1}`}
+                />
+                {/* Le prix est saisi en chiffres bruts : un formatage automatique
+                    pendant la frappe replacerait le curseur au mauvais endroit. */}
+                <TextInput
+                  inputMode="numeric"
+                  value={v.price === 0 ? '' : String(v.price)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value.replace(/[^\d]/g, ''))
+                    update(i, { price: Number.isFinite(n) ? n : 0 })
+                  }}
+                  placeholder="180000"
+                  aria-label={`Prix du modèle ${i + 1}`}
+                />
+                <Button
+                  variant="danger"
+                  onClick={() => remove(i)}
+                  aria-label={`Supprimer ${v.label || `le modèle ${i + 1}`}`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              {/* Ce qui distingue vraiment les modèles : poids, dimensions,
+                  code produit, code-barres. Ce sont ces lignes que le vendeur
+                  lit sur le carton, et elles s'affichent sur la fiche à la
+                  place du tableau commun. */}
+              <p className="mt-3 mb-1.5 text-xs text-text-muted">Fiche technique du modèle</p>
+              <SpecEditor
+                value={v.specs ?? {}}
+                onChange={(specs) => update(i, { specs })}
               />
-              <TextInput
-                value={v.power ?? ''}
-                onChange={(e) => update(i, { power: e.target.value })}
-                placeholder="1,5 cv"
-                aria-label={`Puissance du modèle ${i + 1}`}
-              />
-              <TextInput
-                inputMode="numeric"
-                value={v.btu === undefined ? '' : String(v.btu)}
-                onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, ''))
-                  update(i, { btu: e.target.value === '' || !Number.isFinite(n) ? undefined : n })
-                }}
-                placeholder="12000"
-                aria-label={`BTU du modèle ${i + 1}`}
-              />
-              {/* Le prix est saisi en chiffres bruts : un formatage automatique
-                  pendant la frappe replacerait le curseur au mauvais endroit. */}
-              <TextInput
-                inputMode="numeric"
-                value={v.price === 0 ? '' : String(v.price)}
-                onChange={(e) => {
-                  const n = Number(e.target.value.replace(/[^\d]/g, ''))
-                  update(i, { price: Number.isFinite(n) ? n : 0 })
-                }}
-                placeholder="180000"
-                aria-label={`Prix du modèle ${i + 1}`}
-              />
-              <Button
-                variant="danger"
-                onClick={() => remove(i)}
-                aria-label={`Supprimer ${v.label || `le modèle ${i + 1}`}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+
+              <div className="mt-3">
+                <TextInput
+                  value={v.warning ?? ''}
+                  onChange={(e) => update(i, { warning: e.target.value })}
+                  placeholder="Avertissement de manutention (facultatif)"
+                  aria-label={`Avertissement du modèle ${i + 1}`}
+                />
+              </div>
             </div>
           ))}
         </>

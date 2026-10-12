@@ -445,6 +445,15 @@ function toVariants(raw: unknown): ProductVariant[] {
       price,
       power: typeof o.power === 'string' ? o.power : undefined,
       btu: Number.isFinite(btu) ? btu : undefined,
+      // Le tableau du modèle passe par le même assainissement que celui de la
+      // fiche : des clés vides ou non textuelles produiraient des lignes
+      // fantômes dans le tableau technique.
+      specs: o.specs && typeof o.specs === 'object'
+        ? toStringRecord(o.specs as Record<string, unknown>)
+        : undefined,
+      warning: typeof o.warning === 'string' && o.warning.trim() !== ''
+        ? o.warning.trim()
+        : undefined,
     }]
   })
 }

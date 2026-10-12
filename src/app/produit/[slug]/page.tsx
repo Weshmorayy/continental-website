@@ -218,6 +218,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                     modelRef={product.ref}
                     image={product.image}
                     basePrice={product.price}
+                    commonSpecs={product.specs}
                     variants={product.variants ?? []}
                   />
                 ) : (
@@ -253,9 +254,14 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                   ))}
                 </ul>
 
-                <div className="mt-9">
-                  <TechSpecTable specs={product.specs} />
-                </div>
+                {/* Sur une fiche déclinée, le tableau technique est rendu par le
+                    sélecteur : il change avec le modèle choisi. Le garder ici
+                    afficherait deux tableaux, dont un incomplet. */}
+                {!hasVariants && (
+                  <div className="mt-9">
+                    <TechSpecTable specs={product.specs} />
+                  </div>
+                )}
 
                 <p className="mt-8 flex items-center gap-3 text-sm text-text-body">
                   <ShieldCheck size={20} strokeWidth={1.5} className="text-accent flex-shrink-0" />

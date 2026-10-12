@@ -11,14 +11,20 @@
  * les trois ensemble — boutons, prix, bouton d'ajout — précisément pour qu'ils
  * ne puissent pas se désynchroniser.
  *
- * ── Ce qu'il n'affiche pas ────────────────────────────────────────────────
- * Les caractéristiques, la description et la garantie, communes aux trois
- * modèles, restent rendues par la page (composant serveur) : les déplacer ici
- * ferait grossir le JavaScript envoyé au navigateur sans rien changer au prix.
+ * ── Ce qu'il affiche aussi ────────────────────────────────────────────────
+ * Le tableau technique du modèle choisi. Les trois puissances partagent la
+ * technologie et le montage, mais chacune a ses poids, ses dimensions et son
+ * code-barres : ce sont ces lignes-là qui doivent changer avec la sélection,
+ * sinon la fiche annoncerait 6,4 kg pour un appareil de 19,5 kg.
+ *
+ * La description et la garantie, communes, restent rendues par la page
+ * (composant serveur).
  */
 
 import React, { useState } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import AddToCart from '@/components/cart/AddToCart'
+import TechSpecTable from '@/components/ui/TechSpecTable'
 import type { ProductVariant } from '@/data/products'
 
 interface Props {
@@ -29,11 +35,17 @@ interface Props {
   image: string
   /** Prix de l'entrée de base, utilisé si une variante n'en portait pas. */
   basePrice: number
+  /**
+   * Caractéristiques COMMUNES à tous les modèles (type, montage, technologie,
+   * classe énergétique). Fusionnées avec celles du modèle choisi pour donner
+   * UN seul tableau : deux tableaux côte à côte se répéteraient.
+   */
+  commonSpecs: Record<string, string>
   variants: ProductVariant[]
 }
 
 export default function VariantPicker({
-  slug, name, modelRef, image, basePrice, variants,
+  slug, name, modelRef, image, basePrice, commonSpecs, variants,
 }: Props) {
   // Le premier modèle est celui de l'entrée de base : c'est le prix déjà
   // affiché dans le catalogue, donc ce que le visiteur s'attend à retrouver.
@@ -90,6 +102,25 @@ export default function VariantPicker({
           lineKey={`${slug}::${selected.id}`}
           full
         />
+      </div>
+
+      {/* Consigne de manutention du colis, quand ce modèle en porte une.
+          Hors du tableau technique, à dessein : un avertissement de sécurité
+          noyé entre « Fréquence » et « Code-barres » n'est pas lu. */}
+      {selected.warning && (
+        <p className="mt-6 flex items-start gap-3 border-l-2 border-text-primary pl-4 text-sm leading-relaxed text-text-body">
+          <AlertTriangle
+            size={18}
+            strokeWidth={1.6}
+            className="mt-0.5 flex-shrink-0 text-text-primary"
+            aria-hidden="true"
+          />
+          <span>{selected.warning}</span>
+        </p>
+      )}
+
+      <div className="mt-10">
+        <TechSpecTable specs={{ ...commonSpecs, ...(selected.specs ?? {}) }} />
       </div>
     </div>
   )

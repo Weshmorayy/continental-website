@@ -681,6 +681,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           ...(v.btu === undefined || !Number.isFinite(Number(v.btu))
             ? {}
             : { btu: Number(v.btu) }),
+          // Une ligne de tableau sans intitulé ou sans valeur ne s'afficherait
+          // pas : on l'écarte à l'écriture plutôt que de la stocker pour rien.
+          ...(v.specs && Object.keys(v.specs).length > 0
+            ? {
+                specs: Object.fromEntries(
+                  Object.entries(v.specs)
+                    .filter(([k, val]) => k.trim() !== '' && String(val).trim() !== '')
+                    .map(([k, val]) => [k.trim(), String(val).trim()]),
+                ),
+              }
+            : {}),
+          ...((v.warning ?? '').trim() ? { warning: v.warning!.trim() } : {}),
         })),
     }
     const error = await persist('products', row, id)
