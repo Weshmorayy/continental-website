@@ -37,7 +37,19 @@ import React, {
 } from 'react'
 
 export interface CartLine {
-  /** Clé de ligne : le slug du produit. Deux ajouts du même produit fusionnent. */
+  /**
+   * Clé de LIGNE — l'identité de l'article dans le panier.
+   *
+   * Elle valait le slug, et valait donc aussi l'identité du produit : deux
+   * modèles d'une même fiche fusionnaient en une seule ligne. Le client qui
+   * ajoutait le 1 cv puis le 2 cv lisait « 2 × » au prix d'un seul des deux —
+   * et la commande envoyée au vendeur ne mentionnait qu'un modèle.
+   *
+   * Elle vaut désormais le slug pour une fiche à modèle unique, et
+   * `slug::variante` pour une fiche déclinée.
+   */
+  key: string
+  /** Slug du PRODUIT : sert au lien de la fiche et à la commande. */
   slug: string
   name: string
   ref: string
@@ -46,14 +58,22 @@ export interface CartLine {
   quantity: number
 }
 
+/**
+ * Ce que fournit un bouton d'ajout. La clé de ligne est facultative : sans
+ * variante, elle vaut le slug — c'est le cas de toutes les fiches à modèle
+ * unique, qui n'ont pas à connaître cette mécanique.
+ */
+export type CartInput = Omit<CartLine, 'quantity' | 'key'> & { key?: string }
+
 interface CartValue {
   lines: CartLine[]
   /** Nombre d'articles, toutes lignes confondues. */
   count: number
   subtotal: number
-  add: (product: Omit<CartLine, 'quantity'>, quantity?: number) => void
-  setQuantity: (slug: string, quantity: number) => void
-  remove: (slug: string) => void
+  add: (product: CartInput, quantity?: number) => void
+  /** `key` : la clé de LIGNE, jamais le slug (cf. CartLine.key). */
+  setQuantity: (key: string, quantity: number) => void
+  remove: (key: string) => void
   clear: () => void
   open: boolean
   setOpen: (v: boolean) => void
@@ -75,7 +95,12 @@ function readStored(): CartLine[] {
     // d'une version antérieure. On ne fait confiance à rien : chaque ligne est
     // filtrée sur sa forme, et une ligne cassée est écartée plutôt que
     // propagée jusqu'au total affiché.
-    return parsed.filter((l): l is CartLine => {
+    // La clé est facultative dans ce qui est stocké : un panier enregistré
+    // avant l'arrivée des variantes n'en a pas. C'est le type de ce qui est LU,
+    // pas de ce qui est manipulé ensuite.
+    type Stored = Omit<CartLine, 'key'> & { key?: string }
+
+    return parsed.filter((l): l is Stored => {
       if (typeof l !== 'object' || l === null) return false
       const x = l as Record<string, unknown>
       return (
@@ -85,6 +110,9 @@ function readStored(): CartLine[] {
         typeof x.quantity === 'number' && Number.isInteger(x.quantity) && x.quantity > 0
       )
     }).map((l) => ({
+      // Panier d'avant les variantes : la clé se reconstitue depuis le slug,
+      // et la ligne se comporte exactement comme auparavant.
+      key: typeof l.key === 'string' && l.key !== '' ? l.key : l.slug,
       slug: l.slug,
       name: l.name,
       ref: typeof l.ref === 'string' ? l.ref : '',
@@ -118,16 +146,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lines, ready])
 
-  const add = useCallback((product: Omit<CartLine, 'quantity'>, quantity = 1) => {
+  const add = useCallback((product: CartInput, quantity = 1) => {
+    const key = product.key ?? product.slug
     setLines((prev) => {
-      const existing = prev.find((l) => l.slug === product.slug)
-      if (!existing) return [...prev, { ...product, quantity }]
+      const existing = prev.find((l) => l.key === key)
+      if (!existing) return [...prev, { ...product, key, quantity }]
 
-      // Deux ajouts du même produit : on incrémente plutôt que d'empiler deux
+      // Deux ajouts du même article : on incrémente plutôt que d'empiler deux
       // lignes. Avec un plafond à 99, pour qu'une commande ne devienne pas
       // accidentellement un accueil de dix mille articles en un seul clic.
       return prev.map((l) =>
-        l.slug === product.slug
+        l.key === key
           ? { ...l, quantity: Math.min(l.quantity + quantity, 99) }
           : l,
       )
@@ -135,16 +164,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setOpen(true)
   }, [])
 
-  const setQuantity = useCallback((slug: string, quantity: number) => {
+  const setQuantity = useCallback((key: string, quantity: number) => {
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => l.slug !== slug)
-        : prev.map((l) => (l.slug === slug ? { ...l, quantity: Math.min(quantity, 99) } : l)),
+        ? prev.filter((l) => l.key !== key)
+        : prev.map((l) => (l.key === key ? { ...l, quantity: Math.min(quantity, 99) } : l)),
     )
   }, [])
 
-  const remove = useCallback((slug: string) => {
-    setLines((prev) => prev.filter((l) => l.slug !== slug))
+  const remove = useCallback((key: string) => {
+    setLines((prev) => prev.filter((l) => l.key !== key))
   }, [])
 
   const clear = useCallback(() => setLines([]), [])

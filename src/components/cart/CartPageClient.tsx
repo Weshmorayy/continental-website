@@ -180,7 +180,7 @@ export default function CartPageClient() {
         <section aria-label="Articles">
           <ul className="divide-y divide-border border-y border-border">
             {lines.map((l) => (
-              <li key={l.slug} className="flex gap-5 py-6">
+              <li key={l.key} className="flex gap-5 py-6">
                 <Link href={`/produit/${l.slug}`} className="stage relative h-24 w-24 flex-shrink-0">
                   {l.image ? (
                     <Image src={l.image} alt={l.name} fill className="object-contain p-2" sizes="96px" />
@@ -199,13 +199,13 @@ export default function CartPageClient() {
 
                   <div className="mt-4 flex flex-wrap items-center gap-4">
                     <div className="flex items-center rounded-full border border-border">
-                      <button onClick={() => setQuantity(l.slug, l.quantity - 1)}
+                      <button onClick={() => setQuantity(l.key, l.quantity - 1)}
                         className="p-2 text-text-primary transition-opacity hover:opacity-60"
                         aria-label={`Retirer un ${l.name}`}>
                         <Minus size={14} />
                       </button>
                       <span className="w-8 text-center text-sm tabular-nums" aria-live="polite">{l.quantity}</span>
-                      <button onClick={() => setQuantity(l.slug, l.quantity + 1)}
+                      <button onClick={() => setQuantity(l.key, l.quantity + 1)}
                         disabled={l.quantity >= 99}
                         className="p-2 text-text-primary transition-opacity hover:opacity-60 disabled:opacity-30"
                         aria-label={`Ajouter un ${l.name}`}>
@@ -213,7 +213,7 @@ export default function CartPageClient() {
                       </button>
                     </div>
 
-                    <button onClick={() => remove(l.slug)}
+                    <button onClick={() => remove(l.key)}
                       className="flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-primary">
                       <Trash2 size={14} strokeWidth={1.6} />
                       Retirer

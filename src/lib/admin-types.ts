@@ -11,6 +11,10 @@
  * `ref` est un mot réservé en SQL, la colonne a donc dû être renommée.
  */
 
+import type { ProductVariant } from '@/data/products'
+
+export type { ProductVariant }
+
 export interface Category {
   id: string
   slug: string
@@ -44,6 +48,18 @@ export interface Product {
   specs: Record<string, string>
 
   badge: string | null
+
+  /**
+   * Modèles déclinés de cette fiche (colonne `products.variants`).
+   * Vide = modèle unique. Édité depuis l'onglet Catalogue.
+   *
+   * Le type est PARTAGÉ avec le site public, contrairement au reste de ce
+   * fichier : la valeur est le même document JSON des deux côtés, elle traverse
+   * la frontière telle quelle. En redéclarer une copie ici ne ferait
+   * qu'ajouter un endroit où les deux formes peuvent diverger.
+   */
+  variants: ProductVariant[]
+
   in_stock: boolean
   /** Visible publiquement. Distinct de `in_stock` : visible mais en rupture. */
   is_active: boolean

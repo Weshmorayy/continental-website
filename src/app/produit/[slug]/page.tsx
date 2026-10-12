@@ -8,6 +8,7 @@ import TechSpecTable from '@/components/ui/TechSpecTable'
 import ProductCard from '@/components/ui/ProductCard'
 import ProductViewCounter from '@/components/ProductViewCounter'
 import AddToCart from '@/components/cart/AddToCart'
+import VariantPicker from '@/components/ui/VariantPicker'
 import { getProductBySlug, getRelatedProducts, type Product } from '@/data/products'
 import { getSiteProducts, getSiteSettings } from '@/lib/atelier'
 import { generatePageMetadata } from '@/lib/seo'
@@ -94,9 +95,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const { product } = await loadCatalogue(slug)
   if (!product) return {}
+
+  /*
+   * L'accroche n'annonce que ce qui existe : une fiche sans deuxième
+   * caractéristique produisait « undefined. » dans l'extrait affiché par
+   * Google. Le prix suit la même règle que la page — un prix à 0 ne s'annonce
+   * pas « 0 FCFA », il s'annonce comme à demander.
+   */
+  const points = product.features.slice(0, 2).join('. ')
+  const prix = product.price > 0
+    ? `Prix : ${product.price.toLocaleString('fr-FR')} FCFA.`
+    : 'Prix communiqué sur demande.'
+
   return generatePageMetadata({
     title: `${product.name} — Réf. ${product.ref}`,
-    description: `${product.name} Continental® (${product.ref}). ${product.features[0]}. ${product.features[1]}. Prix : ${product.price.toLocaleString('fr-FR')} FCFA. Livraison à Dakar.`,
+    description: [
+      `${product.name} Continental® (${product.ref}).`,
+      points ? `${points}.` : '',
+      prix,
+      'Livraison à Dakar.',
+    ].filter(Boolean).join(' '),
     path: `/produit/${product.slug}`,
     image: product.image,
   })
@@ -108,6 +126,14 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
   if (!product) notFound()
 
   const cfg = await getSiteSettings()
+
+  /*
+   * Une fiche ne décline des modèles que si elle en porte PLUSIEURS.
+   * Avec une seule variante, le sélecteur n'offrirait aucun choix tout en
+   * déplaçant le prix et le panier dans un composant client : la fiche garde
+   * donc sa mise en page d'origine, prix et bouton rendus par le serveur.
+   */
+  const hasVariants = (product.variants?.length ?? 0) > 1
 
   return (
     <>
@@ -182,14 +208,41 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                   </div>
                 )}
 
-                <div className="mt-8 py-7 hairline border-t border-border">
-                  <span className="product-ref text-text-muted">Prix indicatif</span>
-                  <p className="display-md text-text-primary text-3xl sm:text-4xl mt-1">
-                    {product.price.toLocaleString('fr-FR')}{' '}
-                    <span className="text-lg font-medium text-text-muted">FCFA</span>
-                  </p>
-                  <p className="text-xs text-text-muted mt-2">Confirmé à la commande</p>
-                </div>
+                {hasVariants ? (
+                  /* Fiche déclinée : le choix du modèle, son prix et l'ajout au
+                     panier sont portés par le MÊME composant client — sinon le
+                     prix affiché et la ligne commandée peuvent diverger. */
+                  <VariantPicker
+                    slug={product.slug}
+                    name={product.name}
+                    modelRef={product.ref}
+                    image={product.image}
+                    basePrice={product.price}
+                    variants={product.variants ?? []}
+                  />
+                ) : (
+                  <div className="mt-8 py-7 hairline border-t border-border">
+                    <span className="product-ref text-text-muted">Prix indicatif</span>
+                    <p className="display-md text-text-primary text-3xl sm:text-4xl mt-1">
+                      {/* Un prix à 0 est un champ vide, pas un prix. Sans ce
+                          garde-fou la fiche annonçait « 0 FCFA » — soit un
+                          produit gratuit, soit une fiche cassée. */}
+                      {product.price > 0 ? (
+                        <>
+                          {product.price.toLocaleString('fr-FR')}{' '}
+                          <span className="text-lg font-medium text-text-muted">FCFA</span>
+                        </>
+                      ) : (
+                        <span className="font-medium">Prix sur demande</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-text-muted mt-2">
+                      {product.price > 0
+                        ? 'Confirmé à la commande'
+                        : 'Appelez-nous : le tarif est communiqué au moment de la commande.'}
+                    </p>
+                  </div>
+                )}
 
                 <ul className="mt-8 space-y-3.5">
                   {product.features.map((f) => (
@@ -224,14 +277,20 @@ export default async function ProduitPage({ params }: { params: Promise<{ slug: 
                       Le panier demande le nom, le téléphone, la zone et
                       l'adresse, puis écrit la commande ; WhatsApp reste le
                       canal de conclusion, à l'étape suivante. */}
-                  <AddToCart
-                    slug={product.slug}
-                    name={product.name}
-                    modelRef={product.ref}
-                    price={product.price}
-                    image={product.image}
-                    full
-                  />
+                  {/* Sur une fiche déclinée, l'ajout au panier vit dans le
+                      sélecteur, avec le prix du modèle choisi : le laisser ici
+                      ajouterait le prix de l'entrée de base quel que soit le
+                      modèle affiché. */}
+                  {!hasVariants && (
+                    <AddToCart
+                      slug={product.slug}
+                      name={product.name}
+                      modelRef={product.ref}
+                      price={product.price}
+                      image={product.image}
+                      full
+                    />
+                  )}
                   <a
                     href={`tel:${cfg.contact.phone}`}
                     className="btn-outline w-full justify-center py-4"

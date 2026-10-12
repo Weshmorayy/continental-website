@@ -661,6 +661,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       is_active: p.is_active ?? true,
       is_featured: p.is_featured ?? false,
       position: p.position ?? 0,
+      /*
+       * Modèles déclinés.
+       *
+       * On ne garde que les entrées EXPLOITABLES : une ligne sans libellé, ou
+       * à prix nul, serait de toute façon écartée à l'affichage par
+       * `toVariants` côté site. L'enregistrer ne créerait qu'un écart
+       * silencieux entre ce que l'administration montre et ce que le site
+       * publie — exactement le genre d'écart qu'on ne découvre qu'en recevant
+       * une commande au mauvais prix.
+       */
+      variants: (p.variants ?? [])
+        .filter((v) => (v.label ?? '').trim() !== '' && Number(v.price) > 0)
+        .map((v) => ({
+          id: v.id,
+          label: v.label.trim(),
+          price: Number(v.price),
+          ...((v.power ?? '').trim() ? { power: v.power!.trim() } : {}),
+          ...(v.btu === undefined || !Number.isFinite(Number(v.btu))
+            ? {}
+            : { btu: Number(v.btu) }),
+        })),
     }
     const error = await persist('products', row, id)
     if (error) return error

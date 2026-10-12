@@ -34,7 +34,15 @@ export function generatePageMetadata({
   const ogImage = image ?? siteConfig.seo.ogImage
 
   return {
-    title: fullTitle,
+    /*
+     * `title` reste NU : le gabarit du layout (`%s — Continental®`, layout.tsx)
+     * ajoute la marque une seule fois. L'ancien code la concaténait ici AUSSI,
+     * d'où « … — Continental® — Continental® » dans l'onglet comme dans
+     * Google. `fullTitle` continue de servir OpenGraph et Twitter, où le
+     * gabarit du layout ne s'applique pas : ces balises ont donc besoin de la
+     * marque complète.
+     */
+    title,
     description: desc,
     metadataBase: new URL(siteConfig.url),
     alternates: {

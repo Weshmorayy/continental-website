@@ -13,7 +13,7 @@
  * parce que l'API d'administration est lente serait pire qu'utile.
  */
 
-import type { Product } from '@/data/products'
+import type { Product, ProductVariant } from '@/data/products'
 import { resolveSettings, type ResolvedSettings, type DbSettings } from '@/lib/settings'
 import { products as localProducts, categories as localCategories } from '@/data/products'
 
@@ -352,16 +352,28 @@ export async function getSupabaseProducts(): Promise<Product[]> {
     specs: Record<string, unknown> | null; badge: string | null
     in_stock: boolean; is_featured: boolean
     category_id: string | null
+    variants: unknown
   }
   const rows = await supabaseGet<Row[]>(
     'products?select=slug,name,ref_,price,image,image_alt,short_desc,description,' +
-    'features,specs,badge,in_stock,is_featured,category_id&is_active=eq.true' +
+    'features,specs,badge,in_stock,is_featured,category_id,variants&is_active=eq.true' +
     '&order=position.asc',
   )
   if (!rows?.length) return []
 
-  const cats = await supabaseGet<{ id: string; slug: string }[]>('categories?select=id,slug')
-  const catById = new Map((cats ?? []).map((c) => [c.id, c.slug]))
+  /*
+   * On lit le LIBELLÉ en même temps que le slug.
+   *
+   * La requête ne demandait que `id,slug`, et le mapping s'en servait comme
+   * libellé : chaque vignette affichait donc « ventilateur-sur-pied » au-dessus
+   * du nom du produit, à la place de « Ventilateurs sur pied ». Le slug reste
+   * nécessaire — c'est lui qui rapproche les produits d'une même gamme — mais
+   * il n'a rien à faire à l'écran.
+   */
+  const cats = await supabaseGet<{ id: string; slug: string; label: string }[]>(
+    'categories?select=id,slug,label',
+  )
+  const catById = new Map((cats ?? []).map((c) => [c.id, c]))
 
   /*
    * Les rubriques sont relues à part puis rapprochées par slug. La vue
@@ -386,8 +398,8 @@ export async function getSupabaseProducts(): Promise<Product[]> {
     slug: r.slug,
     name: r.name,
     ref: r.ref_ ?? '',
-    category: categoryFromSlug(catById.get(r.category_id ?? '') ?? null),
-    categoryLabel: catById.get(r.category_id ?? '') ?? 'Produit',
+    category: categoryFromSlug(catById.get(r.category_id ?? '')?.slug ?? null),
+    categoryLabel: catById.get(r.category_id ?? '')?.label ?? 'Produit',
     price: Number(r.price) || 0,
     image: r.image ?? '',
     images: r.image ? [r.image] : [],
@@ -404,7 +416,37 @@ export async function getSupabaseProducts(): Promise<Product[]> {
     badges: sortBadges(badgesBySlug.get(r.slug) ?? []),
     inStock: r.in_stock !== false,
     isBestseller: r.is_featured === true,
+    variants: toVariants(r.variants),
   }))
+}
+
+/**
+ * Variantes de modèle lues depuis `products.variants`.
+ *
+ * La colonne est du JSON libre : une ligne écrite à la main, ou héritée d'une
+ * version antérieure du schéma, peut contenir n'importe quoi. On ne fait donc
+ * pas confiance à sa forme — une variante sans identifiant, sans libellé ou
+ * sans prix est ÉCARTÉE plutôt que de produire un bouton qui n'ajouterait rien
+ * au panier, ou pire, un prix à 0 FCFA sur la fiche.
+ */
+function toVariants(raw: unknown): ProductVariant[] {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((v) => {
+    if (!v || typeof v !== 'object') return []
+    const o = v as Record<string, unknown>
+    const id = typeof o.id === 'string' ? o.id : ''
+    const label = typeof o.label === 'string' ? o.label : ''
+    const price = Number(o.price)
+    if (!id || !label || !Number.isFinite(price) || price <= 0) return []
+    const btu = Number(o.btu)
+    return [{
+      id,
+      label,
+      price,
+      power: typeof o.power === 'string' ? o.power : undefined,
+      btu: Number.isFinite(btu) ? btu : undefined,
+    }]
+  })
 }
 
 /**

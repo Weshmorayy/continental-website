@@ -107,10 +107,27 @@ export default function ProductCard({ product, size = 'default' }: ProductCardPr
 
         <div className="mt-auto pt-6">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-xs text-text-muted">Prix indicatif</span>
+            {/* Une fiche déclinée porte le prix de son premier modèle : le
+                libellé doit le dire, sinon la tuile annonce 150 000 FCFA pour
+                un appareil qui monte à 210 000 sur sa propre page. */}
+            <span className="text-xs text-text-muted">
+              {(product.variants?.length ?? 0) > 1 ? 'À partir de' : 'Prix indicatif'}
+            </span>
             <span className="price-tag">
-              {product.price.toLocaleString('fr-FR')}{' '}
-              <span className="text-sm font-medium text-text-muted">FCFA</span>
+              {/*
+                Un prix à 0 n'est pas un prix : c'est un champ non renseigné.
+                Affiché tel quel, il annonçait « 0 FCFA » — le visiteur y lit un
+                produit gratuit ou une fiche cassée, jamais « prix à confirmer ».
+                On le dit donc, au lieu de laisser un zéro parler à notre place.
+              */}
+              {product.price > 0 ? (
+                <>
+                  {product.price.toLocaleString('fr-FR')}{' '}
+                  <span className="text-sm font-medium text-text-muted">FCFA</span>
+                </>
+              ) : (
+                <span className="text-sm font-medium text-text-muted">Prix sur demande</span>
+              )}
             </span>
           </div>
 

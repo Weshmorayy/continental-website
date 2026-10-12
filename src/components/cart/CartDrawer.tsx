@@ -147,7 +147,7 @@ export default function CartDrawer() {
           <>
             <ul className="flex-1 divide-y divide-border overflow-y-auto px-5">
               {lines.map((l) => (
-                <li key={l.slug} className="flex gap-4 py-4">
+                <li key={l.key} className="flex gap-4 py-4">
                   <Link
                     href={`/produit/${l.slug}`}
                     onClick={() => setOpen(false)}
@@ -178,7 +178,7 @@ export default function CartDrawer() {
                     <div className="mt-2.5 flex items-center justify-between gap-3">
                       <div className="flex items-center rounded-full border border-border">
                         <button
-                          onClick={() => setQuantity(l.slug, l.quantity - 1)}
+                          onClick={() => setQuantity(l.key, l.quantity - 1)}
                           className="p-1.5 text-text-primary transition-opacity hover:opacity-60"
                           aria-label={`Retirer un ${l.name}`}
                         >
@@ -188,7 +188,7 @@ export default function CartDrawer() {
                           {l.quantity}
                         </span>
                         <button
-                          onClick={() => setQuantity(l.slug, l.quantity + 1)}
+                          onClick={() => setQuantity(l.key, l.quantity + 1)}
                           disabled={l.quantity >= 99}
                           className="p-1.5 text-text-primary transition-opacity hover:opacity-60 disabled:opacity-30"
                           aria-label={`Ajouter un ${l.name}`}
@@ -204,7 +204,7 @@ export default function CartDrawer() {
                   </div>
 
                   <button
-                    onClick={() => remove(l.slug)}
+                    onClick={() => remove(l.key)}
                     className="h-fit p-1.5 text-text-muted transition-colors hover:text-text-primary"
                     aria-label={`Retirer ${l.name} du panier`}
                   >

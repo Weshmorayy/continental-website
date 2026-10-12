@@ -13,7 +13,7 @@ import {
   Plus, Search, Pencil, Trash2, Package, LayoutGrid, List, Eye, EyeOff,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
-import type { Product } from '@/lib/admin-types'
+import type { Product, ProductVariant } from '@/lib/admin-types'
 import {
   Card, Button, Field, TextInput, TextArea, Select, Toggle, Pill,
   LineList, SpecEditor, EmptyState, ConfirmDialog, Th, Td, formatFcfa,
@@ -27,6 +27,7 @@ const BLANK: Partial<Product> = {
   name: '', slug: '', ref_: '', price: 0, compare_at: null,
   short_desc: '', description: '', features: [], specs: {},
   images: [], in_stock: true, is_active: true, is_featured: false, badge: '',
+  variants: [],
 }
 
 /**
@@ -79,6 +80,116 @@ function makeRef(name: string, categoryId: string): string {
   return `${fam}${mm}${suffixe ? `-${suffixe}` : ''}-${Date.now().toString().slice(-4)}`
 }
 
+/**
+ * VariantsEditor — les modèles déclinés d'une fiche.
+ *
+ * ── Pourquoi une clé technique par modèle ─────────────────────────────────
+ * Chaque modèle porte un `id` stable, invisble dans le formulaire. C'est lui
+ * qui identifie la LIGNE DE PANIER (`slug::id`) : deux puissances du même
+ * climatiseur doivent être deux lignes distinctes, facturées à leur propre
+ * prix. Toute valeur dérivée du libellé changerait de clé à chaque
+ * reformulation, et le panier d'un visiteur déjà ouvert se retrouverait avec
+ * une ligne orpheline.
+ *
+ * Laisser la liste vide est un état normal : la fiche décrit alors un seul
+ * modèle, au prix principal.
+ */
+function VariantsEditor({
+  value, onChange, basePrice,
+}: {
+  value: ProductVariant[]
+  onChange: (next: ProductVariant[]) => void
+  basePrice: number
+}) {
+  const update = (i: number, patch: Partial<ProductVariant>) =>
+    onChange(value.map((v, j) => (j === i ? { ...v, ...patch } : v)))
+
+  const add = () =>
+    onChange([
+      ...value,
+      {
+        id: `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        label: '',
+        // Le prix principal est repris comme point de départ : c'est presque
+        // toujours celui du premier modèle, et un champ vide enregistré à 0
+        // ferait disparaître la variante du site (cf. `toVariants`).
+        price: basePrice,
+      },
+    ])
+
+  const remove = (i: number) => onChange(value.filter((_, j) => j !== i))
+
+  return (
+    <div className="space-y-2">
+      {value.length === 0 ? (
+        <p className="text-xs text-text-muted">
+          Vide : la fiche décrit un seul modèle, au prix principal ci-dessus.
+        </p>
+      ) : (
+        <>
+          <div className="hidden gap-2 text-[0.7rem] text-text-muted sm:grid sm:grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr_2rem]">
+            <span>Modèle affiché</span>
+            <span>Puissance</span>
+            <span>BTU</span>
+            <span>Prix (FCFA)</span>
+            <span />
+          </div>
+
+          {value.map((v, i) => (
+            <div key={v.id} className="grid gap-2 sm:grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr_2rem] sm:items-center">
+              <TextInput
+                value={v.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="1,5 cv — 12000 BTU"
+                aria-label={`Libellé du modèle ${i + 1}`}
+              />
+              <TextInput
+                value={v.power ?? ''}
+                onChange={(e) => update(i, { power: e.target.value })}
+                placeholder="1,5 cv"
+                aria-label={`Puissance du modèle ${i + 1}`}
+              />
+              <TextInput
+                inputMode="numeric"
+                value={v.btu === undefined ? '' : String(v.btu)}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/\D/g, ''))
+                  update(i, { btu: e.target.value === '' || !Number.isFinite(n) ? undefined : n })
+                }}
+                placeholder="12000"
+                aria-label={`BTU du modèle ${i + 1}`}
+              />
+              {/* Le prix est saisi en chiffres bruts : un formatage automatique
+                  pendant la frappe replacerait le curseur au mauvais endroit. */}
+              <TextInput
+                inputMode="numeric"
+                value={v.price === 0 ? '' : String(v.price)}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/[^\d]/g, ''))
+                  update(i, { price: Number.isFinite(n) ? n : 0 })
+                }}
+                placeholder="180000"
+                aria-label={`Prix du modèle ${i + 1}`}
+              />
+              <Button
+                variant="danger"
+                onClick={() => remove(i)}
+                aria-label={`Supprimer ${v.label || `le modèle ${i + 1}`}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </>
+      )}
+
+      <Button onClick={add}>
+        <Plus className="h-3.5 w-3.5" /> Ajouter un modèle
+      </Button>
+    </div>
+  )
+}
+
 export default function ProductsTab({ notify }: { notify: Notify }) {
   const {
     products, categories, productBadges, saveProduct, setProductSlot,
@@ -96,10 +207,25 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
   /** Vrai dès que l'utilisateur saisit l'identifiant lui-même. */
   const [slugTouched, setSlugTouched] = useState(false)
 
+  /** Combien de fiches sont retirées du site, toutes catégories confondues. */
+  const hiddenCount = useMemo(() => products.filter((p) => !p.is_active).length, [products])
+
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase()
     return products.filter((p) => {
-      if (!showHidden && !p.is_active) return false
+      /*
+       * « Masqués » est un FILTRE, pas une case « tout afficher ».
+       *
+       * C'était le défaut : allumé, il AJOUTAIT les fiches masquées à la liste
+       * publiée. Sur un catalogue où une seule fiche est retirée, l'écran
+       * paraissait ne rien faire — et l'utilisateur ne pouvait pas savoir si
+       * le filtre avait agi ou si aucune fiche n'était masquée.
+       *
+       * Les deux vues sont donc exclusives : éteint on voit ce qui est en
+       * ligne, allumé on ne voit QUE ce qui ne l'est pas — c'est-à-dire la vue
+       * depuis laquelle on va rechercher une fiche pour la remettre en ligne.
+       */
+      if (showHidden !== !p.is_active) return false
       if (cat !== 'all' && p.category_id !== cat) return false
       if (!q) return true
       return (
@@ -173,7 +299,19 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
   const toggle = async (p: Product, patch: Partial<Product>) => {
     const error = await toggleProduct(p.id, patch)
     if (error) { notify({ message: error, tone: 'error' }); return }
+    const masked = patch.is_active === false
     await refresh()
+    /*
+     * Une fiche masquée quitte la liste en cours : sans confirmation, l'écran
+     * est indiscernable d'une suppression. Le message dit donc l'effet réel,
+     * et où retrouver la fiche pour la remettre en ligne.
+     */
+    notify({
+      message: masked
+        ? `« ${p.name} » est masqué : il disparaît du site. Retrouvez-le avec le filtre « Masqués uniquement ».`
+        : `« ${p.name} » est de nouveau visible sur le site.`,
+      tone: 'ok',
+    })
   }
 
   return (
@@ -197,7 +335,15 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
           </Select>
 
           <div className="flex items-center gap-2">
-            <Toggle checked={showHidden} onChange={setShowHidden} label="Masqués" />
+            {/* Le compteur est la partie qui manquait : il dit d'un coup d'œil
+                combien de fiches sont hors ligne, et donc si basculer ce filtre
+                peut changer quelque chose. À zéro, la liste est forcément
+                identique — ce n'est pas une panne. */}
+            <Toggle
+              checked={showHidden}
+              onChange={setShowHidden}
+              label={hiddenCount > 0 ? `Masqués uniquement (${hiddenCount})` : 'Masqués uniquement'}
+            />
 
             <div className="flex items-center gap-1 rounded-full border border-border p-1">
               <button
@@ -355,6 +501,17 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               </Field>
             </div>
 
+            <Field
+              label="Modèles déclinés"
+              hint="Plusieurs puissances sous une même fiche : le visiteur les choisit sur la page produit, et chaque modèle garde son propre prix. Un modèle n'est retenu que s'il a un libellé ET un prix. Laisser vide pour un modèle unique."
+            >
+              <VariantsEditor
+                value={editing.variants ?? []}
+                onChange={(variants) => setEditing({ ...editing, variants })}
+                basePrice={editing.price ?? 0}
+              />
+            </Field>
+
             <Field label="Galerie" hint="Chemin ou URL par ligne. La première sert de vignette.">
               <LineList
                 value={editing.images ?? []}
@@ -410,7 +567,12 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
             hint={
               search || cat !== 'all'
                 ? 'Aucun produit ne correspond à ces filtres.'
-                : 'Créez un premier produit pour remplir le catalogue.'
+                : showHidden
+                  /* Filtre « masqués » allumé et liste vide : c'est une
+                     information, pas une absence de contenu — tout est en
+                     ligne, rien n'a été retiré. */
+                  ? 'Aucune fiche n’est masquée : tout le catalogue est en ligne.'
+                  : 'Créez un premier produit pour remplir le catalogue.'
             }
             action={
               <Button variant="primary" onClick={() => { setSlugTouched(false); setEditing({ ...BLANK }) }}>
@@ -454,6 +616,10 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                         {!p.is_active && <Pill>Masqué</Pill>}
                         {!p.in_stock && <Pill tone="warn">Rupture</Pill>}
                         {p.is_featured && <Pill tone="dark">En avant</Pill>}
+                        {/* La fiche déclinée n'a qu'une carte au catalogue :
+                            sans cette pastille, rien ne dit au vendeur que
+                            trois modèles se cachent derrière. */}
+                        {(p.variants?.length ?? 0) > 1 && <Pill>{p.variants?.length} modèles</Pill>}
                       </div>
                     </Td>
                     <Td label="" className="justify-end">
@@ -501,6 +667,7 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                   {p.badge && <Pill tone="dark">{p.badge}</Pill>}
                   {!p.is_active && <Pill>Masqué</Pill>}
                   {!p.in_stock && <Pill tone="warn">Rupture</Pill>}
+                  {(p.variants?.length ?? 0) > 1 && <Pill>{p.variants?.length} modèles</Pill>}
                 </div>
                 <h4 className="font-heading text-base font-bold leading-tight">{p.name}</h4>
                 <p className="text-xs text-text-muted">{p.ref_ ?? '—'}</p>

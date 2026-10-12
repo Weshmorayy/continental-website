@@ -57,6 +57,35 @@ export interface Product {
    * meilleur-vendu sur la page d'accueil. Les deux cohabitent.
    */
   badges?: ProductBadge[]
+
+  /**
+   * Modèles déclinés d'une même fiche (colonne `products.variants`).
+   *
+   * Le split mural existe en trois puissances ; elles partagent la même fiche,
+   * la même photo et la même description. Sans ce champ il fallait trois
+   * fiches — trois cartes dans le catalogue et trois adresses à diffuser pour
+   * un seul appareil, et le visiteur qui cherchait « le 2 cv » devait deviner
+   * laquelle ouvrir.
+   */
+  variants?: ProductVariant[]
+}
+
+/**
+ * Un modèle décliné d'une fiche.
+ *
+ * `id` est stable et sert de clé de sélection ; `label` est ce que le visiteur
+ * lit et clique (« 1,5 cv — 12000 BTU »). `price` est le prix de CE modèle :
+ * la fiche affiche le prix de la variante choisie, jamais celui de l'entrée de
+ * base — sinon le sélecteur mentirait sur ce qu'il fait.
+ */
+export interface ProductVariant {
+  id: string
+  label: string
+  price: number
+  /** « 1,5 cv » — repris tel quel dans le récapitulatif. */
+  power?: string
+  /** 12000 — en chiffre, pour un tri ou un filtre éventuel. */
+  btu?: number
 }
 
 /** Une rubrique de mise en avant, avec la place qu'elle occupe. */

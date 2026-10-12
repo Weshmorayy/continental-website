@@ -36,16 +36,25 @@ interface Props {
   image: string
   /** Fiche produit : le bouton prend toute la largeur. */
   full?: boolean
+  /**
+   * Identité de la LIGNE de panier, quand la fiche décline des modèles
+   * (`slug::variante`). Sans elle, la clé vaut le slug : le comportement des
+   * fiches à modèle unique est inchangé.
+   */
+  lineKey?: string
 }
 
-export default function AddToCart({ slug, name, modelRef, price, image, full }: Props) {
+export default function AddToCart({ slug, name, modelRef, price, image, full, lineKey }: Props) {
   const { add, lines } = useCart()
-  const inCart = lines.find((l) => l.slug === slug)?.quantity ?? 0
+  const key = lineKey ?? slug
+  // Le compteur suit la LIGNE, pas le produit : « Dans le panier (1) » doit
+  // décrire le modèle affiché à l'écran, pas un autre modèle de la même fiche.
+  const inCart = lines.find((l) => l.key === key)?.quantity ?? 0
 
   return (
     <button
       type="button"
-      onClick={() => add({ slug, name, ref: modelRef, price, image })}
+      onClick={() => add({ key, slug, name, ref: modelRef, price, image })}
       className={full ? 'btn-accent w-full justify-center py-4 text-sm' : 'btn-accent flex-1 justify-center px-4 py-2.5 text-xs'}
       aria-label={`Ajouter ${name} au panier`}
     >
