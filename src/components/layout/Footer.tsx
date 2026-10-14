@@ -49,12 +49,13 @@ export default async function Footer() {
         {/* Bloc marque + contact direct */}
         <div className="py-14 sm:py-20 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8">
           <div className="lg:col-span-5">
+            {/* Même rapport réel que dans l'en-tête (400 × 231). */}
             <Image
               src="/brand/logo-light.png"
               alt="Continental®"
-              width={150}
-              height={42}
-              className="h-7 w-auto object-contain mb-5"
+              width={400}
+              height={231}
+              className="h-10 w-auto object-contain mb-5"
             />
             <p className="text-text-body text-sm leading-relaxed max-w-sm">
               Continental® — ventilation, climatisation Inverter et téléviseurs

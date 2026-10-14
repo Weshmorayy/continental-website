@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MessageCircle } from 'lucide-react'
 import { getBlock, getSlotProduct } from '@/lib/atelier'
+import { objectPositionStyle } from '@/lib/images'
 
 /**
  * Héros — structure calquée sur samsung.com : colonne unique
@@ -88,12 +89,20 @@ export default async function HeroSection() {
               className="group relative mx-auto block aspect-square w-full max-w-[520px]"
               aria-label={featured ? `Voir ${featured.name}` : 'Voir le catalogue'}
             >
+              {/*
+                * Le cadrage du bloc ne s'applique QUE si c'est bien l'image du
+                * bloc qui s'affiche. Quand un produit occupe la place « héros »,
+                * c'est sa photo qui est montrée : lui imposer le cadrage réglé
+                * pour une autre image recadrerait un visuel que personne n'a
+                * demandé à modifier.
+                */}
               <Image
                 src={image}
                 alt={imageAlt}
                 fill
                 priority
                 className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                style={featured ? undefined : objectPositionStyle(hero?.objectFit, hero?.objectPosition)}
                 sizes="(max-width: 640px) 90vw, 520px"
               />
               {slot && (

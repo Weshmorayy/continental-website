@@ -77,12 +77,28 @@ export default function Header() {
           <div className="container-site flex items-center justify-between h-16 lg:h-20">
 
             <Link href="/" className="flex-shrink-0" aria-label="Continental® — accueil">
+              {/*
+                * Le logo est un BLOC vertical : la grande marque « C » posée
+                * au-dessus du mot CONTINENTAL, et non une ligne de texte
+                * horizontale. Ses proportions sont donc proches du carré
+                * (400 × 231) là où l'ancien signe était une bande de
+                * 1146 × 244.
+                *
+                * À 32 px de haut, le mot sous la marque tombait sous les six
+                * pixels : l'ensemble se lisait comme une tache. La hauteur est
+                * donc portée à 36/40/48 px selon l'écran, ce qui redonne au
+                * mot une taille lisible sans changer la hauteur de la barre.
+                *
+                * width/height déclarent le VRAI rapport de l'image : un
+                * rapport inventé réserve une boîte de la mauvaise largeur et
+                * décale la navigation à l'instant où l'image se pose.
+                */}
               <Image
                 src="/brand/logo-light.png"
                 alt="Continental®"
-                width={150}
-                height={42}
-                className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+                width={400}
+                height={231}
+                className="h-9 sm:h-10 lg:h-12 w-auto object-contain"
                 priority
               />
             </Link>

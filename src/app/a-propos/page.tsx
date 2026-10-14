@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import { generatePageMetadata } from '@/lib/seo'
 import { getSiteSettings } from '@/lib/atelier'
 import { getBlocks } from '@/lib/atelier'
+import { objectPositionStyle } from '@/lib/images'
 import { Award, Wind, Users, MapPin, ArrowUpRight, ShoppingBag } from 'lucide-react'
 
 export const metadata = generatePageMetadata({
@@ -125,6 +126,7 @@ export default async function AProposPage() {
               priority
               sizes="100vw"
               className="object-cover object-center"
+              style={objectPositionStyle(hero?.objectFit, hero?.objectPosition)}
             />
           </div>
         </section>
@@ -186,6 +188,7 @@ export default async function AProposPage() {
                     fill
                     sizes="(max-width: 1024px) 100vw, 42vw"
                     className="object-cover object-center"
+                    style={objectPositionStyle(mission?.objectFit, mission?.objectPosition)}
                   />
                 </div>
 

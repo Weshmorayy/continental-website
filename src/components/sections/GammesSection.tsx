@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import { getBlocks, getSiteCategories, getSiteProducts, getSiteSettings } from '@/lib/atelier'
+import { objectPositionStyle } from '@/lib/images'
 import GammePlaceholder from '@/components/ui/GammePlaceholder'
 
 /**
@@ -30,7 +32,33 @@ import GammePlaceholder from '@/components/ui/GammePlaceholder'
  */
 
 /** Repli quand la base est injoignable : deux gammes, avec leur visuel local. */
-const FALLBACK = [
+/**
+ * Une carte de gamme, quelle que soit son origine : bloc éditorial, catégorie
+ * non revendiquée, ou repli du dépôt.
+ *
+ * Le type est EXPLICITE parce que les trois origines construisent leur objet
+ * séparément. Sans lui, TypeScript réunit les trois formes et refuse d'accéder
+ * à `imageStyle` — présent sur les unes, absent des autres — ce qui obligerait
+ * à répéter un champ vide partout.
+ */
+type GammeCard = {
+  key: string
+  slugs: string[]
+  count: number
+  eyebrow: string
+  title: string
+  intro: string
+  meta: string
+  cta: string
+  href: string
+  image: string
+  alt: string
+  /** Cadrage choisi dans l'administration. Absent = la classe décide. */
+  imageStyle?: CSSProperties
+  _fallback?: boolean
+}
+
+const FALLBACK: GammeCard[] = [
   {
     key: 'gamme-1',
     slugs: ['ventilateur-sur-pied'],
@@ -116,6 +144,10 @@ export default async function GammesSection() {
         href: block.ctaHref ?? (slugs[0] ? `/catalogue?cat=${slugs[0]}` : '/catalogue'),
         image: block.image ?? '',
         alt: block.imageAlt ?? block.title ?? '',
+        // Cadrage réglé dans « Contenu du site ». Vide = la classe
+        // `object-cover` ci-dessous continue de s'appliquer : les visuels
+        // déjà en ligne ne bougent pas.
+        imageStyle: objectPositionStyle(block.objectFit, block.objectPosition),
       }
     })
     /*
@@ -143,9 +175,9 @@ export default async function GammesSection() {
    * de la base, qui est desormais fixe (migration 015).
    */
   const claimed = new Set(cards.flatMap((c) => c.slugs))
-  const orphans = categories
+  const orphans: GammeCard[] = categories
     .filter((c) => !claimed.has(c.slug) && countFor([c.slug]) > 0)
-    .map((c, i) => ({
+    .map((c) => ({
       key: `orpheline-${c.slug}`,
       slugs: [c.slug],
       count: countFor([c.slug]),
@@ -214,6 +246,7 @@ export default async function GammesSection() {
                     alt={g.alt}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                    style={g.imageStyle}
                     sizes="(max-width: 1024px) 100vw, 33vw"
                   />
                 ) : (

@@ -276,6 +276,14 @@ export interface ContentBlock {
   ctaHref: string | null
   image: string | null
   imageAlt: string | null
+  /**
+   * Cadrage choisi dans l'administration. `null` = la section décide, comme
+   * avant l'ajout de ce réglage. Les composants posent alors une valeur en
+   * style EN LIGNE, qui l'emporte sur leur classe Tailwind — c'est le seul
+   * moyen de surcharger `object-cover` sans écrire une classe par valeur.
+   */
+  objectFit: string | null
+  objectPosition: string | null
   icon: string | null
   num: string | null
   /** Rang d'affichage. Deux blocs de rang égal sortent dans un ordre imprévisible
@@ -307,6 +315,7 @@ type BlockRow = {
   eyebrow: string | null; title: string | null; subtitle: string | null
   body: string | null; meta: string | null; cta_label: string | null
   cta_href: string | null; image: string | null; image_alt: string | null
+  object_fit: string | null; object_position: string | null
   icon: string | null; num: string | null; position: number
   data: Record<string, unknown> | null
 }
@@ -316,7 +325,9 @@ function toBlock(r: BlockRow): ContentBlock {
     slot: r.slot, key: r.key,
     eyebrow: r.eyebrow, title: r.title, subtitle: r.subtitle, body: r.body,
     meta: r.meta, ctaLabel: r.cta_label, ctaHref: r.cta_href,
-    image: r.image, imageAlt: r.image_alt, icon: r.icon, num: r.num,
+    image: r.image, imageAlt: r.image_alt,
+    objectFit: r.object_fit, objectPosition: r.object_position,
+    icon: r.icon, num: r.num,
     position: r.position,
     data: r.data ?? {},
   }
@@ -445,6 +456,10 @@ function toVariants(raw: unknown): ProductVariant[] {
       price,
       power: typeof o.power === 'string' ? o.power : undefined,
       btu: Number.isFinite(btu) ? btu : undefined,
+      // Référence propre au modèle : sur une fiche déclinée par taille, la
+      // référence de base désigne une seule taille et serait fausse sur les
+      // autres.
+      ref: typeof o.ref === 'string' && o.ref.trim() !== '' ? o.ref.trim() : undefined,
       // Le tableau du modèle passe par le même assainissement que celui de la
       // fiche : des clés vides ou non textuelles produiraient des lignes
       // fantômes dans le tableau technique.

@@ -96,9 +96,17 @@ export default function VariantPicker({
         <AddToCart
           slug={slug}
           name={`${name} — ${selected.label}`}
-          modelRef={modelRef}
           price={price}
           image={image}
+          /*
+           * Le modèle porte sa propre référence quand il en a une. C'est le cas
+           * d'une fiche déclinée par TAILLE : « CT-43SR » ne désigne qu'un 43
+           * pouces, l'afficher sur un 32 pouces annoncerait au client une
+           * référence qui n'est pas celle du carton qu'il reçoit. À défaut, on
+           * retombe sur la référence de la fiche — le cas des climatiseurs, qui
+           * partagent une référence de famille.
+           */
+          modelRef={selected.ref ?? modelRef}
           lineKey={`${slug}::${selected.id}`}
           full
         />

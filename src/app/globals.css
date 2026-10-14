@@ -352,6 +352,16 @@ body {
 
   /* Zone de défilement horizontal pour les cas où la carte ne suffit pas */
   .admin-scroll { @apply overflow-x-auto; -webkit-overflow-scrolling: touch; }
+
+  /* Barre d'onglets — le défilement horizontal doit être fluide au doigt, et
+     la barre de défilement masquée : sur un téléphone, une barre grise sous
+     cinq onglets ressemble à un défaut d'affichage. */
+  .admin-tabs {
+    @apply flex;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

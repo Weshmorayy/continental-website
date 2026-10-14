@@ -265,6 +265,22 @@ export interface ContentBlock {
   cta_href: string | null
   image: string | null
   image_alt: string | null
+
+  /**
+   * Cadrage de l'image dans son cadre.
+   *
+   * `object_fit` dit COMMENT l'image remplit le cadre — `cover` la remplit en
+   * la rognant, `contain` la fait tenir entière, `fill` l'étire.
+   * `object_position` dit OÙ elle se place quand elle est rognée.
+   *
+   * NULL est une valeur pleine et entière : « je ne me prononce pas », auquel
+   * cas la section garde le cadrage qu'elle a toujours eu. C'est ce qui permet
+   * d'ajouter ces deux réglages sans recadrer rétroactivement les visuels déjà
+   * validés par le client.
+   */
+  object_fit: string | null
+  object_position: string | null
+
   icon: string | null
   num: string | null
   data: Record<string, unknown>

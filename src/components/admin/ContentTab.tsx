@@ -11,14 +11,27 @@
  * L'_{'(slot)'}_ sert de LABEL : il explique à l'administrateur où le texte
  * apparaît. « Arguments / 01 » ne veut rien dire pour lui ; « Accroche du
  * héros — grand titre de l'accueil » si.
+ *
+ * ── La liste, revue ───────────────────────────────────────────────────────
+ * Chaque bloc déployait auparavant son formulaire complet, à même la page. La
+ * section « À propos » en compte douze : l'écran devenait un mur de champs, et
+ * retrouver « la phrase du milieu » demandait de faire défiler, puis de lire
+ * chaque en-tête pour se repérer.
+ *
+ * Les blocs sont maintenant des LIGNES : on lit ce que contient chacun d'un
+ * coup d'œil, et on ouvre celui qu'on veut dans une fenêtre à onglets. La liste
+ * tient sur un écran, ce qui est le seul moyen d'y retrouver quelque chose.
  */
 
 import React, { useState, useMemo } from 'react'
-import { Save, Eye, EyeOff, Trash2 } from 'lucide-react'
+import {
+  Save, Eye, EyeOff, Trash2, Type, Camera, Settings2, Pencil, FileText,
+} from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import type { ContentBlock } from '@/lib/admin-types'
 import {
-  Card, Button, Field, TextInput, TextArea, Toggle, Pill, ConfirmDialog,
+  Card, Button, Field, TextInput, TextArea, Pill, EmptyState, ConfirmDialog,
+  Modal, Tabs, Disclosure, ImageFitControl, type ModalTab,
 } from '@/components/admin/ui'
 import ImagePicker from '@/components/admin/ImagePicker'
 
@@ -83,31 +96,48 @@ const LABELS: Record<TextField, string> = {
   image_alt: 'Texte alternatif de l’image',
 }
 
+/** Les champs longs méritent une zone de texte, pas un champ d'une ligne. */
+const isLong = (f: TextField) => f === 'body' || f === 'subtitle'
+
 /** Libellé humain d'une catégorie. Repli sur le slug : afficher
  *  « ventilateur-sur-pied » est laid mais lisible, afficher « undefined »
  *  ne l'est pas. */
 type LabelOf = (slug: string) => string
 
+/**
+ * Ce qu'on lit d'un bloc dans la liste.
+ *
+ * Un titre, sinon un sur-titre, sinon le début du texte, sinon la clé
+ * technique. L'ordre suit ce qui a du sens pour un humain : le premier mot que
+ * le visiteur lira est le meilleur repère pour retrouver le bloc.
+ */
+function summarise(b: ContentBlock): string {
+  const firstLine = (b.body ?? '').split('\n')[0]
+  const text = b.title || b.eyebrow || firstLine || ''
+  return text.length > 90 ? `${text.slice(0, 90)}…` : text
+}
+
+type TabId = 'texte' | 'image' | 'avance'
+
 function BlockEditor({
-  block, fields, onSave, onToggle, onDelete, saving, labelOf,
+  block, fields, onSave, onDelete, onClose, saving, labelOf,
 }: {
   block: ContentBlock
   fields: TextField[]
   labelOf: LabelOf
   onSave: (patch: Partial<ContentBlock>) => void
-  onToggle: (active: boolean) => void
   onDelete: () => void
+  onClose: () => void
   saving: boolean
 }) {
   const [draft, setDraft] = useState<Partial<ContentBlock>>(block)
   const [askDelete, setAskDelete] = useState(false)
+  const [tab, setTab] = useState<TabId>('texte')
 
-  // Le bloc change d'identité quand on en recharge une autre : le brouillon
-  // doit suivre, sinon les modifications resteraient affichées sur la
-  // mauvaise question.
-  React.useEffect(() => { setDraft(block) }, [block])
-
-  const isLong = (f: TextField) => f === 'body' || f === 'subtitle'
+  // Le bloc change d'identité quand on en recharge un autre : le brouillon
+  // doit suivre, sinon les modifications resteraient affichées sur le
+  // mauvais bloc.
+  React.useEffect(() => { setDraft(block); setTab('texte') }, [block])
 
   /*
    * Sur la section « gammes », `meta` ne se lit pas comme du texte : c'est la
@@ -120,75 +150,78 @@ function BlockEditor({
     .map((s) => s.trim())
     .filter(Boolean)
 
+  const hasImage = fields.includes('image')
+  const textFields = fields.filter((f) => f !== 'image' && f !== 'image_alt')
+
+  const tabs: ModalTab[] = [
+    {
+      id: 'texte',
+      label: 'Texte',
+      icon: <Type className="h-3.5 w-3.5" />,
+      hint: `${textFields.length}`,
+      attention: !block.title?.trim() && !block.body?.trim(),
+    },
+    ...(hasImage
+      ? [{
+          id: 'image' as TabId,
+          label: 'Image',
+          icon: <Camera className="h-3.5 w-3.5" />,
+          hint: draft.image ? undefined : 'aucune',
+          attention: !draft.image,
+        }]
+      : []),
+    { id: 'avance', label: 'Avancé', icon: <Settings2 className="h-3.5 w-3.5" /> },
+  ]
+
   return (
-    <Card
-      title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{block.key}</span>
-          {!block.active && <Pill>Masqué</Pill>}
-        </span>
-      }
-      action={
-        <Button variant={draft.active ? 'ghost' : 'primary'} onClick={() => onToggle(!draft.active)}>
-          {draft.active ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          <span className="hidden sm:inline">{draft.active ? 'Masquer' : 'Afficher'}</span>
-        </Button>
+    <Modal
+      size="lg"
+      labelledBy="bloc-titre"
+      title={block.key}
+      subtitle={`Emplacement « ${block.key} » — ${block.active ? 'visible' : 'masqué'}`}
+      onClose={onClose}
+      tabs={<Tabs tabs={tabs} active={tab} onChange={(id) => setTab(id as TabId)} />}
+      footer={
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="danger" onClick={() => setAskDelete(true)}>
+            <Trash2 className="h-3.5 w-3.5" /> Retirer
+          </Button>
+          <Button variant="primary" onClick={() => onSave(draft)} disabled={saving}>
+            <Save className="h-3.5 w-3.5" /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </Button>
+        </div>
       }
     >
-      <div className="space-y-4 p-4 sm:p-5">
-        {/* Le bloc doit dire ce qu'il regroupe AVANT les champs : c'est ce
-            qui permet au vendeur de savoir qu'il est bien en train de
-            modifier la carte « Téléviseurs » et pas une ventilation. */}
-        {isGamme && (
-          <Field
-            label="Catégories regroupées"
-            hint="Lie cette carte à des produits du catalogue. Déterministe : elle ne dépend pas de l'ordre des catégories."
-          >
-            <div className="flex flex-wrap gap-2">
-              {gammeSlugs.length === 0 ? (
-                <Pill>Aucune — cette carte n’apparaît pas sur l’accueil</Pill>
-              ) : (
-                gammeSlugs.map((s) => (
-                  <Pill key={s}>{labelOf(s)}</Pill>
-                ))
+      {tab === 'texte' && (
+        <div className="space-y-4">
+          {/* Le bloc doit dire ce qu'il regroupe AVANT les champs : c'est ce
+              qui permet au vendeur de savoir qu'il est bien en train de
+              modifier la carte « Téléviseurs » et pas une ventilation. */}
+          {isGamme && (
+            <Field
+              label="Catégories regroupées"
+              hint="Lie cette carte à des produits du catalogue. Déterministe : elle ne dépend pas de l'ordre des catégories."
+            >
+              <div className="flex flex-wrap gap-2">
+                {gammeSlugs.length === 0 ? (
+                  <Pill>Aucune — cette carte n’apparaît pas sur l’accueil</Pill>
+                ) : (
+                  gammeSlugs.map((s) => (
+                    <Pill key={s}>{labelOf(s)}</Pill>
+                  ))
+                )}
+              </div>
+              {gammeSlugs.length > 0 && (
+                <p className="mt-2 text-xs text-text-muted">{block.meta}</p>
               )}
-            </div>
-            {gammeSlugs.length > 0 && (
-              <p className="mt-2 text-xs text-text-muted">
-                {block.meta}
-              </p>
-            )}
-          </Field>
-        )}
+            </Field>
+          )}
 
-        {fields.map((f) => {
-          if (f === 'image') {
-            return (
-              <ImagePicker
-                key={f}
-                label="Image"
-                value={draft.image ?? null}
-                onChange={(next) => setDraft((d) => ({ ...d, image: next }))}
-                folder="promo"
-                hint={`Appliquée à « ${block.key} ».`}
-              />
-            )
-          }
-          if (f === 'image_alt') {
-            return (
-              <Field key={f} label="Texte alternatif de l’image" hint="Décrit l’image pour les lecteurs d’écran.">
-                <TextInput
-                  value={draft.image_alt ?? ''}
-                  onChange={(e) => setDraft((d) => ({ ...d, image_alt: e.target.value }))}
-                />
-              </Field>
-            )
-          }
-          return (
+          {textFields.map((f) => (
             <Field key={f} label={LABELS[f]}>
               {isLong(f) ? (
                 <TextArea
-                  rows={3}
+                  rows={f === 'body' ? 5 : 3}
                   value={draft[f] ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}
                 />
@@ -199,16 +232,58 @@ function BlockEditor({
                 />
               )}
             </Field>
-          )
-        })}
+          ))}
+        </div>
+      )}
 
-        <details className="rounded-xl border border-border bg-bg-secondary p-3">
-          <summary className="cursor-pointer text-xs font-semibold text-text-muted">
-            Champs avancés (JSON)
-          </summary>
+      {tab === 'image' && hasImage && (
+        <div className="space-y-5">
+          <ImagePicker
+            label="Image"
+            value={draft.image ?? null}
+            onChange={(next) => setDraft((d) => ({ ...d, image: next }))}
+            folder="promo"
+            hint={`Appliquée à « ${block.key} ».`}
+          />
+
+          <Field label="Texte alternatif de l’image" hint="Décrit l’image pour les lecteurs d’écran.">
+            <TextInput
+              value={draft.image_alt ?? ''}
+              onChange={(e) => setDraft((d) => ({ ...d, image_alt: e.target.value }))}
+            />
+          </Field>
+
+          {/*
+            * Le cadrage n'apparaît que dans cet onglet : il ne concerne que
+            * l'image, et le mêler aux champs de texte ferait croire qu'il agit
+            * sur la mise en page de la section entière.
+            */}
+          <Disclosure
+            title="Cadrage de l’image"
+            hint="Remplir, aligner en haut…"
+            defaultOpen={Boolean(draft.object_fit || draft.object_position)}
+          >
+            <ImageFitControl
+              image={draft.image}
+              fit={draft.object_fit}
+              position={draft.object_position}
+              onChangeFit={(v) => setDraft((d) => ({ ...d, object_fit: v || null }))}
+              onChangePosition={(v) => setDraft((d) => ({ ...d, object_position: v || null }))}
+              hint="« Par défaut » garde le cadrage d’origine de la section."
+            />
+          </Disclosure>
+        </div>
+      )}
+
+      {tab === 'avance' && (
+        <div className="space-y-4">
+          <p className="text-xs leading-relaxed text-text-muted">
+            Ces champs viennent d’un usage ponctuel de la section. Les modifier à
+            la main peut casser son affichage : en cas de doute, ne touchez à rien.
+          </p>
           <TextArea
-            rows={6}
-            className="mt-2 font-mono-ref text-xs"
+            rows={10}
+            className="font-mono-ref text-xs"
             defaultValue={JSON.stringify(block.data ?? {}, null, 2)}
             onChange={(e) => {
               try {
@@ -218,29 +293,20 @@ function BlockEditor({
               }
             }}
           />
-        </details>
-
-        <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-          <Button variant="danger" onClick={() => setAskDelete(true)}>
-            <Trash2 className="h-3.5 w-3.5" /> Retirer
-          </Button>
-          <Button variant="primary" onClick={() => onSave(draft)} disabled={saving}>
-            <Save className="h-3.5 w-3.5" /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </Button>
         </div>
+      )}
 
-        {askDelete && (
-          <ConfirmDialog
-            title="Retirer ce bloc ?"
-            message="Le site affichera alors le texte de repli, pas une page vide."
-            confirmLabel="Retirer"
-            danger
-            onCancel={() => setAskDelete(false)}
-            onConfirm={() => { setAskDelete(false); onDelete() }}
-          />
-        )}
-      </div>
-    </Card>
+      {askDelete && (
+        <ConfirmDialog
+          title="Retirer ce bloc ?"
+          message="Le site affichera alors le texte de repli, pas une page vide."
+          confirmLabel="Retirer"
+          danger
+          onCancel={() => setAskDelete(false)}
+          onConfirm={() => { setAskDelete(false); onDelete() }}
+        />
+      )}
+    </Modal>
   )
 }
 
@@ -254,6 +320,7 @@ export default function ContentTab({ notify }: { notify: Notify }) {
     return (slug) => map.get(slug) ?? slug
   }, [categories])
   const [openSlot, setOpenSlot] = useState<string>(SECTIONS[0].slot)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const bySlot = useMemo(() => {
@@ -269,14 +336,29 @@ export default function ContentTab({ notify }: { notify: Notify }) {
 
   const sectionBlocks = bySlot.get(openSlot) ?? []
   const section = SECTIONS.find((s) => s.slot === openSlot)!
+  const editing = sectionBlocks.find((b) => b.id === editingId) ?? null
 
   const save = async (patch: Partial<ContentBlock>) => {
     setSaving(true)
     const error = await saveBlock(patch)
     setSaving(false)
     if (error) { notify({ message: error, tone: 'error' }); return }
+    setEditingId(null)
     await refresh()
     notify({ message: 'Contenu enregistré. Le site le recharge sous une minute.', tone: 'ok' })
+  }
+
+  /** Affiche ou masque un bloc sans ouvrir son formulaire. */
+  const toggle = async (b: ContentBlock) => {
+    const error = await saveBlock({ ...b, active: !b.active })
+    if (error) { notify({ message: error, tone: 'error' }); return }
+    await refresh()
+    notify({
+      message: b.active
+        ? `« ${b.key} » est masqué : le site affichera son texte de repli.`
+        : `« ${b.key} » est de nouveau affiché.`,
+      tone: 'ok',
+    })
   }
 
   return (
@@ -293,7 +375,7 @@ export default function ContentTab({ notify }: { notify: Notify }) {
             return (
               <button
                 key={s.slot}
-                onClick={() => setOpenSlot(s.slot)}
+                onClick={() => { setOpenSlot(s.slot); setEditingId(null) }}
                 className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
                   active ? 'bg-black text-white' : 'bg-bg-secondary text-text-body hover:text-black'
                 }`}
@@ -309,30 +391,70 @@ export default function ContentTab({ notify }: { notify: Notify }) {
 
       {sectionBlocks.length === 0 ? (
         <Card>
-          <p className="p-10 text-center text-sm text-text-muted">
-            Aucun bloc dans cette section.
-          </p>
+          <EmptyState
+            icon={<FileText className="h-9 w-9" />}
+            title="Aucun bloc dans cette section"
+            hint="Cette section du site utilise donc ses textes d’origine."
+          />
         </Card>
       ) : (
-        <div className="space-y-4">
-          {sectionBlocks.map((b) => (
-            <BlockEditor
-              key={b.id}
-              block={b}
-              fields={FIELDS[section.slot] ?? FIELDS.default}
-              labelOf={labelOf}
-              saving={saving}
-              onSave={save}
-              onToggle={(active) => save({ ...b, active })}
-              onDelete={async () => {
-                const error = await deleteBlock(b.id)
-                if (error) { notify({ message: error, tone: 'error' }); return }
-                await refresh()
-                notify({ message: 'Bloc retiré.', tone: 'ok' })
-              }}
-            />
-          ))}
-        </div>
+        <Card>
+          <ul className="divide-y divide-border">
+            {sectionBlocks.map((b) => (
+              <li key={b.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono-ref text-[0.7rem] font-bold text-text-muted">
+                      {b.key}
+                    </span>
+                    {!b.active && <Pill>Masqué</Pill>}
+                    {(b.object_fit || b.object_position) && <Pill tone="dark">Cadré</Pill>}
+                  </div>
+                  {/* Le résumé est ce qui permet de retrouver « la phrase du
+                      milieu » sans ouvrir les douze blocs l'un après l'autre. */}
+                  <p className="mt-0.5 truncate text-sm text-text-body">
+                    {summarise(b) || <span className="text-text-muted">Bloc vide</span>}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 gap-1.5">
+                  <Button
+                    variant={b.active ? 'ghost' : 'primary'}
+                    onClick={() => toggle(b)}
+                    aria-label={b.active ? `Masquer ${b.key}` : `Afficher ${b.key}`}
+                  >
+                    {b.active
+                      ? <EyeOff className="h-3.5 w-3.5" />
+                      : <Eye className="h-3.5 w-3.5" />}
+                    <span className="hidden sm:inline">{b.active ? 'Masquer' : 'Afficher'}</span>
+                  </Button>
+                  <Button onClick={() => setEditingId(b.id)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Modifier</span>
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {editing && (
+        <BlockEditor
+          block={editing}
+          fields={FIELDS[section.slot] ?? FIELDS.default}
+          labelOf={labelOf}
+          saving={saving}
+          onSave={save}
+          onClose={() => setEditingId(null)}
+          onDelete={async () => {
+            const error = await deleteBlock(editing.id)
+            if (error) { notify({ message: error, tone: 'error' }); return }
+            setEditingId(null)
+            await refresh()
+            notify({ message: 'Bloc retiré.', tone: 'ok' })
+          }}
+        />
       )}
     </div>
   )

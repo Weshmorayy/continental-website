@@ -88,6 +88,17 @@ export interface ProductVariant {
   btu?: number
 
   /**
+   * Référence fabricant PROPRE à ce modèle.
+   *
+   * La référence de la fiche ne convient pas toujours : sur le téléviseur,
+   * `CT-43SR` désigne une taille précise. L'afficher sur le 32 pouces
+   * annoncerait au client une référence qui n'est pas celle du carton qu'il
+   * reçoit. Quand le modèle a la sienne, elle est donc portée ici ; sinon on
+   * retombe sur la référence de la fiche.
+   */
+  ref?: string
+
+  /**
    * Fiche technique PROPRE au modèle : { "Modèle": "CT-INV-09 A+++", … }.
    *
    * Affichée sous le sélecteur, fusionnée avec les caractéristiques communes

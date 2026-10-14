@@ -352,9 +352,9 @@ NEXT_PUBLIC_SUPABASE_BUCKET=<nom-du-bucket>`}
               <Image
                 src="/brand/logo-light.png"
                 alt="Continental®"
-                width={150}
-                height={42}
-                className="h-6 w-auto object-contain sm:h-7"
+                width={400}
+                height={231}
+                className="h-8 w-auto object-contain sm:h-9"
               />
             </Link>
             <span className="admin-label hidden sm:inline">Administration</span>
