@@ -20,6 +20,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
+import { useScrollLock } from '@/hooks/useScrollLock'
 
 const fcfa = (n: number) =>
   `${new Intl.NumberFormat('fr-FR').format(n).replace(/ /g, ' ')} FCFA`
@@ -32,20 +33,18 @@ export default function CartDrawer() {
      Échap, et être refermé au clic extérieur. Sans cela, la touche Tab
      continue de parcourir les liens DU SITE DERRIÈRE le tiroir — un lecteur
      d'écran n'annonce plus du tout où l'on se trouve. */
+  /*
+   * Le verrou de défilement est celui, partagé, de `hooks/useScrollLock`. Il
+   * porte sur `documentElement` ET sur `body` : depuis que `globals.css`
+   * déclare `overflow-x: clip` sur `html`, un `overflow: hidden` posé sur le
+   * seul `body` ne se propage plus à la fenêtre, et la page continuait de
+   * défiler derrière le tiroir ouvert. Le compteur du hook évite en plus
+   * qu'une modale ouverte par-dessus rende la page trop tôt.
+   */
+  useScrollLock(open)
+
   useEffect(() => {
     if (!open) return
-
-    /*
-     * Le verrou porte sur `documentElement` ET sur `body`.
-     *
-     * `body { overflow: hidden }` ne suffit plus depuis que `html` déclare
-     * `overflow-x: clip` : le débordement du body ne se propage à la fenêtre
-     * que si `html` est entièrement `visible`. Le verrouillage était donc
-     * devenu sans effet, et la page continuait de défiler derrière le tiroir
-     * ouvert.
-     */
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setOpen(false); return }
@@ -68,8 +67,6 @@ export default function CartDrawer() {
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.documentElement.style.overflow = ''
-      document.body.style.overflow = ''
     }
   }, [open, setOpen])
 

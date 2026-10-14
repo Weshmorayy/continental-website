@@ -27,6 +27,7 @@
  */
 
 import { siteConfig } from '@/config/site'
+import { buildWhatsAppUrl } from '@/lib/whatsapp'
 
 /** Forme de la ligne `site_settings`, telle que stockée en JSON. */
 export interface DbSettings {
@@ -70,8 +71,27 @@ function num(value: unknown, fallback: number): number {
  * forme, pour qu'un numéro valide ne soit pas rejeté par une faute de frappe.
  */
 export function normalizeWhatsapp(raw: string): string {
-  const digits = raw.replace(/\D/g, '')
-  if (digits === '') return siteConfig.contact.whatsapp
+  return toWaNumber(raw) || siteConfig.contact.whatsapp
+}
+
+/**
+ * La même mise en forme, mais SANS repli.
+ *
+ * ── Pourquoi deux fonctions, et pas une ───────────────────────────────────
+ * `normalizeWhatsapp` remplace un numéro vide par celui du magasin. C'est le
+ * bon comportement pour le numéro DU VENDEUR : un lien de contact ne doit
+ * jamais mener nulle part.
+ *
+ * Ce serait un comportement DANGEREUX pour le numéro d'un client : dans
+ * l'administration, un bouton « Prévenir » sur une commande sans téléphone
+ * ouvrirait alors une conversation avec… le vendeur lui-même, en croyant
+ * écrire au client. Le repli doit donc être une décision de l'appelant, pas
+ * un effet de bord du normaliseur. D'où cette fonction, qui rend une chaîne
+ * vide quand il n'y a rien à composer.
+ */
+export function toWaNumber(raw: string | null | undefined): string {
+  const digits = (raw ?? '').replace(/\D/g, '')
+  if (digits === '') return ''
   if (digits.length === 9) return `221${digits}`
   return digits
 }
@@ -142,7 +162,20 @@ export function resolveSettings(db: DbSettings | null | undefined): ResolvedSett
   }
 }
 
-/** URL de commande WhatsApp, sur le numéro RÉSOLU. */
+/**
+ * URL de commande WhatsApp, sur le numéro RÉSOLU.
+ *
+ * ── Cette fonction n'est plus qu'un raccourci ─────────────────────────────
+ * Elle construisait l'adresse `wa.me` elle-même, comme `buildWhatsAppUrl` de
+ * `lib/whatsapp.ts` — deux endroits pour la même URL, donc deux endroits où
+ * oublier `encodeURIComponent`. Elle délègue désormais.
+ *
+ * L'ordre des arguments est conservé (`cfg` d'abord) parce que les appels
+ * existants — en-tête, pied de page — le lisent ainsi.
+ *
+ * Aucun cycle : `lib/whatsapp.ts` n'importe de ce fichier qu'un TYPE, effacé
+ * à la compilation, donc le graphe d'exécution va dans un seul sens.
+ */
 export function whatsappLink(cfg: ResolvedSettings, message: string): string {
-  return `https://wa.me/${cfg.contact.whatsapp}?text=${encodeURIComponent(message)}`
+  return buildWhatsAppUrl(message, cfg)
 }

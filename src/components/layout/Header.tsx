@@ -10,6 +10,7 @@ import {
 import { useCart } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
 import { whatsappLink } from '@/lib/settings'
+import { useScrollLock } from '@/hooks/useScrollLock'
 
 /*
  * Les adresses portent le slug RÉEL de la catégorie.
@@ -57,10 +58,12 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [menuOpen])
+  /*
+   * Même verrou que le tiroir du panier et les fenêtres de l'administration :
+   * `hooks/useScrollLock`. Un `overflow: hidden` sur le seul `<body>` ne
+   * suffit plus depuis que `html` est en `overflow-x: clip`.
+   */
+  useScrollLock(menuOpen)
 
   useEffect(() => { setMenuOpen(false) }, [pathname])
 

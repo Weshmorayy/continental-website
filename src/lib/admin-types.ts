@@ -234,13 +234,13 @@ export const LEAD_KIND_LABEL: Record<LeadKind, string> = {
   whatsapp_order: 'Commande WhatsApp',
 }
 
-export const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  whatsapp: 'WhatsApp',
-  wave: 'Wave',
-  orange_money: 'Orange Money',
-  card: 'Carte bancaire',
-  cash: 'Espèces',
-}
+/*
+ * Le libellé des modes de règlement vit dans `lib/payments.ts`, avec les
+ * messages WhatsApp qui les nomment : une seule table, donc aucun risque
+ * qu'un message client dise « Wave » pour un règlement « orange_money ».
+ * Il est réexporté ici pour ne pas déplacer les imports existants.
+ */
+export { PAYMENT_METHOD_LABEL } from '@/lib/payments'
 
 /* ──────────────────────────── contenu éditorial du site ───────────────── */
 

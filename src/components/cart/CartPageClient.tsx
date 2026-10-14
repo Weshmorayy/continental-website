@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Minus, Trash2, ArrowRight, MessageCircle, Loader2, AlertTriangle } from 'lucide-react'
 import { useCart, type CartLine } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
-import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { buildWhatsAppUrl, buildOrderRecap } from '@/lib/whatsapp'
 
 const fcfa = (n: number) =>
   `${new Intl.NumberFormat('fr-FR').format(Math.round(n)).replace(/ /g, ' ')} FCFA`
@@ -121,16 +121,36 @@ export default function CartPageClient() {
       return
     }
 
-    // Le récapitulatif est construit AVANT `clear()` : après, `lines` serait
-    // vide et le message partirait sans les articles.
+    /*
+     * Le récapitulatif est construit AVANT `clear()` : après, `lines` serait
+     * vide et le message partirait sans les articles.
+     *
+     * Il est construit par `buildOrderRecap`, et non plus à la main ici : le
+     * message doit porter la zone, l'adresse et le mode de règlement, sinon le
+     * vendeur doit ouvrir l'administration pour savoir OÙ livrer — au moment
+     * précis où il répond depuis son téléphone.
+     */
     const message = ensuite === 'whatsapp'
-      ? [
-          `Bonjour Continental, je viens de passer la commande ${result.ref ?? ''}.`.trim(),
-          '',
-          ...lines.map((l) => `• ${l.name}${l.ref ? ` (Réf. ${l.ref})` : ''} × ${l.quantity} — ${fcfa(l.price * l.quantity)}`),
-          '',
-          `Total : ${fcfa(total)}`,
-        ].join('\n')
+      ? buildOrderRecap({
+          ref: result.ref,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          customerAddress: address.trim() || null,
+          items: lines.map((l) => ({
+            name: l.name,
+            ref: l.ref,
+            price: l.price,
+            quantity: l.quantity,
+          })),
+          subtotal,
+          shippingCost: shipping,
+          shippingZoneName: zone?.name ?? null,
+          total,
+          // Le mode de règlement est décidé à la livraison : le site ne
+          // propose pas encore de paiement en ligne.
+          paymentMethod: 'whatsapp',
+          notes: notes.trim() || null,
+        })
       : ''
 
     clear()

@@ -15,7 +15,43 @@
  */
 
 import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { OBJECT_FIT_OPTIONS, OBJECT_POSITION_OPTIONS, objectPositionStyle } from '@/lib/images'
+import { useScrollLock } from '@/hooks/useScrollLock'
+
+/**
+ * `Portal` — rend ses enfants à la racine du document, sous `document.body`.
+ *
+ * ── Pourquoi ce détour, et pas un simple `z-index` ────────────────────────
+ * Une fenêtre modale est en `position: fixed; inset: 0` : elle devrait couvrir
+ * tout l'écran. Elle ne le faisait pas. Le haut de l'écran restait clair —
+ * l'en-tête d'administration n'était pas assombri — et le geste de défilement
+ * traversait la fenêtre pour faire glisser la page derrière.
+ *
+ * La cause n'est pas une question de rang : `inset: 0` ne se mesure pas au
+ * bord de la fenêtre, mais au bloc conteneur le plus proche — et il suffit
+ * qu'un ancêtre porte `transform`, `filter`, `backdrop-filter`, `contain` ou
+ * `will-change` pour que ce bloc conteneur cesse d'être la fenêtre. La fenêtre
+ * se retrouvait alors alignée sur la boîte de cet ancêtre, donc décalée vers
+ * le bas : d'où la bande claire en haut. Et comme elle défilait avec le
+ * document, le défilement de la page l'emportait sur celui de la fenêtre.
+ *
+ * Aucun ancêtre de ce fichier ne porte ces propriétés *aujourd'hui* — mais il
+ * suffit qu'un composant ajoute un `backdrop-blur` pour que le défaut
+ * revienne, partout à la fois. Passer par un portail supprime la question :
+ * les enfants sont rattachés à `document.body`, qui n'a aucun ancêtre, donc
+ * `inset: 0` désigne la fenêtre et rien d'autre. Le rang `z-index` redevient
+ * alors ce qu'il aurait toujours dû être : une simple comparaison entre
+ * couches sœurs.
+ *
+ * `mounted` évite l'échec au rendu serveur, où `document` n'existe pas.
+ */
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted || typeof document === 'undefined') return null
+  return createPortal(children, document.body)
+}
 
 /* ─────────────────────────────────────────────────────────── conteneurs ── */
 
@@ -290,17 +326,27 @@ export function Toast({
     return () => clearTimeout(t)
   }, [message, tone, onDone])
 
+  /*
+   * La notification passe par le portail, et son rang la place au-dessus de
+   * TOUT — y compris de la fenêtre modale. C'est le cas le plus fréquent :
+   * on enregistre depuis un formulaire, la confirmation « Enregistré »
+   * apparaît. Tant qu'elle était à `z-[60]`, soit sous la fenêtre (`z-[100]`),
+   * elle était invisible : l'utilisateur ne savait pas si son clic avait
+   * abouti.
+   */
   return (
+    <Portal>
     <div
       role="status"
       aria-live="polite"
-      className={`fixed inset-x-4 bottom-4 z-[60] mx-auto max-w-sm rounded-2xl px-5 py-3
+      className={`fixed inset-x-4 bottom-4 z-[130] mx-auto max-w-sm rounded-2xl px-5 py-3
                   text-center text-sm font-semibold shadow-2xl sm:inset-x-auto sm:right-5 sm:text-left ${
                     tone === 'ok' ? 'bg-black text-white' : 'bg-red-600 text-white'
                   }`}
     >
       {message}
     </div>
+    </Portal>
   )
 }
 
@@ -349,19 +395,14 @@ export function Modal({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
-
-    // Le défilement du document est rendu à sa valeur d'origine à la fermeture,
-    // et non remis à vide : deux fenêtres ouvertes l'une sur l'autre (une
-    // confirmation par-dessus le formulaire) rendraient sinon la main à la page
-    // alors qu'il en reste une d'ouverte.
-    const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = previous
-    }
+    return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  // Le défilement de la page est verrouillé tant que la fenêtre est ouverte.
+  // Le verrou est partagé (voir `hooks/useScrollLock`) : une confirmation
+  // ouverte par-dessus ce formulaire ne rend pas la main à la page en se
+  // fermant, puisque le formulaire, lui, est toujours là.
+  useScrollLock(true)
 
   const width = {
     md: 'sm:max-w-lg',
@@ -370,8 +411,9 @@ export function Modal({
   }[size]
 
   return (
+    <Portal>
     <div
-      className="fixed inset-0 z-[65] flex items-end justify-center bg-black/70 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[100] flex items-end justify-center overscroll-contain bg-black/70 sm:items-center sm:p-6"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -404,13 +446,19 @@ export function Modal({
 
         {tabs}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+        {/* `overscroll-contain` arrête la propagation du geste : arrivé en
+            haut ou en bas de la fenêtre, le doigt ne fait plus glisser la
+            page derrière. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+          {children}
+        </div>
 
         {footer && (
           <div className="shrink-0 border-t border-border bg-white px-4 py-3 sm:px-5">{footer}</div>
         )}
       </div>
     </div>
+    </Portal>
   )
 }
 
@@ -607,8 +655,14 @@ export function ConfirmDialog({
     return () => window.removeEventListener('keydown', onKey)
   }, [onCancel])
 
+  // Une confirmation s'ouvre souvent PAR-DESSUS un formulaire : le verrou de
+  // défilement est le même, et le compteur du hook empêche cette fenêtre, en
+  // se fermant, de rendre la main à la page sous le formulaire encore ouvert.
+  useScrollLock(true)
+
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
+    <Portal>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center overscroll-contain bg-black/70 p-4">
       <div role="alertdialog" aria-modal="true" className="panel w-full max-w-sm p-6 shadow-2xl">
         <h3 className="display-md text-lg">{title}</h3>
         <p className="mt-2 text-sm text-text-body">{message}</p>
@@ -620,6 +674,7 @@ export function ConfirmDialog({
         </div>
       </div>
     </div>
+    </Portal>
   )
 }
 

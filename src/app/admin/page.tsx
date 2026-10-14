@@ -32,6 +32,7 @@ import { useStore } from '@/context/StoreContext'
 import { missingEnvVars } from '@/lib/supabase'
 import type { ModuleKey } from '@/lib/admin-types'
 import { Toast, ConfirmDialog } from '@/components/admin/ui'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import OrdersTab from '@/components/admin/OrdersTab'
 import ProductsTab from '@/components/admin/ProductsTab'
 import LeadsTab from '@/components/admin/LeadsTab'
@@ -147,11 +148,15 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin])
 
-  /* Verrouille le défilement de la page quand le tiroir est ouvert. */
-  useEffect(() => {
-    document.body.style.overflow = drawer ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [drawer])
+  /*
+   * Verrouille le défilement de la page quand le tiroir est ouvert.
+   *
+   * Le verrou est celui, partagé, de `hooks/useScrollLock` : il compte les
+   * couches ouvertes au lieu de se contenter d'un `overflow` sur `<body>`.
+   * L'ancienne version posait `''` à la fermeture — ce qui débloquait la page
+   * même si une fenêtre modale était restée ouverte par-dessus le tiroir.
+   */
+  useScrollLock(drawer)
 
   /* ─────────────────────────────────────────── états 1 et 2 ─────────── */
 
@@ -433,7 +438,7 @@ NEXT_PUBLIC_SUPABASE_BUCKET=<nom-du-bucket>`}
 
       {/* ══ tiroir plein écran — sous `lg` ══ */}
       {drawer && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[90] lg:hidden">
           <div
             className="absolute inset-0 bg-black/60"
             onClick={() => setDrawer(false)}
