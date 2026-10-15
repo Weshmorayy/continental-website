@@ -107,9 +107,18 @@ export default async function Footer() {
             <h2 className="product-ref text-text-muted uppercase tracking-[0.12em] mb-5">
               Paiements acceptés
             </h2>
+            {/* Liste figée auparavant : un moyen de paiement coupé dans
+                l'administration restait annoncé ici. */}
             <ul className="space-y-2 text-sm text-text-body">
-              {['Wave', 'Orange Money', 'Carte bancaire', 'Espèces à la livraison'].map((p) => (
-                <li key={p}>{p}</li>
+              {(
+                [
+                  { label: 'Wave', on: cfg.payments.wave },
+                  { label: 'Orange Money', on: cfg.payments.orangeMoney },
+                  { label: 'Carte bancaire', on: cfg.payments.card },
+                  { label: 'Espèces à la livraison', on: cfg.payments.cash },
+                ].filter((p) => p.on)
+              ).map((p) => (
+                <li key={p.label}>{p.label}</li>
               ))}
             </ul>
           </div>

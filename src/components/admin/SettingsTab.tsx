@@ -205,6 +205,20 @@ export default function SettingsTab({ notify }: { notify: Notify }) {
             />
           </Field>
 
+          {/*
+            L'interrupteur général. Il prime sur les deux autres règles :
+            tant qu'il est allumé, aucune commande ne paie de livraison, quel
+            que soit le panier — c'est le geste « livraison offerte sur tout
+            le catalogue » pendant une promotion.
+          */}
+          <div className="flex flex-wrap gap-5 rounded-2xl bg-bg-secondary p-4">
+            <Toggle
+              checked={Boolean(draft.delivery.freeForAll)}
+              onChange={(next) => setJson('delivery', 'freeForAll', next)}
+              label="Livraison offerte partout"
+            />
+          </div>
+
           <div className="flex flex-wrap gap-5 rounded-2xl bg-bg-secondary p-4">
             {(
               [

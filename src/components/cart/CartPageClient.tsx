@@ -31,7 +31,7 @@ type Errors = Partial<Record<'name' | 'phone' | 'zone', string>>
 
 export default function CartPageClient() {
   const { lines, subtotal, setQuantity, remove, clear } = useCart()
-  const { shippingZones, placeOrder, siteConfig: cfg } = useStore()
+  const { shippingZones, placeOrder, siteConfig: cfg, products } = useStore()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -39,6 +39,7 @@ export default function CartPageClient() {
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [zoneId, setZoneId] = useState('')
+  const [honeypot, setHoneypot] = useState('')
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [fatal, setFatal] = useState<string | null>(null)
@@ -48,7 +49,24 @@ export default function CartPageClient() {
     [shippingZones],
   )
   const zone = zones.find((z) => z.id === zoneId) ?? null
-  const shipping = Number(zone?.price ?? 0)
+
+  /*
+   * Les frais affichés ici sont une ESTIMATION, calculée avec les mêmes règles
+   * que `create_order` : l'interrupteur général, puis l'article « livraison
+   * offerte », puis le seuil de panier. Le montant qui fait foi reste celui que
+   * le serveur renvoie — c'est lui qui part dans la fiche de commande et dans
+   * le message WhatsApp. Sans cette estimation, le client verrait des frais
+   * que le serveur n'applique pas, ou l'inverse.
+   */
+  const shippingOffered = useMemo(() => {
+    if (cfg.delivery.freeForAll) return true
+    const freeSlugs = new Set(products.filter((p) => p.free_delivery).map((p) => p.slug))
+    if (lines.some((l) => freeSlugs.has(l.slug))) return true
+    const freeFrom = Number(cfg.delivery.freeFrom ?? 0)
+    return freeFrom > 0 && subtotal >= freeFrom
+  }, [cfg.delivery.freeForAll, cfg.delivery.freeFrom, products, lines, subtotal])
+
+  const shipping = shippingOffered ? 0 : Number(zone?.price ?? 0)
   const total = subtotal + shipping
 
   /* ── validation ────────────────────────────────────────────────────────── */
@@ -112,6 +130,9 @@ export default function CartPageClient() {
       shippingZone: zone,
       items: lines.map(toOrderItem),
       paymentMethod: 'whatsapp',
+      // Champ piège : rempli par un robot, vide pour un visiteur. Il voyage
+      // jusqu'à `create_order`, qui refuse la commande s'il est rempli.
+      honeypot,
       ...(notes.trim() ? { notes: notes.trim() } : {}),
     })
     setBusy(false)
@@ -142,10 +163,10 @@ export default function CartPageClient() {
             price: l.price,
             quantity: l.quantity,
           })),
-          subtotal,
-          shippingCost: shipping,
+          subtotal: result.subtotal ?? subtotal,
+          shippingCost: result.shippingCost ?? shipping,
           shippingZoneName: zone?.name ?? null,
-          total,
+          total: result.total ?? total,
           // Le mode de règlement est décidé à la livraison : le site ne
           // propose pas encore de paiement en ligne.
           paymentMethod: 'whatsapp',
@@ -259,7 +280,7 @@ export default function CartPageClient() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-muted">Livraison</dt>
-                <dd>{zone ? (shipping > 0 ? fcfa(shipping) : 'Offerte') : '—'}</dd>
+                <dd>{shippingOffered ? 'Offerte' : zone ? fcfa(shipping) : '—'}</dd>
               </div>
               <div className="hairline flex items-baseline justify-between pt-3">
                 <dt className="font-semibold">Total</dt>
@@ -268,6 +289,31 @@ export default function CartPageClient() {
             </dl>
 
             <form onSubmit={submit} className="mt-7 space-y-4" noValidate>
+              {/*
+                Champ piège.
+
+                Un visiteur ne le voit jamais : il est hors écran, sans
+                étiquette lisible, hors du parcours au clavier, et les
+                gestionnaires de mots de passe l'ignorent. Un robot qui remplit
+                tous les champs le remplit aussi — `create_order` refuse alors
+                la commande avant d'écrire quoi que ce soit. C'est ce qui
+                remplace le contrôle que le navigateur ne peut plus faire :
+                personne ne peut plus inventer une commande en écrivant
+                directement dans la table.
+              */}
+              <div className="absolute left-[-9999px] h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="societe">Société</label>
+                <input
+                  id="societe"
+                  name="societe"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               <div>
                 <label htmlFor="name" className="admin-label">Nom et prénom</label>
                 <input id="name" value={name} onChange={(e) => setName(e.target.value)}
@@ -362,6 +408,13 @@ export default function CartPageClient() {
 function toOrderItem(l: CartLine) {
   return {
     productId: l.slug,
+    /*
+     * La clé porte le MODÈLE choisi (`v-tv-43`), pas seulement la fiche. Sans
+     * elle, `create_order` ne retrouve pas la déclinaison et retombe sur le
+     * prix de base : un 43" serait facturé au tarif du 32", et l'écart ne se
+     * verrait qu'au moment de la livraison.
+     */
+    key: l.key,
     slug: l.slug,
     name: l.name,
     ref: l.ref || null,

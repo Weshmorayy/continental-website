@@ -281,11 +281,21 @@ export default async function ContactPage() {
 
                 <p className="mt-5 text-sm text-text-body leading-relaxed max-w-2xl">
                   Nos livreurs interviennent dans toute la région de Dakar et sa
-                  banlieue immédiate. Livraison gratuite à partir de{' '}
-                  <strong className="text-text-primary font-semibold">
-                    {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA
-                  </strong>
-                  .
+                  banlieue immédiate.{' '}
+                  {cfg.delivery.freeForAll ? (
+                    <>
+                      Livraison <strong className="text-text-primary font-semibold">offerte</strong>{' '}
+                      sur tout le catalogue.
+                    </>
+                  ) : (
+                    <>
+                      Livraison gratuite à partir de{' '}
+                      <strong className="text-text-primary font-semibold">
+                        {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA
+                      </strong>
+                      .
+                    </>
+                  )}
                 </p>
 
                 <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-12 border-t border-border">

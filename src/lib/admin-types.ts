@@ -65,6 +65,15 @@ export interface Product {
   is_active: boolean
   is_featured: boolean
 
+  /**
+   * Livraison offerte sur cet article (colonne `products.free_delivery`).
+   *
+   * Dès qu'une ligne du panier en bénéficie, `create_order` annule les frais
+   * de port de TOUTE la commande. C'est une colonne de la table : elle voyage
+   * sous son nom SQL, comme `in_stock` ou `is_active`.
+   */
+  free_delivery: boolean
+
   position: number
   views: number
 

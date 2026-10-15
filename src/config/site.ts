@@ -35,7 +35,12 @@ export const siteConfig = {
   payments: {
     wave: true,
     orangeMoney: true,
-    card: true,
+    /*
+     * Carte bancaire retirée : l'intégration PayTech a été désactivée, aucune
+     * commande ne peut donc être réglée par carte. La valeur n'est qu'un repli
+     * — `site_settings.payments.card` en base la remplace dès qu'il est lu.
+     */
+    card: false,
     cash: true,
   },
 
@@ -50,6 +55,15 @@ export const siteConfig = {
       { name: 'Rufisque', delay: '48–72h', fee: 3500 },
     ],
     freeFrom: 50000,
+    /**
+     * Interrupteur global « livraison offerte partout » (`delivery.freeForAll`).
+     *
+     * Il rend les frais de port nuls sur tout le site sans toucher aux zones ni
+     * à leurs tarifs : le vendeur peut offrir la livraison pendant une
+     * promotion, puis la rétablir en décochant une case, sans ressaisir un seul
+     * prix. `freeFrom` (le seuil) reste actif en parallèle.
+     */
+    freeForAll: false,
   },
 
   seo: {

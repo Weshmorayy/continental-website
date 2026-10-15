@@ -746,7 +746,17 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
                   onChange={(is_featured) => setEditing({ ...editing, is_featured })}
                   label="Mis en avant"
                 />
+                <Toggle
+                  checked={editing.free_delivery ?? false}
+                  onChange={(free_delivery) => setEditing({ ...editing, free_delivery })}
+                  label="Livraison offerte"
+                />
               </div>
+
+              <p className="text-xs leading-relaxed text-text-muted">
+                « Livraison offerte » annule les frais de livraison pour cet
+                article, quelle que soit la zone du client.
+              </p>
 
               <SlotPicker
                 slug={editing.slug ?? ''}

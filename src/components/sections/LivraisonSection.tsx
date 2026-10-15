@@ -2,12 +2,18 @@ import { Clock, CreditCard, ShieldCheck } from 'lucide-react'
 import { getSiteSettings } from '@/lib/atelier'
 import { getBlocks } from '@/lib/atelier'
 
+/*
+ * Chaque moyen de paiement est rattaché à sa clé de réglage. La liste était
+ * figée : un moyen coupé dans l'administration continuait de s'afficher ici,
+ * alors que la page Contact obéissait déjà au réglage. Deux pages du même site
+ * annonçaient donc des choses différentes.
+ */
 const payments = [
-  { name: 'Wave Sénégal', note: 'Sans frais' },
-  { name: 'Orange Money', note: 'Disponible' },
-  { name: 'Carte bancaire', note: 'Disponible' },
-  { name: 'Espèces', note: 'Au livreur' },
-]
+  { key: 'wave', name: 'Wave Sénégal', note: 'Sans frais' },
+  { key: 'orangeMoney', name: 'Orange Money', note: 'Disponible' },
+  { key: 'card', name: 'Carte bancaire', note: 'Disponible' },
+  { key: 'cash', name: 'Espèces', note: 'Au livreur' },
+] as const
 
 export default async function LivraisonSection() {
   const cfg = await getSiteSettings()
@@ -37,6 +43,15 @@ export default async function LivraisonSection() {
     'Bonjour Continental, je souhaite une facture proforma pour mon entreprise.'
   )}`
 
+  /*
+   * « Livraison offerte partout » l'emporte sur le tarif de chaque secteur :
+   * quand l'interrupteur est actif, tous les secteurs s'affichent « Offerte »,
+   * exactement comme le panier et `create_order` les facturent.
+   */
+  const isOffered = (fee: number) => cfg.delivery.freeForAll || fee === 0
+
+  const accepted = payments.filter((p) => cfg.payments[p.key])
+
   return (
     <section className="bg-bg-primary py-20 sm:py-28">
       <div className="container-site">
@@ -47,8 +62,14 @@ export default async function LivraisonSection() {
             {title}
           </h2>
           <p className="mt-5 text-text-body">
-            Livraison gratuite à partir de{' '}
-            {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA.
+            {cfg.delivery.freeForAll ? (
+              <>Livraison offerte sur tout le catalogue.</>
+            ) : (
+              <>
+                Livraison gratuite à partir de{' '}
+                {cfg.delivery.freeFrom.toLocaleString('fr-FR')} FCFA.
+              </>
+            )}
           </p>
         </div>
 
@@ -72,10 +93,10 @@ export default async function LivraisonSection() {
                     </span>
                     <span
                       className={`text-sm font-semibold tabular-nums ${
-                        zone.fee === 0 ? 'text-accent' : 'text-text-primary'
+                        isOffered(zone.fee) ? 'text-accent' : 'text-text-primary'
                       }`}
                     >
-                      {zone.fee === 0 ? 'Gratuit' : `${zone.fee.toLocaleString('fr-FR')} FCFA`}
+                      {isOffered(zone.fee) ? 'Offerte' : `${zone.fee.toLocaleString('fr-FR')} FCFA`}
                     </span>
                   </span>
                 </li>
@@ -96,7 +117,7 @@ export default async function LivraisonSection() {
             <h3 className="display-sm text-xl text-text-primary mb-6">Moyens de paiement</h3>
 
             <ul className="grid grid-cols-2 gap-3">
-              {payments.map((pay) => (
+              {accepted.map((pay) => (
                 <li key={pay.name} className="stage px-5 py-5">
                   <span className="display-sm block text-text-primary text-sm">{pay.name}</span>
                   <span className="block text-xs text-text-muted mt-1">{pay.note}</span>

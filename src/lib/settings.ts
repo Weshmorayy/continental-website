@@ -58,6 +58,27 @@ function num(value: unknown, fallback: number): number {
 }
 
 /**
+ * Un drapeau qui accepte aussi les formes écrites en texte.
+ *
+ * `bool` n'accepte qu'un vrai booléen JSON. C'est le bon défaut pour les
+ * réglages que seule l'administration écrit. Mais `freeForAll` décide d'une
+ * gratuité ANNONCÉE au client : si la valeur arrive en `"true"` ou `"1"` — un
+ * import, une case saisie à la main, un `update` SQL mal typé — refuser la
+ * gratuité ferait payer une livraison que le site affiche offerte. On accepte
+ * donc les deux écritures.
+ */
+function flag(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase()
+    if (['true', 't', '1', 'yes', 'oui', 'on'].includes(v)) return true
+    if (['false', 'f', '0', 'no', 'non', 'off'].includes(v)) return false
+  }
+  if (typeof value === 'number') return value !== 0
+  return fallback
+}
+
+/**
  * Numéro WhatsApp, au format international sans `+` ni espaces.
  *
  * L'administration demande un numéro tapé librement — `+221 78 506 55 55`,
@@ -140,6 +161,11 @@ export function resolveSettings(db: DbSettings | null | undefined): ResolvedSett
     delivery: {
       available: bool(delivery.available, siteConfig.delivery.available),
       freeFrom: num(delivery.freeFrom, siteConfig.delivery.freeFrom),
+      /*
+       * « Livraison offerte partout ». `flag` et non `bool` : la value peut
+       * arriver en texte selon qui l'a écrite (voir le commentaire de `flag`).
+       */
+      freeForAll: flag(delivery.freeForAll, siteConfig.delivery.freeForAll),
       /*
        * Les zones de livraison ne sont PAS dans `site_settings` : elles ont
        * leur propre table `shipping_zones`, éditable module par module, avec

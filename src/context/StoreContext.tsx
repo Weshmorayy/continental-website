@@ -131,11 +131,39 @@ interface StoreValue {
   submitLead: (input: { kind: LeadKind; name?: string; phone?: string; email?: string; city?: string; message?: string; productId?: string }) => Promise<string | null>
   placeOrder: (input: {
     customer: { name: string; phone: string; email?: string; address?: string }
-    items: { productId: string; name: string; price: number; quantity: number; image?: string | null }[]
+    items: {
+      productId: string
+      name: string
+      price: number
+      quantity: number
+      /**
+       * Clé de LIGNE (`slug` ou `slug::variante`). Le serveur s'en sert pour
+       * retrouver la variante commandée ; sans elle, une TV 43" serait
+       * facturée au prix de la 32". Voir `CartLine.key`.
+       */
+      key?: string
+      image?: string | null
+    }[]
     shippingZone?: ShippingZone | null
     paymentMethod: string
     notes?: string
-  }) => Promise<{ token: string | null; ref: string | null; error: string | null }>
+    /** Champ piège : rempli seulement par un robot. */
+    honeypot?: string
+  }) => Promise<{
+    token: string | null
+    ref: string | null
+    error: string | null
+    /**
+     * Montants recalculés par le SERVEUR, pas par le navigateur.
+     *
+     * Ils valent `null` quand la commande n'a pas été enregistrée. Le panier
+     * les affiche et les met dans le message WhatsApp : c'est ce qui garantit
+     * que le récapitulatif correspond à ce qui est en base.
+     */
+    subtotal: number | null
+    shippingCost: number | null
+    total: number | null
+  }>
 
   refresh: () => Promise<void>
 }
@@ -158,6 +186,52 @@ function frError(error: { code?: string; message: string } | null): string {
   if (error.code === '23503') return 'Référence invalide : la catégorie liée n’existe plus.'
   if (error.code === '23514') return 'Valeur refusée par la base (contrainte).'
   return error.message
+}
+
+/**
+ * Traduit un refus de `create_order` en français lisible par le client.
+ *
+ * La fonction serveur lève des exceptions dont le message est un code
+ * (`NOM_REQUIS`, `PRODUIT_INDISPONIBLE`…). `frError` les renverrait tels quels :
+ * le client lirait « PRODUIT_INDISPONIBLE » au moment précis où il essaie de
+ * commander. Chaque code porte ici la phrase qui dit quoi faire.
+ *
+ * Le code est cherché dans le message plutôt que comparé : PostgREST peut
+ * l'entourer de son propre texte selon le cas.
+ */
+function frOrderError(error: { code?: string; message: string } | null): string {
+  if (!error) return 'Erreur inconnue.'
+  const message = error.message ?? ''
+
+  const known: [string, string][] = [
+    // Piège à robots : un humain ne le remplit jamais. On ne lui explique pas
+    // ce qui l'a trahi — il lirait la consigne et contournerait le champ.
+    ['COMMANDE_REFUSEE', "La commande n'a pas pu être enregistrée. Réessayez."],
+    ['NOM_REQUIS', 'Indiquez votre nom complet.'],
+    ['TELEPHONE_INVALIDE', 'Ce numéro de téléphone semble incomplet. Vérifiez-le.'],
+    ['EMAIL_INVALIDE', 'Cette adresse e-mail semble incorrecte.'],
+    ['PANIER_VIDE', 'Votre panier est vide.'],
+    ['PANIER_TROP_GRAND', 'Votre panier contient trop de lignes. Commandez en deux fois.'],
+    [
+      'TROP_DE_COMMANDES',
+      'Vous avez déjà passé plusieurs commandes à l’instant. Appelez-nous, on s’en occupe directement.',
+    ],
+    ['LIGNE_INVALIDE', 'Une ligne du panier est illisible. Videz le panier et recommencez.'],
+    ['LIGNE_SANS_PRODUIT', 'Un article du panier est incomplet. Videz le panier et recommencez.'],
+    ['QUANTITE_INVALIDE', 'Une quantité du panier est incorrecte.'],
+    ['PRODUIT_INTROUVABLE', "Un article n'est plus au catalogue. Retirez-le du panier."],
+    ['PRODUIT_INDISPONIBLE', "Un article n'est plus disponible. Retirez-le du panier."],
+    ['VARIANTE_INTROUVABLE', "Le modèle choisi n'est plus disponible. Rechoisissez-le."],
+    ['ZONE_INTROUVABLE', 'Cette zone de livraison n’existe plus. Rechoisissez-la.'],
+    ['COMMANDE_NON_ENREGISTREE', "La commande n'a pas pu être enregistrée. Réessayez."],
+  ]
+
+  for (const [code, phrase] of known) {
+    if (message.includes(code)) return phrase
+  }
+
+  // Refus inattendu : on rend le message brut plutôt que d'inventer une cause.
+  return message || 'Erreur inconnue.'
 }
 
 const safe = <T,>(value: unknown, fallback: T): T =>
@@ -245,6 +319,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       features: safe<string[]>(x.features, []),
       images: safe<string[]>(x.images, []),
       specs: safe<Record<string, string>>(x.specs, {}),
+      /*
+       * Colonne `products.free_delivery`, lue sous son nom SQL comme le reste
+       * de la ligne. On la normalise en booléen : `null` doit valoir « non »,
+       * jamais « livraison offerte ».
+       */
+      free_delivery: x.free_delivery === true,
     })) as Product[])
 
     setProductBadges((pb.data ?? []) as { slug: string; slot: string; label: string }[])
@@ -662,6 +742,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       is_featured: p.is_featured ?? false,
       position: p.position ?? 0,
       /*
+       * Livraison offerte sur cet article.
+       *
+       * La liste ci-dessus est la liste des colonnes RÉELLES de `products` :
+       * un champ absent d'ici est silencieusement perdu à l'enregistrement.
+       * La case cochée dans le formulaire n'aurait donc aucun effet — le
+       * vendeur croirait offrir la livraison, et `create_order` continuerait
+       * de la facturer.
+       */
+      free_delivery: p.free_delivery === true,
+      /*
        * Modèles déclinés.
        *
        * On ne garde que les entrées EXPLOITABLES : une ligne sans libellé, ou
@@ -1014,42 +1104,63 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /**
    * Passe commande.
    *
-   * La référence est calculée CÔTÉ CLIENT puis l'insertion est relue : c'est le
-   * seul moyen de connaître le jeton public, que PostgREST ne retourne pas
-   * sur un INSERT nu. Sans ce jeton, la page de confirmation n'a aucun moyen
-   * de prouver au client que la commande est bien la sienne.
+   * Le navigateur n'écrit PLUS dans `orders` : la politique `orders_public_insert`
+   * a été retirée et l'INSERT est révoqué pour `anon`. Tout passe par la
+   * fonction `create_order`, qui recalcule les prix depuis la base — un prix
+   * envoyé d'ici est ignoré — et renvoie le sous-total, les frais et le total
+   * qu'elle a elle-même calculés.
+   *
+   * Ce que le client envoie se limite donc à ce qu'il est seul à savoir :
+   * le panier (slug, variante, quantité), ses coordonnées, la zone et le mode
+   * de règlement. Le prix, la référence et le jeton public viennent du serveur.
+   *
+   * `honeypot` est un champ caché du formulaire : un humain le laisse vide.
    */
   const placeOrder = useCallback<StoreValue['placeOrder']>(async (input) => {
-    if (!supabase) return { token: null, ref: null, error: 'Base non configurée.' }
-    if (!input.items.length) return { token: null, ref: null, error: 'Le panier est vide.' }
+    const rien = { token: null, ref: null, error: null, subtotal: null, shippingCost: null, total: null }
 
-    const subtotal = input.items.reduce((s, i) => s + Number(i.price) * i.quantity, 0)
-    const shipping = Number(input.shippingZone?.price ?? 0)
-    const total = subtotal + shipping
-    const ref = `CNT-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+    if (!supabase) return { ...rien, error: 'Base non configurée.' }
+    if (!input.items.length) return { ...rien, error: 'Le panier est vide.' }
 
-    const { error } = await supabase.from('orders').insert({
-      ref_command: ref,
-      customer_name: input.customer.name,
-      customer_phone: input.customer.phone,
-      customer_email: input.customer.email ?? null,
-      customer_address: input.customer.address ?? null,
-      shipping_zone_id: input.shippingZone?.id ?? null,
-      shipping_zone_name: input.shippingZone?.name ?? null,
-      shipping_cost: shipping,
-      subtotal,
-      total_amount: total,
-      items: input.items,
-      payment_method: input.paymentMethod,
-      notes: input.notes ?? null,
+    // On n'envoie QUE l'identité et la quantité : le serveur relit les prix.
+    // `key` porte la variante (`slug::v-tv-43`) ; sans elle, toutes les tailles
+    // d'une même fiche seraient facturées au prix de base.
+    const items = input.items.map((i) => ({
+      slug: i.productId,
+      key: i.key ?? i.productId,
+      quantity: i.quantity,
+    }))
+
+    const { data, error } = await supabase.rpc('create_order', {
+      p_items: items,
+      p_customer_name: input.customer.name,
+      p_customer_phone: input.customer.phone,
+      p_customer_email: input.customer.email ?? null,
+      p_customer_address: input.customer.address ?? null,
+      // Le serveur relit la zone en base et recalcule les frais : le prix
+      // envoyé par le navigateur ne compte pas non plus de ce côté.
+      p_shipping_zone_id: input.shippingZone?.id ?? null,
+      p_payment_method: input.paymentMethod,
+      p_notes: input.notes ?? null,
+      p_honeypot: input.honeypot ?? null,
     })
-    if (error) return { token: null, ref: null, error: frError(error) }
 
-    const { data } = await supabase
-      .from('orders').select('ref_command, public_token').eq('ref_command', ref).maybeSingle()
-    if (!data) return { token: null, ref: null, error: 'Commande enregistrée, mais sa référence est introuvable.' }
+    if (error) return { ...rien, error: frOrderError(error) }
 
-    return { token: data.public_token, ref: data.ref_command, error: null }
+    // `returns table` : PostgREST rend un tableau, même pour une seule ligne.
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { ref_command: string; public_token: string; subtotal: number; shipping_cost: number; total_amount: number }
+      | undefined
+    if (!row) return { ...rien, error: "Commande enregistrée, mais sa référence est introuvable." }
+
+    return {
+      token: row.public_token,
+      ref: row.ref_command,
+      error: null,
+      subtotal: Number(row.subtotal),
+      shippingCost: Number(row.shipping_cost),
+      total: Number(row.total_amount),
+    }
   }, [])
 
   const value = useMemo<StoreValue>(() => ({
