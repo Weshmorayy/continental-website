@@ -8,3 +8,6 @@ out/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# per-project scratch (never commit)
+.scratch/
