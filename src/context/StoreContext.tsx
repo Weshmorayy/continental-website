@@ -18,6 +18,7 @@ import React, {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured, storageBucket } from '@/lib/supabase'
+import { deepEqual } from '@/lib/deepEqual'
 import { resolveSettings, type ResolvedSettings, type DbSettings } from '@/lib/settings'
 import type {
   Product, Category, Banner, ShippingZone, Faq, Order, Lead,
@@ -924,7 +925,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     for (const [field, value] of Object.entries(patch)) {
       const stored = data[field as keyof SiteSettings]
-      if (JSON.stringify(stored) !== JSON.stringify(value)) {
+      // Comparaison PROFONDE et insensible à l'ordre des clés : Postgres
+      // réordonne les clés des objets JSONB, donc `JSON.stringify` seul
+      // produirait un faux « écriture refusée » sur une écriture réussie.
+      if (!deepEqual(stored, value)) {
         return `Le champ « ${field} » n'a pas été enregistré : écriture refusée.`
       }
     }

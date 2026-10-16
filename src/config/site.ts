@@ -62,7 +62,7 @@ export const siteConfig = {
      * promotion, puis la rétablir en décochant une case, sans ressaisir un seul
      * prix. `freeFrom` (le seuil) reste actif en parallèle.
      */
-    freeForAll: false,
+    freeForAll: true,
   },
 
   seo: {

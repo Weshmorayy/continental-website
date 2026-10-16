@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react'
 import { Check, Save } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import type { SiteSettings } from '@/lib/admin-types'
+import { deepEqual } from '@/lib/deepEqual'
 import { Card, Button, Field, TextInput, TextArea, Toggle } from '@/components/admin/ui'
 
 type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
@@ -52,8 +53,12 @@ export default function SettingsTab({ notify }: { notify: Notify }) {
   // Le contexte arrive après le premier rendu : on resynchronise une fois.
   useEffect(() => { setDraft(settings) }, [settings])
 
+  // Un bloc est « modifié » si le brouillon diffère réellement de la valeur en
+  // base. La comparaison doit ignorer l'ordre des clés : Postgres réordonne les
+  // clés des objets JSONB, donc `JSON.stringify` marquerait « modifié » un bloc
+  // pourtant identique, juste après un enregistrement.
   const section = (key: keyof SiteSettings) =>
-    JSON.stringify(draft[key]) !== JSON.stringify(settings[key])
+    !deepEqual(draft[key], settings[key])
 
   const commit = async (key: keyof SiteSettings, message: string) => {
     setSaving(key)
