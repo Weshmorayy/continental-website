@@ -19,10 +19,11 @@
  * manque quelque chose — le vendeur voit où aller sans ouvrir les cinq.
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
-  Plus, Search, Pencil, Trash2, Package, LayoutGrid, List, Eye, EyeOff,
-  Tag, Camera, AlignLeft, Layers, Check, Circle,
+  Plus, Search, Pencil, Trash2, Package, PackageX, LayoutGrid, List, Eye, EyeOff,
+  Tag, Camera, AlignLeft, Layers, Check, Circle, CheckSquare, Square, Truck,
+  Star, StarOff, Loader2,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import type { Product, ProductVariant } from '@/lib/admin-types'
@@ -287,6 +288,17 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
   const [tab, setTab] = useState<ProductTabId>('essentiel')
   /** Vrai dès que l'utilisateur saisit l'identifiant lui-même. */
   const [slugTouched, setSlugTouched] = useState(false)
+  /*
+   * Édition en masse — les identifiants cochés, pas les fiches elles-mêmes.
+   *
+   * Stocker les objets figerait les valeurs au moment du clic : une fiche
+   * rafraîchie entre-temps serait réécrite avec ses anciennes colonnes. Un
+   * identifiant, lui, se relit toujours sur l'état courant du catalogue.
+   */
+  const [selected, setSelected] = useState<string[]>([])
+  const [bulkBusy, setBulkBusy] = useState(false)
+  /** La suppression groupée est la seule action qui demande confirmation. */
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
   /** Combien de fiches sont retirées du site, toutes catégories confondues. */
   const hiddenCount = useMemo(() => products.filter((p) => !p.is_active).length, [products])
@@ -316,6 +328,26 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
       )
     })
   }, [products, search, cat, showHidden])
+
+  /*
+   * Un identifiant orphelin ne survit pas à un rafraîchissement.
+   *
+   * Après une suppression groupée, `products` perd les lignes supprimées ; sans
+   * ce nettoyage, la barre continuerait d'annoncer trois fiches sélectionnées
+   * alors qu'il n'en reste qu'une, et l'action suivante buterait sur une ligne
+   * inexistante. On rend le MÊME tableau quand rien n'a bougé : un nouvel objet
+   * à chaque passage relancerait un rendu en boucle.
+   */
+  useEffect(() => {
+    setSelected((prev) => {
+      const alive = new Set(products.map((p) => p.id))
+      const next = prev.filter((id) => alive.has(id))
+      return next.length === prev.length ? prev : next
+    })
+  }, [products])
+
+  /** La sélection couvre-t-elle déjà tout ce que les filtres affichent ? */
+  const allShownSelected = shown.length > 0 && shown.every((p) => selected.includes(p.id))
 
   /**
    * Ce qu'il faut pour publier une fiche, coché ou non.
@@ -468,6 +500,82 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
     })
   }
 
+  /* ── édition en masse ──────────────────────────────────────────────────
+     Mêmes écritures que la bascule unitaire, appliquées à la file des fiches
+     cochées. Rien ici ne court-circuite le magasin : chaque ligne passe par
+     `toggleProduct` / `deleteProduct`, qui restent seuls juges du résultat. */
+
+  /** Coche ou décoche une fiche. */
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
+  /** « Tout sélectionner » porte sur ce que les filtres affichent, pas sur le catalogue entier. */
+  const selectAllShown = () => setSelected(shown.map((p) => p.id))
+
+  /**
+   * Applique le même changement à toute la sélection.
+   *
+   * Les écritures sont enchaînées une à une plutôt que lancées ensemble : la
+   * base arbitre chaque ligne (places de rubrique, RLS), et un `Promise.all`
+   * rendrait le compte des réussites inexploitable — on ne saurait pas
+   * lesquelles sont passées. `refresh()` n'est appelé qu'UNE fois, à la fin :
+   * sinon le catalogue entier est relu autant de fois qu'il y a de fiches.
+   *
+   * En cas d'échec partiel, la sélection est CONSERVÉE : l'utilisateur peut
+   * rejouer l'action sur les fiches restées en arrière.
+   */
+  const runBulk = async (patch: Partial<Product>) => {
+    if (selected.length === 0 || bulkBusy) return
+    setBulkBusy(true)
+    let done = 0
+    const failures: string[] = []
+    for (const id of selected) {
+      const error = await toggleProduct(id, patch)
+      if (error) { failures.push(error); continue }
+      done++
+    }
+    await refresh()
+    setBulkBusy(false)
+
+    const failure = failures[0] ?? null
+    if (failure) {
+      notify({ message: `${done} fiche(s) mise(s) à jour. ${failure}`, tone: 'error' })
+      return
+    }
+    setSelected([])
+    notify({ message: `${done} fiche(s) mise(s) à jour.`, tone: 'ok' })
+  }
+
+  /**
+   * Suppression groupée — toujours confirmée, jamais sur une sélection vide.
+   *
+   * La confirmation est distincte de celle d'une fiche seule : le message doit
+   * dire combien de fiches vont disparaître, sinon le geste est irréversible
+   * sans que son ampleur ait été annoncée.
+   */
+  const runBulkDelete = async () => {
+    if (selected.length === 0 || bulkBusy) return
+    setConfirmBulkDelete(false)
+    setBulkBusy(true)
+    let done = 0
+    const failures: string[] = []
+    for (const id of selected) {
+      const error = await deleteProduct(id)
+      if (error) { failures.push(error); continue }
+      done++
+    }
+    await refresh()
+    setBulkBusy(false)
+
+    const failure = failures[0] ?? null
+    if (failure) {
+      notify({ message: `${done} fiche(s) supprimée(s). ${failure}`, tone: 'error' })
+      return
+    }
+    setSelected([])
+    notify({ message: `${done} fiche(s) supprimée(s).`, tone: 'ok' })
+  }
+
   return (
     <div className="space-y-4">
       {/* ── barre d'outils ── */}
@@ -522,6 +630,82 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
           </div>
         </div>
       </Card>
+
+      {/* ── édition en masse ─────────────────────────────────────────────
+          La barre n'apparaît qu'une fois une fiche cochée : elle porte le
+          compte, les commandes groupées et l'avancement. Tant que la sélection
+          est vide, rien ne s'ajoute au-dessus du catalogue — une rangée de
+          boutons inactifs n'apprendrait rien.
+
+          Chaque commande écrit UNE colonne sur les fiches cochées. Les plus
+          fréquentes sont groupées par sujet (visibilité, stock, livraison,
+          mise en avant) dans l'ordre où le vendeur s'en sert. */}
+      {selected.length > 0 && (
+        <Card>
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-heading text-sm font-bold">
+                {selected.length} fiche(s) sélectionnée(s)
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={selectAllShown} disabled={bulkBusy || allShownSelected}>
+                  <CheckSquare className="h-3.5 w-3.5" /> Tout sélectionner
+                </Button>
+                <Button onClick={() => setSelected([])} disabled={bulkBusy}>
+                  <Square className="h-3.5 w-3.5" /> Tout désélectionner
+                </Button>
+                {bulkBusy && (
+                  <span className="flex items-center gap-1.5 text-xs text-text-muted" role="status">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Traitement…
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <span className="admin-label mr-1">Actions groupées</span>
+
+              <Button onClick={() => runBulk({ is_active: true })} disabled={bulkBusy}>
+                <Eye className="h-3.5 w-3.5" /> Rendre visible
+              </Button>
+              <Button onClick={() => runBulk({ is_active: false })} disabled={bulkBusy}>
+                <EyeOff className="h-3.5 w-3.5" /> Masquer
+              </Button>
+
+              {/* Le stock s'arrête au produit fini : les modèles déclinés
+                  gardent leur propre disponibilité, hors de cette barre. */}
+              <Button onClick={() => runBulk({ in_stock: true })} disabled={bulkBusy}>
+                <Check className="h-3.5 w-3.5" /> En stock
+              </Button>
+              <Button onClick={() => runBulk({ in_stock: false })} disabled={bulkBusy}>
+                <PackageX className="h-3.5 w-3.5" /> En rupture
+              </Button>
+
+              <Button onClick={() => runBulk({ free_delivery: true })} disabled={bulkBusy}>
+                <Truck className="h-3.5 w-3.5" /> Livraison offerte
+              </Button>
+              <Button onClick={() => runBulk({ free_delivery: false })} disabled={bulkBusy}>
+                <Truck className="h-3.5 w-3.5" /> Livraison payante
+              </Button>
+
+              <Button onClick={() => runBulk({ is_featured: true })} disabled={bulkBusy}>
+                <Star className="h-3.5 w-3.5" /> Mettre en avant
+              </Button>
+              <Button onClick={() => runBulk({ is_featured: false })} disabled={bulkBusy}>
+                <StarOff className="h-3.5 w-3.5" /> Retirer la mise en avant
+              </Button>
+
+              <Button
+                variant="danger"
+                onClick={() => setConfirmBulkDelete(true)}
+                disabled={bulkBusy}
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Supprimer
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* ── édition ──────────────────────────────────────────────────────
           Une vraie fenêtre modale : elle ne recouvre plus tout l'écran du
@@ -799,6 +983,16 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
             <table className="admin-table">
               <thead className="border-b border-border">
                 <tr>
+                  {/* La case d'en-tête coche ce que les filtres affichent. */}
+                  <Th className="w-10">
+                    <input
+                      type="checkbox"
+                      checked={allShownSelected}
+                      onChange={() => (allShownSelected ? setSelected([]) : selectAllShown())}
+                      aria-label="Tout sélectionner dans la liste"
+                      className="h-4 w-4 cursor-pointer align-middle accent-black"
+                    />
+                  </Th>
                   <Th>Produit</Th><Th>Catégorie</Th><Th>Prix</Th>
                   <Th>État</Th><Th>Actions</Th>
                 </tr>
@@ -806,6 +1000,15 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
               <tbody className="divide-y divide-border">
                 {shown.map((p) => (
                   <tr key={p.id}>
+                    <Td className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(p.id)}
+                        onChange={() => toggleSelected(p.id)}
+                        aria-label={`Sélectionner ${p.name}`}
+                        className="h-4 w-4 cursor-pointer align-middle accent-black"
+                      />
+                    </Td>
                     <Td primary>
                       <div className="flex items-center gap-3">
                         {p.image && (
@@ -860,7 +1063,17 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((p) => (
             <Card key={p.id} className="flex flex-col">
-              <div className="flex items-center justify-center border-b border-border bg-white p-4">
+              {/* La case vit sur la vignette, coin haut-gauche : elle reste au
+                  même endroit d'une carte à l'autre, et ne bouscule ni les
+                  pastilles ni les boutons du bas. */}
+              <div className="relative flex items-center justify-center border-b border-border bg-white p-4">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(p.id)}
+                  onChange={() => toggleSelected(p.id)}
+                  aria-label={`Sélectionner ${p.name}`}
+                  className="absolute left-3 top-3 h-4 w-4 cursor-pointer accent-black"
+                />
                 {p.image ? (
                   <img
                     src={p.image}
@@ -913,6 +1126,19 @@ export default function ProductsTab({ notify }: { notify: Notify }) {
           danger
           onCancel={() => setConfirmDelete(null)}
           onConfirm={remove}
+        />
+      )}
+
+      {/* La suppression groupée a SA confirmation : elle doit annoncer combien
+          de fiches disparaissent, ce que celle d'une fiche seule ne peut pas. */}
+      {confirmBulkDelete && (
+        <ConfirmDialog
+          title="Supprimer ces produits ?"
+          message={`${selected.length} fiche(s) seront retirées du site. Cette action est définitive.`}
+          confirmLabel={`Supprimer ${selected.length} fiche(s)`}
+          danger
+          onCancel={() => setConfirmBulkDelete(false)}
+          onConfirm={runBulkDelete}
         />
       )}
     </div>
