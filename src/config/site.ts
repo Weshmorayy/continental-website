@@ -51,7 +51,7 @@ export const siteConfig = {
       { name: 'Almadies / Ngor / Ouakam / Yoff', delay: 'Sous 2h à 4h', fee: 2000 },
       { name: 'Grand Yoff / Liberté / Sacré-Cœur / Parcelles', delay: 'Même jour', fee: 2500 },
       { name: 'Guédiawaye / Pikine / Rufisque / Keur Massar', delay: '24h', fee: 3000 },
-      { name: 'Régions (Thiès, Mbour, Saint-Louis...)', delay: '24h à 48h', fee: 4000 },
+      { name: 'Régions (Thiès, Mbour, Saint-Louis...)', delay: '24h à 48h (GP)', fee: 4000 },
     ],
     freeFrom: 50000,
     /**
