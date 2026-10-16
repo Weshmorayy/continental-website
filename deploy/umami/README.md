@@ -65,51 +65,87 @@ umami**, pas de la base.
 Compte par défaut : `admin` / `umami`. Umami demande de le changer à la
 première connexion.
 
-### 4. Déclarer le site
+> **Umami v3 : les sites appartiennent à une équipe.** Depuis la version 3, un
+> site sans équipe n'est visible que de son créateur. Un compte de lecture
+> ajouté à la main, mais absent de l'équipe, reçoit un **401** sur toutes les
+> routes de statistiques — y compris si son rôle est correct. Les deux étapes
+> ci-dessous vont donc ensemble : on ne peut pas sauter l'équipe.
 
-**Settings → Websites → Add website**
+### 4. Créer l'équipe, puis déclarer le site dedans
+
+**Settings → Teams → Add team** — un nom neutre, par exemple `Atelier`.
+
+Puis **Settings → Websites → Add website** :
 
 - **Name** : `Continental`
 - **Domain** : `continentalsn.com` (le domaine réel du site ; sert de filtre,
   il n'a pas besoin d'être exact tant qu'on ne mesure qu'un seul site)
+- **Team** : `Atelier` ← c'est le champ qui compte
 
 Umami affiche alors un **Website ID** (un UUID). C'est la valeur de
 `NEXT_PUBLIC_UMAMI_WEBSITE_ID`.
 
-### 5. Créer le compte de lecture
+⚠ Le rattachement à une équipe se choisit **à la création du site** et ne se
+modifie plus ensuite depuis l'interface. Un site créé sans équipe doit être
+recréé (il perd son historique) — donc vérifier ce champ avant de valider.
+
+### 5. Créer le compte de lecture, et l'ajouter à l'équipe
 
 **Settings → Users → Add user**
 
 - **Username** : `continental-stats`
-- **Role** : `Viewer`
+- **Role** : `View-only`
 - **Password** : un mot de passe long, distinct de celui de l'admin
 
-C'est ce compte que l'application utilisera pour interroger l'API. Le rôle
-« Viewer » suffit à lire les statistiques et ne permet pas de modifier Umami.
-Le mot de passe n'est jamais envoyé au navigateur : il n'est lu que par la
-route serveur qui, elle, vérifie d'abord que l'appelant est administrateur du
-site.
+Puis **Settings → Teams → Atelier → Add user** → `continental-stats`, rôle
+**View-only**. C'est cette seconde adhésion qui ouvre la lecture ; le rôle
+global seul ne suffit pas.
+
+Ce compte est celui que l'application utilise pour interroger l'API. Il lit les
+statistiques et ne peut rien modifier : création, modification et suppression de
+site répondent `401`. Le mot de passe n'est jamais envoyé au navigateur — il
+n'est lu que par la route serveur qui, elle, vérifie d'abord que l'appelant est
+administrateur du site.
+
+*(Une seule équipe et un seul compte de lecture suffisent pour Continental et
+MG Perfume, qui partagent cette instance : les deux sites vivent dans la même
+équipe et le même identifiant de lecture lit les deux.)*
 
 ### 6. Renseigner les variables du site, puis REDÉPLOYER
 
-Dans la ressource Coolify de `continental-website`, ajouter les cinq
-variables (voir `.env.example` pour le détail) :
+Dans la ressource Coolify de `continental-website`, ajouter les variables (voir
+`.env.example` pour le détail) :
 
 ```
-NEXT_PUBLIC_UMAMI_URL=https://umami-xxxxxxxx.coolify.example
+NEXT_PUBLIC_UMAMI_URL=https://stats.continentalsn.com
 NEXT_PUBLIC_UMAMI_WEBSITE_ID=<uuid affiché à l'étape 4>
-UMAMI_URL=https://umami-xxxxxxxx.coolify.example
+UMAMI_URL=http://umami-<uuid>:3000
+UMAMI_WEBSITE_ID=<le même uuid>
 UMAMI_USERNAME=continental-stats
 UMAMI_PASSWORD=<mot de passe de l'étape 5>
 ```
 
-⚠ Les deux variables `NEXT_PUBLIC_*` sont **remplacées par leur valeur au
-moment du build**. Les ajouter puis redémarrer le conteneur ne change rien : il
-faut **redéployer**. C'est la cause la plus fréquente d'un « les statistiques
-restent vides ».
+Deux familles, deux moments de lecture — c'est la distinction qui évite de
+chercher longtemps pourquoi « les statistiques restent vides » :
 
-Les trois autres sont lues au moment de l'exécution : les corriger suffit sans
-rebuild.
+| | Lues | Conséquence |
+|---|---|---|
+| `NEXT_PUBLIC_*` (2) | **au build**, figées dans le bundle | les changer exige un **redéploiement**, pas un redémarrage |
+| `UMAMI_*` (4) | **à chaque requête** | les corriger suffit, sans reconstruire |
+
+C'est pour cette raison que l'identifiant du site existe en deux exemplaires :
+`UMAMI_WEBSITE_ID` (serveur) permet de faire vivre l'onglet Statistiques
+**avant** que le domaine public d'Umami existe, `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+n'étant nécessaire que pour le script de mesure côté visiteur.
+
+**Ordre à respecter.** `UMAMI_URL` côté serveur peut viser le domaine interne
+`http://umami-<uuid>:3000` : le serveur parle à Umami par le réseau Docker, et
+l'onglet Statistiques fonctionne donc **dès maintenant, sans DNS**. Le script
+visiteur, lui, ne peut pas être servi en `http://` depuis une page `https://`
+(contenu mixte, bloqué par le navigateur) : `NEXT_PUBLIC_UMAMI_URL` doit
+attendre le domaine réel. Tant qu'il est vide, aucun script n'est injecté et
+aucune requête en échec n'apparaît dans la console.
+
 
 ### 7. Vérifier
 
@@ -124,6 +160,25 @@ cinq variables manque — l'écran nomme celle qui pose problème.
 ---
 
 ## Notes d'exploitation
+
+### Pièges de l'API v3 (rencontrés en vrai)
+
+Trois choses ne se devinent pas et coûtent une soirée chacune :
+
+1. **`path`, pas `url`.** En v3 le type de métrique « pages » s'appelle `path`.
+   Avec `url` le serveur répond `400` — et comme `getAudience()` lance ses huit
+   appels dans un `Promise.all`, un seul `400` vidait l'onglet Statistiques en
+   entier. `type=host` n'existe pas non plus.
+2. **Un site sans équipe est invisible aux autres comptes.** Le champ `teamId`
+   ne se modifie **pas** après création : `POST /api/websites/{id}` n'accepte
+   que `name`, `domain`, `shareId`, `replayConfig`. Il se choisit à la
+   création (`POST /api/websites`, champ `teamId`).
+3. **Le lecteur doit être membre de l'équipe** avec le rôle `team-view-only`
+   (`POST /api/teams/{teamId}/users`). Le rôle global « View-only » ne suffit
+   pas : sans adhésion, toutes les routes de stats répondent `401`.
+
+L'API Umami n'utilise pas `PATCH` ni `PUT` : les mises à jour passent par
+`POST` sur la ressource.
 
 ### Sauvegarde
 

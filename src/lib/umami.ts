@@ -35,7 +35,13 @@ const BASE = (process.env.UMAMI_URL ?? process.env.NEXT_PUBLIC_UMAMI_URL ?? '')
 
 const USERNAME = process.env.UMAMI_USERNAME?.trim()
 const PASSWORD = process.env.UMAMI_PASSWORD
-const WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID?.trim()
+// Deux noms possibles : `UMAMI_WEBSITE_ID` est lu à l'exécution, ce qui permet
+// de brancher l'onglet sans reconstruire l'image ; `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+// est celui du script de mesure, figé dans le bundle au moment du build. Le
+// serveur accepte les deux, dans cet ordre.
+const WEBSITE_ID = (
+  process.env.UMAMI_WEBSITE_ID ?? process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID
+)?.trim()
 
 /**
  * Fuseau de découpage des jours. Dakar est à UTC+0 toute l'année, sans heure
@@ -423,7 +429,10 @@ export async function getAudience(
     // consultées, elle sert aussi à COMPTER les consultations de fiche produit
     // pour le taux de contact. Une limite trop basse tronquerait le total, et
     // le taux serait faux — pas approximatif, faux.
-    get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'url', limit: 50 }),
+    // `path` et non `url` : Umami v3 a renommé ce type de métrique. Avec
+    // l'ancien nom le serveur répond 400, et comme les appels partent en
+    // `Promise.all`, un seul 400 vidait l'onglet Statistiques en entier.
+    get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'path', limit: 50 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'referrer', limit: 8 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'device', limit: 5 }),
     get<Point[]>(`/api/websites/${WEBSITE_ID}/metrics`, { ...range, type: 'browser', limit: 6 }),
