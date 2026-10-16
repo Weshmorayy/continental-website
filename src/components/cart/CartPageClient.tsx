@@ -340,7 +340,7 @@ export default function CartPageClient() {
                   <option value="">Choisir une zone…</option>
                   {zones.map((z) => (
                     <option key={z.id} value={z.id}>
-                      {z.name} — {Number(z.price) > 0 ? `${fcfa(Number(z.price))} · ${z.delay}` : `Offerte · ${z.delay}`}
+                      {z.name} — {shippingOffered || Number(z.price) <= 0 ? `Offerte · ${z.delay}` : `${fcfa(Number(z.price))} · ${z.delay}`}
                     </option>
                   ))}
                 </select>
