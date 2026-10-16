@@ -30,16 +30,18 @@
 import React, { useState, useMemo } from 'react'
 import {
   Search, ShoppingBag, MessageCircle, Phone, MapPin, User,
-  Copy, StickyNote, Clock, Wallet, ChevronDown, X, Check,
+  Copy, StickyNote, Clock, Wallet, ChevronDown, X, Check, Trash2,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import type { Order, OrderStatus, PaymentStatus } from '@/lib/admin-types'
 import { ORDER_STATUS_LABEL, PAYMENT_STATUS_LABEL } from '@/lib/admin-types'
+import { supabase } from '@/lib/supabase'
+import { isTestOrder } from '@/lib/testOrder'
 import { paymentLabel } from '@/lib/payments'
 import { waHrefFor, buildStatusMessage } from '@/lib/whatsapp'
 import {
   Card, Button, Select, TextInput, TextArea, Pill, EmptyState,
-  Modal, Field, formatFcfa, formatDate,
+  Modal, Field, ConfirmDialog, formatFcfa, formatDate,
 } from '@/components/admin/ui'
 
 type Notify = (t: { message: string; tone: 'ok' | 'error' }) => void
@@ -81,6 +83,55 @@ const OPEN_STATUSES: OrderStatus[] = ['new', 'confirmed', 'preparing', 'shipped'
 
 /** Les états proposés au changement, dans l'ordre du parcours réel. */
 const NEXT_STATUS: OrderStatus[] = ['confirmed', 'preparing', 'shipped', 'delivered', 'cancelled']
+
+/**
+ * Efface une commande de la base, et l'inscrit au journal.
+ *
+ * ── Pourquoi ces deux gestes sont écrits ici ──────────────────────────────
+ * `useStore()` n'expose que des `deleteX()` dédiés aux autres tables, plus
+ * jamais `mutate()` ni `audit()` : le magasin n'a pas de `deleteOrder`, et il
+ * n'en fallait pas — la suppression d'une commande n'est pas une opération
+ * ordinaire, c'est une exception réservée aux essais. La garder dans ce
+ * module, à côté de la seule règle qui l'autorise, évite qu'un futur écran
+ * l'appelle sans avoir posé la question « est-ce un test ? ».
+ *
+ * Les deux appels reprennent mot pour mot la convention du magasin :
+ * `Prefer: return=representation`, puis vérification qu'une ligne a bien été
+ * touchée — sans quoi une suppression refusée en silence (RLS) passerait
+ * pour un succès.
+ */
+async function deleteOrderRow(id: string): Promise<string | null> {
+  if (!supabase) return 'Base non configurée.'
+
+  const result = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', id)
+    .setHeader('Prefer', 'return=representation')
+
+  if (result.error) return `Suppression refusée : ${result.error.message}`
+  if ((result.data ?? []).length === 0) {
+    return 'Suppression refusée : commande introuvable ou accès non autorisé.'
+  }
+  return null
+}
+
+/**
+ * Journalise la suppression via `log_event()`, comme le fait le magasin.
+ *
+ * Volontairement non bloquante : un journal en panne ne doit pas faire croire
+ * à une suppression ratée, alors que la ligne, elle, est bien partie.
+ */
+async function auditOrderDelete(id: string, label: string | null) {
+  if (!supabase) return
+  const { error } = await supabase.rpc('log_event', {
+    p_action: 'delete',
+    p_entity: 'orders',
+    p_entity_id: id,
+    p_label: label,
+  })
+  if (error) console.error('[Continental] journalisation impossible :', error.message)
+}
 
 export default function OrdersTab({ notify }: { notify: Notify }) {
   const { orders, updateOrderStatus, refresh } = useStore()
@@ -144,6 +195,35 @@ export default function OrdersTab({ notify }: { notify: Notify }) {
     if (error) { notify({ message: error, tone: 'error' }); return }
     await refresh()
     notify({ message: done, tone: 'ok' })
+  }
+
+  /**
+   * Supprime une commande « test ».
+   *
+   * Le garde-fou est ICI, dans la fonction, et pas seulement dans
+   * l'affichage : même appelée par erreur depuis un futur bouton, elle refuse
+   * toute commande qui n'est pas un test. Il n'existe aucune variable
+   * « forcer » — supprimer une vraie commande est impossible, pas seulement
+   * déconseillé.
+   */
+  const removeTestOrder = async (o: Order) => {
+    if (!isTestOrder(o)) {
+      notify({ message: 'Suppression refusée : ce n’est pas une commande test.', tone: 'error' })
+      return
+    }
+
+    setBusyId(o.id)
+    const error = await deleteOrderRow(o.id)
+    if (error) {
+      setBusyId(null)
+      notify({ message: error, tone: 'error' })
+      return
+    }
+
+    await auditOrderDelete(o.id, o.ref_command)
+    await refresh()
+    setBusyId(null)
+    notify({ message: `Commande test ${o.ref_command} supprimée.`, tone: 'ok' })
   }
 
   const copyRef = async (o: Order) => {
@@ -285,6 +365,7 @@ export default function OrdersTab({ notify }: { notify: Notify }) {
               order={o}
               busy={busyId === o.id}
               onChange={change}
+              onDelete={removeTestOrder}
               onCopy={copyRef}
               onEditNote={() => { setNoteFor(o); setNoteDraft(o.notes ?? '') }}
             />
@@ -379,16 +460,25 @@ function Stat({
  * quoi livrer, combien. Les actions sont en bas, atteignables au pouce.
  */
 function OrderCard({
-  order, busy, onChange, onCopy, onEditNote,
+  order, busy, onChange, onDelete, onCopy, onEditNote,
 }: {
   order: Order
   busy: boolean
   onChange: ApplyChange
+  onDelete: (o: Order) => void
   onCopy: (o: Order) => void
   onEditNote: () => void
 }) {
   const [showItems, setShowItems] = useState(false)
+  const [askDelete, setAskDelete] = useState(false)
   const itemCount = order.items.reduce((s, i) => s + (i.quantity || 1), 0)
+
+  /*
+   * Le mot « test » est cherché UNE fois pour toute la fiche : la pastille et
+   * le bouton doivent répondre la même chose, y compris quand le nom contient
+   * un accent. Deux appels séparés finiraient par diverger.
+   */
+  const testOrder = isTestOrder(order)
 
   /*
    * Le message suit l'ÉTAT de la commande : après avoir basculé en
@@ -427,6 +517,11 @@ function OrderCard({
           <Pill tone={order.payment_status === 'paid' ? 'ok' : 'neutral'}>
             {paymentLabel(order.payment_method)} · {PAYMENT_STATUS_LABEL[order.payment_status]}
           </Pill>
+          {/* Grosseur volontairement discrète : cette pastille n'est pas un
+              état de la commande, c'est la raison pour laquelle la ligne peut
+              être supprimée. Le vendeur qui cherche pourquoi doit la trouver ;
+              celui qui traite une vraie commande ne doit pas la voir. */}
+          {testOrder && <Pill tone="neutral">Test</Pill>}
         </div>
       </header>
 
@@ -544,20 +639,12 @@ function OrderCard({
             ))}
           </Select>
 
-          <Select
-            value={order.payment_status}
-            disabled={busy}
-            aria-label={`Règlement de ${order.ref_command}`}
-            onChange={(e) => {
-              const next = e.target.value as PaymentStatus
-              void onChange(order, { payment_status: next }, `Règlement : ${PAYMENT_STATUS_LABEL[next].toLowerCase()}.`)
-            }}
-            className="sm:w-36"
-          >
-            {Object.entries(PAYMENT_STATUS_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </Select>
+          {/* Le règlement n'est plus modifiable ici : le client paie en
+              espèces ou par Wave à la livraison, et le vendeur n'a rien à
+              trancher entre « en attente » et « payée » — le bandeau
+              « Encaissé » et la pastille de la fiche suffisent à lire où on
+              en est. Deux menus côte à côte invitaient surtout à changer le
+              mauvais. */}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -579,8 +666,47 @@ function OrderCard({
             <MessageCircle className="h-3.5 w-3.5" />
             Prévenir
           </a>
+
+          {/* Suppression offerte UNIQUEMENT sur les commandes de test. Le
+              bouton n'apparaît pas ailleurs, et `removeTestOrder` revérifie
+              la règle de son côté : il n'y a donc aucun chemin, même en
+              modifiant la page dans le navigateur, qui mène à la disparition
+              d'une commande de client. */}
+          {testOrder && (
+            <Button
+              variant="danger"
+              disabled={busy}
+              onClick={() => setAskDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Supprimer</span>
+            </Button>
+          )}
         </div>
       </footer>
+
+      {askDelete && (
+        <ConfirmDialog
+          title="Supprimer cette commande test ?"
+          danger
+          confirmLabel="Supprimer"
+          message={
+            <>
+              La commande <strong>{order.ref_command}</strong> de{' '}
+              <strong>{order.customer_name}</strong> a été passée pour un test.
+              Sa suppression est définitive : elle quitte la liste avec ses
+              articles et son total, et rien ne permet de la retrouver.
+              Les commandes des vrais clients, elles, ne peuvent pas être
+              supprimées.
+            </>
+          }
+          onCancel={() => setAskDelete(false)}
+          onConfirm={() => {
+            setAskDelete(false)
+            onDelete(order)
+          }}
+        />
+      )}
     </article>
   )
 }

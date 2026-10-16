@@ -15,6 +15,8 @@
 import React, { useState } from 'react'
 import { Database, Plus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
+import { supabase } from '@/lib/supabase'
+import PasswordDialog from '@/components/admin/PasswordDialog'
 import {
   Card, Button, Field, TextInput, EmptyState, ConfirmDialog, Pill, formatDate,
 } from '@/components/admin/ui'
@@ -27,6 +29,8 @@ export default function BackupsTab({ notify }: { notify: Notify }) {
   const [busy, setBusy] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [restoreBusy, setRestoreBusy] = useState(false)
+  const [restoreError, setRestoreError] = useState<string | null>(null)
 
   const take = async () => {
     setBusy(true)
@@ -48,6 +52,55 @@ export default function BackupsTab({ notify }: { notify: Notify }) {
       message: 'Restauration terminée. Les éléments déjà présents ont été conservés.',
       tone: 'ok',
     })
+  }
+
+  /**
+   * Pourquoi un mot de passe juste avant de restaurer ?
+   *
+   * Parce qu'une restauration se déclenche d'un simple clic, alors qu'elle est
+   * destructrice : elle réinjecte du contenu qu'on avait retiré exprès. Refaire
+   * le ménage à la main, produit par produit, est long et incertain. Le mot de
+   * passe transforme donc un clic distrait en un geste volontaire.
+   *
+   * Le mot de passe n'est ni conservé ni comparé à une valeur du code : il est
+   * présenté à Supabase, qui répond oui ou non. Le compte doit être celui de
+   * l'utilisateur déjà connecté — on ne restaure pas avec le compte d'un autre.
+   */
+  const confirmRestoreWithPassword = async (password: string) => {
+    if (!confirmRestore) return
+    if (!supabase) {
+      setRestoreError('Base non configurée : vérifiez les variables Supabase.')
+      return
+    }
+
+    setRestoreBusy(true)
+    setRestoreError(null)
+
+    const { data: userData } = await supabase.auth.getUser()
+    let email = userData.user?.email ?? null
+    if (!email) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      email = sessionData.session?.user.email ?? null
+    }
+    if (!email) {
+      setRestoreBusy(false)
+      setRestoreError('Impossible de retrouver votre compte. Reconnectez-vous.')
+      return
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setRestoreBusy(false)
+
+    if (error) {
+      setRestoreError('Mot de passe incorrect.')
+      return
+    }
+
+    const id = confirmRestore
+    // Fermer la fenêtre détruit l'état local qui portait le mot de passe.
+    setConfirmRestore(null)
+    setRestoreError(null)
+    await restore(id)
   }
 
   const remove = async () => {
@@ -126,12 +179,14 @@ export default function BackupsTab({ notify }: { notify: Notify }) {
       )}
 
       {confirmRestore && (
-        <ConfirmDialog
+        <PasswordDialog
           title="Restaurer cet instantané ?"
-          message="Les éléments disparus depuis la prise de cet instantané seront réajoutés. Vos modifications plus récentes sont conservées."
+          message="La restauration réajoute les produits, bannières, zones et questions qui manquent depuis cet instantané. Vos modifications plus récentes ne sont pas écrasées. Pour confirmer, entrez votre mot de passe."
           confirmLabel="Restaurer"
-          onCancel={() => setConfirmRestore(null)}
-          onConfirm={() => restore(confirmRestore)}
+          busy={restoreBusy}
+          error={restoreError}
+          onCancel={() => { setConfirmRestore(null); setRestoreError(null) }}
+          onConfirm={confirmRestoreWithPassword}
         />
       )}
 
