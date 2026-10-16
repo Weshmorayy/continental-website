@@ -201,14 +201,19 @@ Sur ce site, c'est négligeable (quelques milliers de lignes par an). Si un jour
 le volume devient un sujet, le réglage tient dans Umami lui-même, pas dans le
 code du site.
 
-### Pourquoi `measure.js` et pas `script.js`
+### Pourquoi `measure` et pas `script.js`
 
 `TRACKER_SCRIPT_NAME: measure` dans le compose. Les listes de blocage
 publicitaires filtrent le nom standard `script.js` sur des milliers de sites ;
-le renommer suffit à mesure que le script se charge chez la plupart des
+le renommer suffit à ce que le script se charge chez la plupart des
 visiteurs équipés d'un bloqueur. Le nom est cohérent des deux côtés : le
 compose le fixe, `NEXT_PUBLIC_UMAMI_URL` ne contient que le domaine, et
 l'application compose l'URL du script elle-même.
+
+**Sans extension.** Umami v3 sert le tracker à `/<TRACKER_SCRIPT_NAME>` tel
+quel : l'URL est `https://stats.continentalsn.com/measure`. `/measure.js`
+répond **404** (vérifié par sonde HTTP le 2026-10-16) — un suffixe `.js` ajouté
+par réflexe coupe la mesure sans message d'erreur.
 
 ### Les visites de l'administrateur ne comptent pas
 
