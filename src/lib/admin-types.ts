@@ -116,8 +116,19 @@ export interface Faq {
   position: number
 }
 
+/*
+ * Cinq états, et pas un de plus : c'est le référentiel du portail MG Perfume,
+ * désormais partagé par les deux boutiques du système. « confirmed » (Confirmée)
+ * et « preparing » (En préparation) ont fusionné dans « processing » — le
+ * vendeur qui confirme une commande la met en préparation dans le même geste.
+ *
+ * Les deux anciennes valeurs restent déclarées dans l'énumération PostgreSQL
+ * (on ne retire pas une valeur d'énum ; voir
+ * supabase/migrations/20261017_unification_statuts_commandes.sql), mais plus
+ * aucun code ne les écrit ni ne les lit.
+ */
 export type OrderStatus =
-  | 'new' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled'
+  | 'new' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 
 export interface OrderItem {
@@ -213,11 +224,15 @@ export interface SiteBackup {
 
 /* ─────────────────────────────── libellés français ────────────────────── */
 
+/*
+ * Les libellés sont ceux du portail MG Perfume, mot pour mot : le vendeur qui
+ * travaille sur les deux boutiques retrouve la même phrase au même endroit.
+ * « En livraison » a remplacé « Expédiée » pour cette raison.
+ */
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   new: 'Nouvelle',
-  confirmed: 'Confirmée',
-  preparing: 'En préparation',
-  shipped: 'Expédiée',
+  processing: 'En préparation',
+  shipped: 'En livraison',
   delivered: 'Livrée',
   cancelled: 'Annulée',
 }

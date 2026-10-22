@@ -237,8 +237,7 @@ export function buildStatusMessage(
 
   const body: Record<string, string> = {
     new: `nous avons bien reçu votre commande ${ref}. Un conseiller vous rappelle pour confirmer la livraison.`,
-    confirmed: `votre commande ${ref} est confirmée. Nous préparons votre colis.`,
-    preparing: `votre commande ${ref} est en préparation dans notre entrepôt.`,
+    processing: `votre commande ${ref} est en préparation dans notre entrepôt.`,
     shipped: `votre commande ${ref} est en route${zone}. Le livreur vous appelle avant de passer.`,
     delivered: `votre commande ${ref} a été livrée. Merci de votre confiance — si tout est en ordre, un mot de votre part nous fait toujours plaisir.`,
     cancelled: `votre commande ${ref} a été annulée. Si c'est une surprise, répondez à ce message : nous la remettons en route.`,

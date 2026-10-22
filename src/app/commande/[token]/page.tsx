@@ -44,11 +44,16 @@ interface Row {
 const fcfa = (n: number) =>
   `${new Intl.NumberFormat('fr-FR').format(Math.round(Number(n))).replace(/ /g, ' ')} FCFA`
 
+/*
+ * Libellés lus par le CLIENT sur sa page de suivi. Ils suivent le référentiel
+ * partagé avec le portail MG Perfume : plus de « Confirmée » (l'état a fusionné
+ * dans « processing »), et « En livraison » plutôt que « Expédiée ».
+ * Une clé absente retombe sur la valeur brute — voir l'appel plus bas.
+ */
 const STATUS: Record<string, string> = {
   new: 'Reçue',
-  confirmed: 'Confirmée',
-  preparing: 'En préparation',
-  shipped: 'Expédiée',
+  processing: 'En préparation',
+  shipped: 'En livraison',
   delivered: 'Livrée',
   cancelled: 'Annulée',
 }
